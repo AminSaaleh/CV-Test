@@ -1,0 +1,40 @@
+[
+    {
+        "title": "Riot",
+        "ort": "Letschin",
+        "dienstkleidung": "Anzug ",
+        "auftraggeber": "Hallo",
+        "start": "2025-09-03T09:00",
+        "status": "offen",
+        "required_staff": "2",
+        "id": "79c21218-9c35-46d9-8030-f0c093f54c36",
+        "responses": {
+            "Amine": {
+                "status": "bestätigt",
+                "remark": "",
+                "end_time": "09:00"
+            },
+            "lukas": {
+                "status": "bestätigt",
+                "remark": ""
+            }
+        }
+    },
+    {
+        "title": "a",
+        "ort": "Letschin",
+        "dienstkleidung": "Anzug ",
+        "auftraggeber": "Hallo",
+        "start": "2025-10-29T09:00",
+        "status": "offen",
+        "required_staff": 1,
+        "id": "baa1ddb0-849c-4afb-9191-449ab635c61d",
+        "responses": {
+            "lukas": {
+                "status": "bestätigt",
+                "remark": "",
+                "end_time": "19:00"
+            }
+        }
+    }
+]

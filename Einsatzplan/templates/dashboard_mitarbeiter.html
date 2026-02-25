@@ -1,0 +1,1616 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Mitarbeiter Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .fc-daygrid-event-dot{
+      height:16px;width:16px;border-radius:50%;
+      background-color:currentColor !important;
+      margin-right:8px;
+      border:0 !important;
+    }
+    /* Wochenende grau (Sa/So) */
+    .fc .fc-daygrid-day.weekend{ background:#f2f2f2; }
+    /* Sa/So komplette Spalten inkl. Header grau */
+    .fc .fc-daygrid-day.fc-day-sat, .fc .fc-daygrid-day.fc-day-sun{ background:#f2f2f2; }
+    .fc .fc-col-header-cell.fc-day-sat, .fc .fc-col-header-cell.fc-day-sun{ background:#f2f2f2; }
+
+    .fc-event-title{font-weight:bold;font-size:14px;}
+    .detail-box{
+      border:1px solid #ddd;border-radius:6px;padding:8px;
+      margin-bottom:10px;background:#fafafa;
+    }
+    .filter-row{margin:10px 0;}
+    .earnings-bold{font-weight:bold;color:#1a1a1a;}
+    .muted{color:#666;font-size:12px;margin-top:6px;}
+  
+    /* Einheitliche Buttons in Einsatzdetails */
+    .modal-actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:12px;
+    }
+    .modal-actions button{
+      flex:1;
+      min-width:160px;
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:14px;
+      line-height:1.1;
+    }
+    
+  
+    #endtime-section{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+    #endtime-section input[type="time"]{
+      flex:1;
+      min-width:160px;
+    }
+    #btn-endtime{
+      min-width:160px;
+      padding:10px 12px;
+      border-radius:10px;
+      font-size:14px;
+    }
+
+
+    /* Report: Spalte 'Vorauss. Ende' ausblenden (Daten bleiben erhalten) */
+    #report .col-planned-end{ display:none; }
+
+    /* =========================
+       ✅ Mobile-Optimierung
+       ========================= */
+    /* Navigation: Tabs auf Handy nicht zu breit + scrollbar */
+    nav{ display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; }
+    nav .left{ display:flex; gap:8px; flex-wrap:wrap; }
+    nav .right{ display:flex; gap:10px; align-items:center; }
+
+    @media (max-width: 650px){
+      /* Tabs: eine Zeile, horizontal scrollbar */
+      nav{ padding:8px 10px; }
+      nav .left{
+        flex-wrap:nowrap;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        width:100%;
+        padding-bottom:6px; /* Platz für Scrollbar */
+      }
+      nav .left a{ white-space:nowrap; font-size:12px; padding:7px 9px; }
+      nav .right{ width:100%; justify-content:space-between; }
+      nav .right span{ font-size:12px; }
+
+      /* Kalender: kompakter (Titel + Uhrzeit soll in eine Zeile passen) */
+      .fc .fc-toolbar-title{ font-size:15px !important; }
+      .fc .fc-button{ padding:6px 8px !important; font-size:12px !important; }
+
+      .fc .fc-daygrid-event{ padding:1px 2px !important; }
+      .fc .fc-daygrid-event .fc-event-main{ line-height:1.1 !important; }
+      .fc .fc-event-time{ font-size:10px !important; }
+      .fc-event-title{
+        font-size:10.5px !important;
+        font-weight:700 !important;
+        white-space:nowrap !important;
+        overflow:hidden !important;
+        text-overflow:ellipsis !important;
+      }
+
+      /* Tabellen: besser lesbar + sauber horizontal scrollen */
+      .user-table{
+        width:100%;
+        display:block;
+        overflow-x:auto;
+        -webkit-overflow-scrolling:touch;
+        border:1px solid #eee;
+        border-radius:8px;
+        padding-bottom:6px; /* Scrollbar nicht über Text */
+        font-size:12px;
+      }
+      .user-table th, .user-table td{ padding:5px 6px; }
+
+      /* Lange Felder dürfen umbrechen (Titel/Ort/Bemerkung) */
+      .user-table td:nth-child(2),
+      .user-table td:nth-child(3),
+      .user-table td:last-child{
+        white-space:normal;
+        min-width:140px;
+      }
+    }
+    
+  
+    /* =========================
+       ✅ Kategorien-Farben (CP/CV)
+       ========================= */
+    #calendar .cat-cp{
+      background-color: #fff3cd !important; /* leicht gold */
+      border-color: #f1c40f !important;
+    }
+    #calendar .cat-cv{
+      background-color: #dbeafe !important; /* leicht blau */
+      border-color: #60a5fa !important;
+    }
+    #calendar .cat-cp .fc-event-main,
+    #calendar .cat-cv .fc-event-main{
+      color:#111 !important;
+    }
+
+  
+.user-table{
+  table-layout: fixed;
+}
+.user-table thead th{
+  vertical-align: middle !important;
+  white-space: nowrap;
+  height: 42px;
+  text-align:center;
+}
+
+</style>
+
+<style>
+/* === Voll gefüllte Status-Kreise === */
+.fc-daygrid-event-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none !important;
+    margin-right: 4px;
+}
+
+.status-bestaetigt .fc-daygrid-event-dot {
+    background-color: #2ecc71 !important;
+}
+
+.status-offen .fc-daygrid-event-dot {
+    background-color: #f1c40f !important;
+}
+
+.status-abgelehnt .fc-daygrid-event-dot {
+    background-color: #e74c3c !important;
+}
+
+.status-ersatz .fc-daygrid-event-dot {
+    background-color: #3498db !important;
+}
+
+.status-zugesagt .fc-daygrid-event-dot {
+    background-color: #f39c12 !important; /* orange */
+}
+
+.status-abgelehnt_chef .fc-daygrid-event-dot,
+.status-entfernt_chef .fc-daygrid-event-dot {
+    background-color: #e74c3c !important; /* rot */
+}
+#report-total{ display:none; }
+</style>
+
+
+<style>
+.badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  margin-left:6px;
+}
+.badge-cp{ background:#fff3cd; border:1px solid #f1c40f; color:#111; }
+.badge-cv{ background:#dbeafe; border:1px solid #60a5fa; color:#111; }
+
+.filter-card{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  background:#fafafa;
+  border:1px solid #e5e5e5;
+  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:10px;
+}
+.filter-card label{ font-weight:600; }
+</style>
+
+
+
+
+
+
+<style>
+.money{ color:#b8860b; font-weight:800; }        /* gold */
+.money-soft{ color:#b8860b; font-weight:700; }
+</style>
+
+
+<style>
+/* ✅ Aktueller Tag: komplett hellgrün (Kalender) */
+#calendar .fc-day-today{
+  background:#e9fbe9 !important;
+}
+#calendar .fc-day-today .fc-daygrid-day-number{
+  font-weight:800;
+  color:#000;
+}
+#calendar .fc-col-header-cell.fc-day-today{
+  background:#d8f5d8 !important;
+}
+</style>
+
+<style>
+
+/* ✅ Report-Tabelle: Kopfzeile nicht verzerren (auch mobil) */
+#report table.user-table{ 
+  display: table !important;
+  table-layout: fixed !important;
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+#report table.user-table thead{ display: table-header-group !important; }
+#report table.user-table tbody{ display: table-row-group !important; }
+#report table.user-table tfoot{ display: table-footer-group !important; }
+#report table.user-table th, 
+#report table.user-table td{
+  line-height: 1.2 !important;
+  padding: 10px 12px !important;
+  vertical-align: middle !important;
+}
+#report table.user-table thead th{
+  height: 46px !important;
+}
+
+</style>
+
+<style>
+/* ✅ Report-Tabelle (Mitarbeiter): volle Breite, sauber ausgerichtet */
+#report { padding-left: 0 !important; padding-right: 0 !important; }
+#report table.user-table{
+  width: 100% !important;
+  margin: 0 !important;
+  display: table !important;
+  table-layout: fixed !important;
+  border-collapse: collapse !important;
+}
+#report table.user-table thead th,
+#report table.user-table tbody td{
+  text-align: center !important;
+  vertical-align: middle !important;
+  white-space: nowrap;
+}
+#report table.user-table thead th{ height: 44px; }
+#report table.user-table thead th:first-child,
+#report table.user-table tbody td:first-child{
+  text-align: left !important;
+}
+</style>
+
+
+<style>
+/* ✅ Report: Summe nur unter Verdienst – sauber integriert */
+#report table.user-table tfoot td{
+  border-top: 2px solid #ddd;
+  padding: 10px 10px;
+  background: #fff;
+}
+#report table.user-table tfoot .report-sum-only td{
+  vertical-align: middle;
+}
+</style>
+
+
+<style>
+#report table.user-table tfoot .sum-earnings{
+  font-weight: 900;
+  font-size: 18px;
+  text-align: right;
+  padding-right: 14px;
+}
+</style>
+
+
+<style>
+#report table.user-table tfoot td{
+  border-top:2px solid #d0d0d0;
+  background:#fff;
+  padding:12px 10px;
+}
+#report table.user-table tfoot td:not(.sum-earnings){
+  color:transparent;
+}
+#report table.user-table tfoot .sum-earnings{
+  text-align:center;
+  font-weight:900;
+  font-size:18px;
+}
+</style>
+
+
+<style>
+/* ✅ CP/CV Buttons – wie Chef (farbig + aktiver Zustand klar) */
+.category-toggle{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.cat-btn{
+  padding:8px 14px;
+  border-radius:12px;
+  border:2px solid transparent;
+  font-weight:900;
+  cursor:pointer;
+  line-height:1;
+  transition: transform .06s ease, box-shadow .12s ease, filter .12s ease;
+}
+.cat-btn[data-value="CV"]{
+  background:#dbeafe;
+  border-color:#60a5fa;
+  color:#0b2a4a;
+}
+.cat-btn[data-value="CP"]{
+  background:#fff3cd;
+  border-color:#f1c40f;
+  color:#000;
+}
+.cat-btn.active{
+  border-color:#111 !important;
+  box-shadow:0 0 0 3px rgba(0,0,0,0.10);
+  transform:translateY(-1px);
+  filter:saturate(1.1);
+}
+</style>
+
+
+<style>
+/* ✅ Mobile: Tabellen horizontal scrollbar statt verzerrt */
+@media (max-width: 768px){
+  .table-scroll{
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll table{
+    min-width: 900px;
+    table-layout: fixed;
+  }
+  .table-scroll th,
+  .table-scroll td{
+    white-space: nowrap;
+  }
+}
+</style>
+
+
+<style>
+.gold-headers thead th{
+  background: linear-gradient(180deg, #ffcc33, #e6b800) !important;
+  color:#000 !important;
+  border-bottom:2px solid #cfa600 !important;
+}
+</style>
+
+
+<style>
+/* ✅ Meine Termine: Kopfspalten & Inhalte sauber zentriert */
+#termine table.user-table thead th{
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+#termine table.user-table tbody td{
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+/* Erste Textspalten linksbündig lassen (Titel, Ort) */
+#termine table.user-table thead th:nth-child(2),
+#termine table.user-table thead th:nth-child(3),
+#termine table.user-table tbody td:nth-child(2),
+#termine table.user-table tbody td:nth-child(3){
+  text-align: left !important;
+}
+</style>
+
+
+<style>
+  /* ✅ Startseite */
+  .home-wrap{
+    display:flex;
+    justify-content:center;
+    padding:22px 14px 40px;
+  }
+  .home-card{
+    width:min(980px, 100%);
+    background:#fff;
+    border:1px solid #e6e6e6;
+    border-radius:16px;
+    padding:22px 20px;
+    box-shadow:0 10px 28px rgba(0,0,0,.06);
+  }
+  .home-logo{
+    width:min(520px, 92%);
+    max-width:520px;
+    display:block;
+    margin:6px auto 14px;
+  }
+  .home-title{
+    text-align:center;
+    font-size:22px;
+    margin:8px 0 12px;
+  }
+  .home-text{
+    font-size:15px;
+    line-height:1.55;
+    margin:10px 0;
+  }
+  .home-subtitle{
+    font-size:18px;
+    margin:16px 0 8px;
+  }
+  .home-consent-text{
+    font-size:14px;
+    line-height:1.5;
+    margin:10px 0 14px;
+    color:#222;
+  }
+  .home-sep{
+    border:0;
+    border-top:1px solid #eee;
+    margin:18px 0;
+  }
+  .consent-form{
+    margin-top:6px;
+    background:#fafafa;
+    border:1px solid #e8e8e8;
+    border-radius:12px;
+    padding:14px 12px;
+  }
+  .consent-row{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    flex-wrap:wrap;
+    margin:10px 0;
+  }
+  .consent-row input[type="text"]{
+    flex:1;
+    min-width:220px;
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+  }
+  .consent-row input[type="date"]{
+    padding:10px 12px;
+    border-radius:10px;
+    border:1px solid #ddd;
+  }
+  .consent-check{
+    display:flex;
+    gap:10px;
+    align-items:center;
+    font-weight:700;
+  }
+  .consent-done{
+    margin-top:12px;
+    padding:12px 12px;
+    border-radius:12px;
+    border:1px solid #d9ead3;
+    background:#e9fbe9;
+    font-weight:800;
+  }
+
+  /* ✅ Tabs sperren */
+  nav .left a.locked{
+    opacity:.45;
+    pointer-events:none;
+    filter:grayscale(0.6);
+  }
+</style>
+
+
+<style>
+/* =========================
+   ✅ FullCalendar Stabilisierung (nur Kalender)
+   Verhindert, dass globale table/th Styles (margin-top, overflow, sticky th) das Monatsraster zerstören.
+   ========================= */
+#calendar table{
+  margin-top: 0 !important;
+  border-radius: 0 !important;
+  overflow: visible !important;
+  box-shadow: none !important;
+}
+#calendar th{
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+  background: transparent !important;
+  color: inherit !important;
+  font-weight: inherit !important;
+}
+/* Falls irgendwo globale td-Paddings stören: FullCalendar setzt selbst Klassen, wir lassen td in Ruhe */
+</style>
+
+
+<style>
+/* =========================
+   ✅ Startseite volle Seite
+   ========================= */
+#home{
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 24px 16px;
+}
+#home .home-card{
+  width: 100%;
+  max-width: 1100px;
+}
+</style>
+
+
+<style>
+/* =========================
+   ✅ Startseite wirklich volle Seite (ohne Card-Limit)
+   ========================= */
+#home{
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  padding: 0 !important;
+  margin: 0 !important;
+  }
+#home .home-card{
+  width: 100% !important;
+  max-width: none !important;
+  min-height: calc(100vh - 64px);
+  border-radius: 0 !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  padding: 28px 18px 44px !important;
+}
+#home .home-logo{
+  width: min(560px, 92%);
+  max-width: 560px;
+}
+#home .home-title{
+  font-size: 24px;
+}
+</style>
+
+
+<style>
+/* ✅ Startseite Fullscreen (ohne display:... !important → Tabs funktionieren) */
+#home{
+  min-height: calc(100vh - 64px);
+  width: 100%;
+  padding: 0;
+  margin: 0;
+}
+#home .home-card{
+  width: 100%;
+  max-width: none;
+  min-height: calc(100vh - 64px);
+  border-radius: 0;
+  border: 0;
+  box-shadow: none;
+  padding: 28px 18px 44px;
+}
+#home .home-logo{
+  width: min(560px, 92%);
+  max-width: 560px;
+}
+</style>
+
+</head>
+<body>
+  <nav>
+    <div class="left">
+      <a href="#" id="tab-home" class="active">🏠 Start</a>
+      <a href="#" id="tab-calendar">📅 Kalender</a>
+      <a href="#" id="tab-termine">🗓️ Meine Termine</a>
+      <a href="#" id="tab-report">📊 Report</a>
+    </div>
+    <div class="right">
+      <span>{{ user }}</span>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+
+  <div id="home" class="home-wrap">
+    <div class="home-card">
+      <img src="{{ url_for('static', filename='casutt_logo.jpeg') }}" alt="Casutt Veranstaltungsservice" class="home-logo">
+      <h1 class="home-title">Willkommen im Planungsportal von Casutt - Veranstaltungsservice</h1>
+      <p class="home-text"><b>Schön, dass du da bist!</b><br>
+        In diesem Portal kannst du dich bequem für verfügbare Aufträge eigenständig buchen, deine Zeiten erfassen und alle wichtigen Informationen zu deinen bestätigten Einsätzen einsehen.
+      </p>
+      <p class="home-text">
+        Bitte prüfe regelmäßig neue Aufträge und beachte die Buchungsfristen. So können wir Einsätze schnell und effizient planen.
+      </p>
+      <p class="home-text">
+        Vielen Dank für deine Unterstützung – wir freuen uns auf die Zusammenarbeit!
+      </p>
+
+      <hr class="home-sep">
+
+      <h2 class="home-subtitle">Einwilligung zur Datenverarbeitung</h2>
+      <p class="home-consent-text">
+        Ich willige ein, dass meine im Formular angegebenen personenbezogenen Daten (z. B. Foto, Name, Kontaktdaten, Qualifikationen und einsatzrelevante Informationen) von Kevin Casutt zum Zweck der Anmeldung, Personalverwaltung, Einsatzplanung und Kommunikation verarbeitet werden. Soweit dies für die Durchführung eines Auftrags erforderlich ist, dürfen meine einsatzrelevanten Daten (z. B. Foto, Name, Qualifikation, Einsatzdaten) an den jeweiligen Kunden weitergegeben werden. Die Verarbeitung erfolgt gemäß Art. 6 Abs. 1 lit. a DSGVO. Meine Einwilligung kann ich jederzeit mit Wirkung für die Zukunft widerrufen.
+      </p>
+
+      <div id="consent-form" class="consent-form">
+        <div class="consent-row">
+          <label class="consent-check">
+            <input type="checkbox" id="consent-yes">
+            <span>Ich,</span>
+          </label>
+          <input type="text" id="consent-name" placeholder="Vorname Nachname">
+          <span>, willige ein.</span>
+        </div>
+
+        <div class="consent-row">
+          <label for="consent-date"><b>Datum:</b></label>
+          <input type="date" id="consent-date" disabled>
+          <button type="button" class="confirm" id="consent-save" disabled>✅ Einwilligung speichern</button>
+        </div>
+
+        <div class="muted" style="margin-top:8px;">
+          Hinweis: Solange du nicht eingewilligt hast, bleiben die anderen Reiter gesperrt.
+        </div>
+      </div>
+
+      <div id="consent-done" class="consent-done" style="display:none;"></div>
+    </div>
+  </div>
+
+  <div id="calendar" style="display:none;"></div>
+
+
+  <div id="termine" style="display:none;">
+    <h3 style="margin-top:10px;">✅ Bestätigte Termine</h3>
+
+    <!-- Filter: Monat + Jahr (oben links) -->
+    <div class="filter-row" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="termine-month"><b>Monat:</b></label>
+        <select id="termine-month">
+          <option value="1">Januar</option>
+          <option value="2">Februar</option>
+          <option value="3">März</option>
+          <option value="4">April</option>
+          <option value="5">Mai</option>
+          <option value="6">Juni</option>
+          <option value="7">Juli</option>
+          <option value="8">August</option>
+          <option value="9">September</option>
+          <option value="10">Oktober</option>
+          <option value="11">November</option>
+          <option value="12">Dezember</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="termine-year"><b>Jahr:</b></label>
+        <input type="number" id="termine-year" min="2020" max="2100" step="1" style="max-width:120px;">
+      </div>
+      
+
+    </div>
+
+    <div class="muted" id="termine-count">0 Termine</div>
+
+    <div class="table-scroll">
+<table class="user-table" style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Titel</th>
+          <th>Ort</th>
+          <th>Start</th>
+          <th>Vorauss. Ende</th>
+          <th>Stundensatz</th>
+          <th>Bemerkung</th>
+        </tr>
+      </thead>
+      <tbody id="termine-list"></tbody>
+</table>
+</div>
+</table>
+
+    <div class="muted" style="margin-top:8px;">
+      Hinweis: „Vorauss. Ende“ ist die geplante Endzeit aus dem Einsatz. „Bemerkung“ wird nur angezeigt, wenn der Vorgesetzter eine hinterlegt hat.
+    </div>
+  </div>
+
+  <div id="report" style="display:none;">
+    <div class="filter-card">
+      <label for="report-month">Monat wählen:</label>
+      <input type="month" id="report-month">
+      <label style="margin-left:10px;">Kategorie:</label>
+      <div class="category-toggle" id="report-cat-toggle" aria-label="Kategorie wählen (Report)">
+        <button type="button" class="cat-btn" data-target="report-category" data-value="CV">CV</button>
+        <button type="button" class="cat-btn" data-target="report-category" data-value="CP">CP</button>
+      </div>
+      <select id="report-category" style="display:none;">
+          <option value="CV">Casutt Veranstaltungsservice</option>
+          <option value="CP">CP-Security-Solutions</option>
+</select>
+
+    </div>
+
+    <div class="detail-box" id="invoice-hint" style="display:none;margin-top:10px;"></div>
+<div class="table-scroll">
+<table class="user-table">
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Titel</th>
+          <th>Start</th>
+          <th class="col-planned-end">Vorauss. Ende</th>
+          <th>Ende</th>
+          <th>Stunden</th>
+          <th>Stundensatz</th>
+          <th>Verdienst</th>
+        </tr>
+      </thead>
+      <tbody id="report-list"></tbody>
+
+
+
+
+
+<tfoot>
+  <tr class="tfoot-sum report-sum-only">
+    <td></td><td></td><td></td><td></td><td></td><td></td>
+    <td id="report-sum-earnings" class="sum-earnings"><b>0.00 €</b></td>
+  </tr>
+</tfoot>
+
+
+
+
+
+</table>
+</div>
+</table>
+
+    <h4 id="report-total-bottom" style="margin-top:12px;"></span></h4>
+  </div>
+
+  <div class="modal" id="respondModal">
+    <div class="modal-content">
+      <span class="close-btn" onclick="closeRespondModal()">×</span>
+      <h3 id="r-title">Einsatzdetails <span id="r-category-badge"></span></h3>
+
+      <div class="detail-box"><b>Auftraggeber:</b> <span id="r-firma"></span></div>
+      <div class="detail-box"><b>Ort:</b> <span id="r-ort"></span></div>
+      <div class="detail-box"><b>Dienstkleidung:</b> <span id="r-dienst"></span></div>
+      <div class="detail-box"><b>Mitteilung:</b> <span id="r-auftrag"></span></div>
+
+      <div class="detail-box"><b>Start:</b> <span id="r-start"></span></div>
+      <div class="detail-box"><b>Voraussichtliches Ende:</b> <span id="r-planned-end"></span></div>
+      <div class="detail-box"><b>Frist:</b> <span id="r-frist"></span></div>
+
+      <div class="detail-box"><b>Stundensatz:</b> <span id="r-rate"></span></div>
+
+      <div id="remark-block" style="margin-top:10px;">
+        <label for="r-remark">Bemerkung (optional)</label>
+        <textarea id="r-remark" rows="3" placeholder="Bemerkung..."></textarea>
+      </div>
+
+      <div id="endtime-section" style="margin-top:10px; display:none;">
+        <input type="time" id="r-endtime">
+        <button class="confirm" id="btn-endtime">💾 Endzeit speichern</button>
+        <div id="saved-endtime" style="margin-top:6px; font-weight:bold; display:none;"></div>
+      </div>
+
+      <div class="modal-actions" id="response-buttons">
+        <button class="confirm" id="btn-zusagen">✅ Zusagen</button>
+        <button class="reject" id="btn-absagen">❌ Absagen</button>
+        <button class="release" id="btn-withdraw">↩️ Zurückziehen</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script>
+    let calendar, currentEventId=null;
+
+    function fmtTime(d){
+      if(!(d instanceof Date) || isNaN(d)) return "-";
+      return d.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+    }
+
+    function normTime(t){
+      // erwartet "HH:MM" oder leer
+      const s = String(t || "").trim();
+      const m = s.match(/^(\d{1,2}):(\d{2})$/);
+      if(!m) return "";
+      const hh = String(Math.min(23, Math.max(0, Number(m[1])))).padStart(2,"0");
+      const mm = String(Math.min(59, Math.max(0, Number(m[2])))).padStart(2,"0");
+      return `${hh}:${mm}`;
+    }
+
+    function fmtRate(n){
+      const v = Number(n);
+      if(isNaN(v)) return "-";
+      // de-DE: Komma als Dezimaltrennzeichen
+      const nf = new Intl.NumberFormat("de-DE",{minimumFractionDigits:2, maximumFractionDigits:2});
+      return nf.format(v) + " €/h";
+    }
+
+
+    function fmtDateOnlyDE(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const dd = String(d.getDate()).padStart(2,"0");
+      const mm = String(d.getMonth()+1).padStart(2,"0");
+      const yy = String(d.getFullYear());
+      return `${dd}.${mm}.${yy}`;
+    }
+
+    // ✅ Auftraggeber-Map (UI zeigt keine Abkürzungen)
+    function catToAuftraggeber(cat){
+      const c = String(cat || "").toUpperCase();
+      return (c === "CV") ? "Casutt Veranstaltungsservice" : "CP-Security-Solutions";
+    }
+
+    function auftraggeberToCat(name){
+      const s = String(name || "").toLowerCase();
+      if(s.includes("casutt")) return "CV";
+      if(s.includes("cp-security")) return "CP";
+      return "CP";
+    }
+
+
+    // ✅ Kategorie-Buttons (CV/CP) steuern den versteckten Select
+    function syncCatButtons(toggleId, selectId){
+      const toggle = document.getElementById(toggleId);
+      const sel = document.getElementById(selectId);
+      if(!toggle || !sel) return;
+
+      const current = String(sel.value || "CV").toUpperCase();
+      toggle.querySelectorAll("button.cat-btn").forEach(btn=>{
+        const v = String(btn.dataset.value || "").toUpperCase();
+        btn.classList.toggle("active", v === current);
+      });
+    }
+
+    function applyGoldHeaders(){
+  const v = String(document.getElementById("report-category")?.value || "CV").toUpperCase();
+  const tbl = document.querySelector("#report table.user-table");
+  if(tbl) tbl.classList.toggle("gold-headers", v === "CP");
+}
+
+    function initCategoryButtons(){
+      const sel = document.getElementById("report-category");
+      const toggle = document.getElementById("report-cat-toggle");
+      if(!sel || !toggle) return;
+
+      toggle.querySelectorAll("button.cat-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const v = String(btn.dataset.value || "CV").toUpperCase();
+          sel.value = v;
+          sel.dispatchEvent(new Event("change"));
+          syncCatButtons("report-cat-toggle","report-category");
+          applyGoldHeaders();
+        });
+      });
+
+      syncCatButtons("report-cat-toggle","report-category");
+      applyGoldHeaders();
+    }
+
+
+    // ✅ my_rate kommt vom Backend und ist IMMER der richtige Satz (Einsatz oder Profil)
+    function getMyRate(ev){
+      const me = "{{ user }}";
+      const r = ev.responses?.[me] || null;
+
+      // ✅ Chef-Override pro Einsatz hat Priorität
+      if(r && r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override).trim() !== ""){
+        const ov = Number(r.rate_override);
+        return isNaN(ov) ? 0 : ov;
+      }
+
+      const v = Number(ev.my_rate ?? 0);
+      return isNaN(v) ? 0 : v;
+    }
+
+    function rateLabel(ev, myResponse){
+      // Wenn Override gesetzt wurde, immer so anzeigen
+      if(myResponse && myResponse.rate_override !== undefined && myResponse.rate_override !== null && String(myResponse.rate_override).trim() !== ""){
+        const ov = Number(myResponse.rate_override);
+        return fmtRate(ov) + " (überschrieben)";
+      }
+
+      const base = fmtRate(getMyRate(ev));
+      const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
+      return useEventRate ? base : (base + " (Profil)");
+    }
+
+    function formatDateDE(iso){
+  const s = String(iso||"").trim();
+  const m = s.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(!m) return s;
+  return `${m[3]}.${m[2]}.${m[1]}`;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+      const today = new Date().toISOString().slice(0,10);
+      const d = document.querySelector("input[type=date]");
+      if(d) d.value = today;
+
+
+      // ✅ Default-Filter: Casutt Veranstaltungsservice
+      const tc = document.getElementById("termine-category");
+      if(tc && (!tc.value)) tc.value = "CV";
+      const rc = document.getElementById("report-category");
+      if(rc && (!rc.value)) rc.value = "CV";
+      if(rc){
+        rc.addEventListener("change", ()=>{ if(typeof loadReport==="function") loadReport(); if(typeof syncCatButtons==="function") syncCatButtons("report-cat-toggle","report-category"); if(typeof applyGoldHeaders==="function") applyGoldHeaders(); });
+      }
+
+      if(typeof initCategoryButtons==="function") initCategoryButtons();
+      // =========================
+      // ✅ DSGVO Einwilligung (Startseite)
+      // =========================
+      const tabs = {
+        home: document.getElementById("tab-home"),
+        cal: document.getElementById("tab-calendar"),
+        ter: document.getElementById("tab-termine"),
+        rep: document.getElementById("tab-report"),
+      };
+
+      const sections = {
+        home: document.getElementById("home"),
+        cal: document.getElementById("calendar"),
+        ter: document.getElementById("termine"),
+        rep: document.getElementById("report"),
+      };
+
+      function setActiveTab(which){
+        Object.values(tabs).forEach(a=>a && a.classList.remove("active"));
+        if(tabs[which]) tabs[which].classList.add("active");
+
+        Object.values(sections).forEach(s=>{ if(s) s.style.display="none"; });
+        if(sections[which]) sections[which].style.display="block";
+      }
+
+      function setLocked(isLocked){
+        const locked = !!isLocked;
+
+        // Labels mit Schloss
+        const labels = {
+          cal: "📅 Kalender",
+          ter: "🗓️ Meine Termine",
+          rep: "📊 Report",
+        };
+
+        ["cal","ter","rep"].forEach(k=>{
+          const el = tabs[k];
+          if(!el) return;
+          el.classList.toggle("locked", locked);
+          el.textContent = locked ? ("🔒 " + labels[k]) : labels[k];
+        });
+      }
+
+      async function loadConsent(){
+        try{
+          const res = await fetch("/consent_status?ts="+Date.now());
+          const data = await res.json();
+          const given = !!data.given;
+
+          // Datum setzen (heute)
+          const dateEl = document.getElementById("consent-date");
+          if(dateEl && !dateEl.value){
+            const now = new Date();
+            const yyyy = now.getFullYear();
+            const mm = String(now.getMonth()+1).padStart(2,"0");
+            const dd = String(now.getDate()).padStart(2,"0");
+            dateEl.value = `${yyyy}-${mm}-${dd}`;
+          }
+
+          // Name vorbelegen (falls vorhanden)
+          const nameEl = document.getElementById("consent-name");
+          if(nameEl && !nameEl.value){
+            nameEl.value = (data.full_name || "").trim();
+          }
+
+          if(given){
+            // Einwilligung steht fest
+            const done = document.getElementById("consent-done");
+            const form = document.getElementById("consent-form");
+            if(form) form.style.display = "none";
+            if(done){
+              done.style.display = "block";
+              done.textContent = `Ich, ${data.name || data.full_name || "Vorname Nachname"}, willige der Datenverarbeitung ein.
+Datum: ${formatDateDE(data.date || "")}.`;
+            }
+            setLocked(false);
+          }else{
+            setLocked(true);
+          }
+        }catch(e){
+          // Wenn der Endpoint noch nicht da ist: sicherheitshalber sperren
+          setLocked(true);
+        }
+      }
+
+      function validateConsentForm(){
+        const yes = document.getElementById("consent-yes")?.checked;
+        const name = (document.getElementById("consent-name")?.value || "").trim();
+        const date = new Date().toISOString().slice(0,10);
+        const btn = document.getElementById("consent-save");
+        if(btn) btn.disabled = !(yes && name && date);
+      }
+
+      document.getElementById("consent-yes")?.addEventListener("change", validateConsentForm);
+      document.getElementById("consent-name")?.addEventListener("input", validateConsentForm);
+      document.getElementById("consent-date")?.addEventListener("change", validateConsentForm);
+
+      document.getElementById("consent-save")?.addEventListener("click", async ()=>{
+        const yes = document.getElementById("consent-yes")?.checked;
+        const name = (document.getElementById("consent-name")?.value || "").trim();
+        const date = new Date().toISOString().slice(0,10);
+        if(!yes || !name || !date) return;
+
+        const res = await fetch("/consent", {
+          method:"POST",
+          headers:{ "Content-Type":"application/json" },
+          body: JSON.stringify({ yes:true, name, date })
+        });
+
+        const out = await res.json().catch(()=>({}));
+        if(res.ok && out.status==="ok"){
+          // UI fixieren
+          const done = document.getElementById("consent-done");
+          const form = document.getElementById("consent-form");
+          if(form) form.style.display = "none";
+          if(done){
+            done.style.display = "block";
+            done.textContent = `Ich, ${name}, willige der Datenverarbeitung ein.
+Datum: ${formatDateDE(date)}.`;
+          }
+          setLocked(false);
+        }else{
+          alert(out.error || "Einwilligung konnte nicht gespeichert werden.");
+        }
+      });
+
+      // Starttab immer verfügbar
+      tabs.home?.addEventListener("click", (e)=>{ e.preventDefault(); setActiveTab("home"); });
+
+      // Beim Laden: Einwilligung prüfen
+      loadConsent();
+
+
+            document.getElementById("tab-calendar").onclick = (e)=>{
+        e.preventDefault();
+        // falls gesperrt, brich ab
+        if(document.getElementById("tab-calendar").classList.contains("locked")) return;
+        setActiveTab("cal");
+        // ✅ Scroll-Position resetten (sonst bleibt man "unten hängen")
+        try{ window.scrollTo({top:0,left:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
+        // ✅ FullCalendar: nach Einblenden neu berechnen
+        setTimeout(()=>{
+          try{ calendar.render(); }catch(e){}
+          try{ calendar.updateSize(); }catch(e){}
+          try{ calendar.refetchEvents(); }catch(e){}
+          try{
+            const sc = document.querySelector("#calendar .fc-scroller");
+            if(sc) sc.scrollTop = 0;
+          }catch(e){}
+        }, 0);
+      };
+
+            document.getElementById("tab-termine").onclick = e=>{
+        e.preventDefault();
+        setActiveTab("ter");
+        loadTermine();
+      };
+
+            document.getElementById("tab-report").onclick = e=>{
+        e.preventDefault();
+        setActiveTab("rep");
+        let now=new Date();
+        document.getElementById("report-month").value =
+          now.getFullYear()+"-"+String(now.getMonth()+1).padStart(2,"0");
+        loadReport();
+      };
+
+      document.getElementById("report-month").addEventListener("change", loadReport);
+
+      // Standard: Startseite
+      setActiveTab("home");
+
+      
+      document.getElementById("report-category").addEventListener("change", loadReport);
+// Termine: Default Monat/Jahr + Filter-Listener
+      const nowT = new Date();
+      const tMonth = document.getElementById("termine-month");
+      const tYear  = document.getElementById("termine-year");
+      if(tMonth && tYear){
+        tMonth.value = String(nowT.getMonth()+1);
+        tYear.value  = String(nowT.getFullYear());
+        tMonth.addEventListener("change", loadTermine);
+        
+      
+tYear.addEventListener("change", loadTermine);
+      }
+
+      calendar = new FullCalendar.Calendar(document.getElementById("calendar"), {
+        initialView: "dayGridMonth",
+        locale: "de",
+        firstDay: 1,
+        height: "auto",
+        contentHeight: "auto",
+        expandRows: false,
+
+        dayCellClassNames: (arg)=>{
+          const dow = arg.date.getDay();
+          return (dow===0 || dow===6) ? ['weekend'] : [];
+        },
+
+        // Dot-Modus damit die Kreise sichtbar bleiben
+        eventDisplay: "list-item",
+        displayEventTime: true,
+        eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
+
+        datesSet: function(){
+          // ✅ Nach Monatswechsel: Größe neu berechnen + Scroller nach oben
+          try{ calendar.updateSize(); }catch(e){}
+          try{
+            const sc = document.querySelector('#calendar .fc-scroller');
+            if(sc) sc.scrollTop = 0;
+          }catch(e){}
+        },
+
+        eventClick: function(info) {
+          currentEventId = info.event.extendedProps.id || info.event.id;
+          const ev = info.event.extendedProps || {};
+          const me = "{{ user }}";
+          const myResponse = ev.responses?.[me] || null;
+
+          // Kopf/Felder
+          document.getElementById("r-title").textContent = info.event.title || "(ohne Titel)";
+          const _cat = String(ev.category || "CP").toUpperCase() === "CV" ? "CV" : "CP";
+          const rf = document.getElementById("r-firma"); if(rf) rf.textContent = catToAuftraggeber(_cat);
+          if(typeof setCategoryBadgeM === "function") setCategoryBadgeM(_cat);
+
+          document.getElementById("r-ort").textContent = ev.ort || "-";
+          document.getElementById("r-dienst").textContent = ev.dienstkleidung || "-";
+          document.getElementById("r-auftrag").textContent = ev.auftraggeber || "-";
+          document.getElementById("r-planned-end").textContent = ev.planned_end_time || "-";
+
+          // Frist
+          const frRaw = String(ev.frist || "").trim();
+          let fristExpired = false;
+          if(frRaw){
+            const fd = new Date(frRaw);
+            document.getElementById("r-frist").textContent = isNaN(fd) ? frRaw : fd.toLocaleString("de-DE");
+            if(!isNaN(fd) && new Date() > fd) fristExpired = true;
+          } else {
+            document.getElementById("r-frist").textContent = "-";
+          }
+
+          // Startanzeige: Chef-Startzeit (response.start_time) hat Priorität
+          const chefStart = normTime(myResponse?.start_time);
+          document.getElementById("r-start").textContent = chefStart || fmtTime(info.event.start);
+
+          // Stundensatz
+          document.getElementById("r-rate").textContent = rateLabel(ev, myResponse);
+
+          // Remark / Buttons
+          const remarkBlock = document.getElementById("remark-block");
+          const remarkInput = document.getElementById("r-remark");
+          const btnBox = document.getElementById("response-buttons");
+          const btnWithdraw = document.getElementById("btn-withdraw");
+
+          const status = myResponse?.status || "";
+          const remarkVal = (myResponse?.remark || "").trim();
+
+          const canAct = !fristExpired && status !== "bestätigt";
+
+          // Remark initial
+          remarkInput.value = remarkVal || "";
+          remarkInput.disabled = !canAct;
+
+          // Buttons Sichtbarkeit
+          if(!canAct){
+            btnBox.style.display = "none";
+            // Remark nur zeigen, wenn es was gibt (oder wenn bestätigt und Endzeit fehlt etc.)
+            remarkBlock.style.display = remarkVal ? "block" : "none";
+          } else {
+            btnBox.style.display = "flex";
+            remarkBlock.style.display = "block";
+            // Zurückziehen nur, wenn bereits reagiert wurde
+            btnWithdraw.style.display = status ? "inline-block" : "none";
+          }
+
+          // Endzeit-Bereich nur wenn bestätigt
+          const section = document.getElementById("endtime-section");
+          const input = document.getElementById("r-endtime");
+          const btn = document.getElementById("btn-endtime");
+          const saved = document.getElementById("saved-endtime");
+
+          if (status === "bestätigt") {
+            section.style.display = "block";
+            if (myResponse?.end_time) {
+              input.style.display = "none";
+              btn.style.display = "none";
+              saved.style.display = "block";
+              saved.textContent = "Gespeicherte Endzeit: " + myResponse.end_time;
+            } else {
+              input.style.display = "block";
+              btn.style.display = "inline-block";
+              saved.style.display = "none";
+            }
+          } else {
+            section.style.display = "none";
+          }
+
+          document.getElementById("respondModal").style.display = "flex";
+        },
+
+        events: async (info, success) => {
+          let res = await fetch("/events?ts="+Date.now());
+          let events = await res.json();
+
+          // Sichtbarkeit nach Frist:
+// - status==geplant nie zeigen
+// - abgelehnt nie zeigen
+// - wenn Frist vorbei UND Mitarbeiter nichts gemacht hat -> ausblenden
+// - wenn Frist vorbei UND Mitarbeiter abgelehnt hat -> ausblenden
+// - zugesagt/bestätigt bleibt sichtbar
+          const me = "{{ user }}";
+          events = events.filter(e => {
+            const my = e.responses?.[me] || null;
+            const st = String(my?.status || "").trim();
+
+            if (e.status === "geplant") return false;
+
+            // ✅ Chef-Entscheidung: sofort ausblenden
+            if (["abgelehnt_chef","entfernt_chef"].includes(st)) return false;
+
+            const frRaw = String(e.frist || "").trim();
+            let fristExpired = false;
+            if(frRaw){
+              const fd = new Date(frRaw);
+              if(!isNaN(fd) && new Date() > fd) fristExpired = true;
+            }
+
+            // ✅ Mitarbeiter hat selbst abgesagt:
+            // -> bis zur Frist als roter Kreis sichtbar
+            // -> nach Frist automatisch ausblenden
+            if (st === "abgelehnt") {
+              if(!frRaw) return false;        // ohne Frist nicht anzeigen
+              if(fristExpired) return false;  // nach Frist weg
+              return true;                    // vor Frist sichtbar (rot)
+            }
+
+            // Sichtbarkeit nach Frist:
+            // - wenn Frist vorbei UND Mitarbeiter nichts gemacht hat -> ausblenden
+            // - zugesagt/bestätigt bleibt sichtbar
+            if(fristExpired){
+              if(!st) return false;
+            }
+            return true;
+          });
+
+          events.forEach(ev => {
+            let my = ev.responses?.["{{ user }}"];
+
+            // ✅ Für die Kalenderanzeige: Titel + Anfangszeit (inkl. Chef-Anpassung)
+            // Wenn Chef eine Startzeit gesetzt hat, übernehmen wir diese in ev.start,
+            // damit FullCalendar die Uhrzeit korrekt anzeigt.
+            const chefStart = normTime(my?.start_time);
+            if(chefStart){
+              const datePart = String(ev.start || "").slice(0,10);
+              if(/^\d{4}-\d{2}-\d{2}$/.test(datePart)){
+                ev.start = `${datePart}T${chefStart}:00`;
+              }
+            }
+
+            // ✅ Titel im Kalender: immer Titel + Startzeit (für diesen Mitarbeiter)
+            // (berücksichtigt Chef-Startzeit, weil ev.start oben ggf. überschrieben wurde)
+            try{
+              const d0 = new Date(ev.start);
+              if(!isNaN(d0)){
+                const hh = String(d0.getHours()).padStart(2,'0');
+                const mm = String(d0.getMinutes()).padStart(2,'0');
+                const base = String(ev.title || "(ohne Titel)").replace(/\s*\(\d{2}:\d{2}\)\s*$/,"").trim();
+                ev.title = `${base} (${hh}:${mm})`.trim();
+              }
+            } catch(e) {}
+
+            const st = String(my?.status || "").trim();
+
+            // helper: Status -> CSS-Klasse (Umlaute raus)
+            const statusClass = (s)=>{
+              const t = String(s||"").trim().toLowerCase();
+              return "status-" + t
+                .replace(/ä/g,"ae").replace(/ö/g,"oe").replace(/ü/g,"ue").replace(/ß/g,"ss")
+                .replace(/\s+/g,"_");
+            };
+
+            // Farbe + Textfarbe setzen (Dot nutzt currentColor!)
+            if (st === "zugesagt") { ev.color = "orange"; ev.textColor = "orange"; }
+            if (st === "bestätigt") { ev.color = "green"; ev.textColor = "green"; }
+
+            // ✅ Chef-Ablehnung/Entfernen ebenfalls rot anzeigen, falls sichtbar
+            if (["abgelehnt","abgelehnt_chef","entfernt_chef"].includes(st)) { ev.color = "red"; ev.textColor = "red"; }
+
+            // Statusklasse anhängen, damit CSS (falls genutzt) greifen kann
+            if(st){
+              ev.classNames = (ev.classNames || []).concat([statusClass(st)]);
+            }
+          });
+
+          success(events);
+        }
+      });
+
+      calendar.render();
+
+            document.getElementById("btn-zusagen").onclick = () => sendResponse("zugesagt");
+      document.getElementById("btn-absagen").onclick = () => sendResponse("abgelehnt");
+      document.getElementById("btn-withdraw").onclick = () => withdrawResponse();
+
+      document.getElementById("btn-endtime").onclick = async () => {
+        let endtime = document.getElementById("r-endtime").value;
+        if (!endtime) { alert("Bitte Endzeit eintragen!"); return; }
+
+        await fetch("/events/endtime", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ event_id: currentEventId, username: "{{ user }}", end_time: endtime })
+        });
+
+        closeRespondModal();
+        calendar.refetchEvents();
+      };
+    });
+
+    function closeRespondModal() {
+      document.getElementById("respondModal").style.display = "none";
+    }
+
+    async function sendResponse(status) {
+      let remarkBlock = document.getElementById("remark-block");
+      let remark = remarkBlock.style.display === "none" ? "" : document.getElementById("r-remark").value;
+
+      const res = await fetch("/events/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: currentEventId, response: status, remark })
+      });
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){ alert(r.error || "Aktion fehlgeschlagen"); }
+
+      closeRespondModal();
+      calendar.refetchEvents();
+    }
+
+    async function withdrawResponse(){
+      const res = await fetch("/events/respond", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: currentEventId, response: "", remark: "" })
+      });
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){ alert(r.error || "Zurückziehen fehlgeschlagen"); }
+
+      closeRespondModal();
+      calendar.refetchEvents();
+    }
+
+    
+    // TERMINE (✅ alle bestätigten Termine übersichtlich untereinander)
+    async function loadTermine(){
+      let res = await fetch("/events?ts="+Date.now());
+      let events = await res.json();
+
+      const me = "{{ user }}";
+      let entries = [];
+
+      // Filter (Monat/Jahr)
+      const selMonth = document.getElementById("termine-month");
+      const selYear  = document.getElementById("termine-year");
+      const fMonth = selMonth ? Number(selMonth.value) : null;   // 1-12
+      const fYear  = selYear  ? Number(selYear.value)  : null;
+      
+
+      events.forEach(ev=>{
+        const r = ev.responses?.[me];
+        if(!r || r.status !== "bestätigt") return;
+
+        let start = new Date(ev.start);
+
+        // ✅ Chef-Startzeit nutzen, wenn vorhanden
+        if (r.start_time) {
+          const parts = String(r.start_time).split(":");
+          if (parts.length === 2) {
+            const sh = Number(parts[0]);
+            const sm = Number(parts[1]);
+            if (!isNaN(sh) && !isNaN(sm)) start.setHours(sh, sm, 0, 0);
+          }
+        }
+
+        // Filter anwenden
+        if(fYear && start.getFullYear() != fYear) return;
+        if(fMonth && (start.getMonth()+1) != fMonth) return;
+
+        const dateStr = fmtDateOnlyDE(start);
+        const startStr = start.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"});
+
+        // ✅ Gewünscht: statt Ende immer die voraussichtliche Endzeit
+        const plannedEndStr = (ev.planned_end_time && String(ev.planned_end_time).trim() !== "") ? String(ev.planned_end_time) : "-";
+
+        // Bemerkung (Chef) – wenn vorhanden
+        const remark = (r.remark || "").trim();
+
+        entries.push({
+          dt: start.getTime(),
+          date: dateStr,
+          title: ev.title || "(ohne Titel)",
+          ort: ev.ort || "-",
+          startStr,
+          plannedEndStr,
+          rateText: rateLabel(ev, r),
+          remark: remark || "-"
+        });
+      });
+
+      entries.sort((a,b)=> a.dt - b.dt);
+
+      document.getElementById("termine-count").textContent =
+        entries.length + (entries.length===1 ? " Termin" : " Termine");
+
+      const list = document.getElementById("termine-list");
+      list.innerHTML = "";
+
+      entries.forEach(e=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${String(e.date||'').replace(/^(\d)\.(\d)\./,'0$1.0$2.').replace(/^(\d{2})\.(\d)\./,'$1.0$2.').replace(/^(\d)\.(\d{2})\./,'0$1.$2.')}</td>
+          <td>${e.title}</td>
+          <td>${e.ort}</td>
+          <td>${e.startStr}</td>
+          <td>${e.plannedEndStr}</td>
+          <td>${e.rateText}</td>
+          <td>${e.remark}</td>
+        `;
+        list.appendChild(tr);
+      });
+    }
+
+// REPORT (✅ rechnet mit my_rate UND berücksichtigt Chef-Startzeit)
+    async function loadReport(){
+      let month = document.getElementById("report-month").value;
+      let catFilter = (document.getElementById("report-category")?.value || "CV");
+      if(typeof applyGoldHeaders==="function") applyGoldHeaders();
+
+      // ✅ Rechnungshinweis dynamisch je Auftraggeber
+      const hintEl = document.getElementById("invoice-hint");
+      if(hintEl){
+        const c = String(catFilter || "CV").toUpperCase()==="CV"?"CV":"CP";
+        if(c === "CV"){
+          hintEl.innerHTML = `Rechnung per PDF oder E-Rechnung an: kontakt@casutt-veranstaltungsservice.de<br><br>
+Casutt Veranstaltungsservice<br>
+Kevin Casutt<br>
+Dörpfeldstr. 75<br>
+12489 Berlin<br><br>
+Zahlungsziel: 14 Tage.`;
+        } else {
+          hintEl.innerHTML = `Rechnung per PDF oder E-Rechnung an: contact@cp-security-solutions.de<br><br>
+CP-Security-Solutions<br>
+Lucas Pfennig<br>
+Lehnitzstr. 103<br>
+12623 Berlin<br><br>
+Zahlungsziel: 14 Tage.`;
+        }
+        hintEl.style.display = "block";
+      }
+
+      if(!month) return;
+
+      let res = await fetch("/events?ts="+Date.now());
+      let events = await res.json();
+
+      let totalHours = 0;
+      let totalEarnings = 0;
+      let entries = [];
+
+      events.forEach(ev=>{
+        let r = ev.responses?.["{{ user }}"];
+
+        if(r?.status==="bestätigt" && r.end_time){
+          let start = new Date(ev.start);
+
+          // ✅ Chef-Startzeit nutzen, wenn vorhanden
+          if (r.start_time) {
+            const parts = String(r.start_time).split(":");
+            if (parts.length === 2) {
+              const sh = Number(parts[0]);
+              const sm = Number(parts[1]);
+              if (!isNaN(sh) && !isNaN(sm)) start.setHours(sh, sm, 0, 0);
+            }
+          }
+
+          let [eh,em] = r.end_time.split(":");
+          let end = new Date(start); end.setHours(Number(eh), Number(em), 0, 0);
+
+          // ✅ Falls Einsatz über Mitternacht geht (z.B. 22:00 -> 06:00), nächsten Tag berücksichtigen
+          if(end < start){
+            end.setDate(end.getDate() + 1);
+          }
+
+          let evMonth = `${start.getFullYear()}-${String(start.getMonth()+1).padStart(2,"0")}`;
+          if(evMonth!==month) return;
+
+          const cat = String(ev.category || "CP").toUpperCase();
+          if(cat !== String(catFilter).toUpperCase()) return;
+
+          let hours=(end-start)/(1000*60*60);
+          if(hours<0) hours=0;
+
+          const rate = getMyRate(ev);
+          const earnings = hours * rate;
+
+          totalHours += hours;
+          totalEarnings += earnings;
+
+          entries.push({
+            dt: start.getTime(),
+            date:fmtDateOnlyDE(start),
+            title:ev.title || "(ohne Titel)",
+            startStr:start.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}),
+            plannedEnd: ev.planned_end_time || "-",
+            endStr:end.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}),
+            hours, rate,
+            rateText: (r && r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override).trim() !== "") ? (fmtRate(rate) + " (überschrieben)") : ((Number(ev.use_event_rate ?? 1) === 1) ? fmtRate(rate) : (fmtRate(rate) + " (Profil)")),
+            earnings
+          });
+        }
+      });
+
+      entries.sort((a,b)=> (a.dt - b.dt) || a.startStr.localeCompare(b.startStr));
+// ✅ Summe auch unten in der Tabelle anzeigen (wie Chef-Ansicht)
+      const sh = document.getElementById("report-sum-hours");
+      const se = document.getElementById("report-sum-earnings");
+      if(sh) sh.textContent = totalHours.toFixed(2) + " h";
+      if(se) se.textContent = totalEarnings.toFixed(2) + " €";
+
+      let list=document.getElementById("report-list");
+      list.innerHTML="";
+
+      entries.forEach(e=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${String(e.date||'').replace(/^(\d)\.(\d)\./,'0$1.0$2.').replace(/^(\d{2})\.(\d)\./,'$1.0$2.').replace(/^(\d)\.(\d{2})\./,'0$1.$2.')}</td>
+          <td>${e.title}</td>
+          <td>${e.startStr}</td>
+          <td class="col-planned-end">${e.plannedEnd}</td>
+          <td>${e.endStr}</td>
+          <td>${e.hours.toFixed(2)}</td>
+          <td>${e.rateText}</td>
+          <td class="earnings-bold">${e.earnings.toFixed(2)} €</td>
+        `;
+        list.appendChild(tr);
+      });
+    }
+  </script>
+
+<script>
+function setCategoryBadgeM(cat){
+  const el = document.getElementById("r-category-badge");
+  if(!el) return;
+  const c = String(cat||"CP").toUpperCase()==="CV"?"CV":"CP";
+  const txt = catToAuftraggeber(c);
+  el.innerHTML = `<span class="badge badge-${c.toLowerCase()}">${txt}</span>`;
+}
+</script>
+
+</body>
+</html>

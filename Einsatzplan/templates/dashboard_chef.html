@@ -1,0 +1,4046 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Chef Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    .fc-daygrid-event-dot{
+      height:16px;width:16px;border-radius:50%;
+      background-color:currentColor !important;
+      margin-right:6px;
+      border:0 !important;
+    }
+    /* Chef: abgelehnt oder entfernt bleibt rot */
+#response-list.requests-grid > li.abgelehnt_chef,
+#response-list.requests-grid > li.entfernt_chef {
+  background: #fdecea;
+  border-color: #c62828;
+}
+    /* Wochenende grau (Sa/So) – stärker/gezielter, damit es in Chef-Ansicht sicher greift */
+    #calendar .fc-daygrid-day.weekend,
+    #planning-calendar .fc-daygrid-day.weekend{
+      background:#f2f2f2 !important;
+    }
+    .fc-event-title{font-weight:bold;font-size:14px;}
+
+    .detail-box{border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:10px;background:#fafafa;}
+    .filter-row{margin:10px 0;}
+    #response-list button.inline{margin-left:8px;padding:2px 8px;font-size:12px;}
+    .section{margin-top:12px;padding-top:8px;border-top:1px dashed #ddd;}
+    .tfoot-sum td{font-weight:bold;border-top:2px solid #ccc;}
+    .hint{font-size:12px;color:#666;margin-top:6px;}
+    .form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
+    .form-row > *{flex:1;min-width:160px;}
+    /* ✅ Checkbox + Text sollen eng beieinander stehen (keine 100%-Breite aus globalem CSS übernehmen) */
+    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:10px 0;flex-wrap:nowrap;width:auto;}
+    .checkbox-row input[type="checkbox"]{margin:0;width:auto !important;flex:0 0 auto;display:inline-block;}
+    .checkbox-row label{margin:0;white-space:nowrap;width:auto !important;flex:0 1 auto;display:inline-block;}
+    .muted{color:#666;font-size:12px;}
+  
+    /* ✅ Anfragen im Einsatzdetails: 4 nebeneinander (Grid) */
+    #response-list.requests-grid{
+      list-style:none;
+      padding:0;
+      margin:0;
+      display:grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap:12px;
+    }
+    /* Karten-Look für Einträge */
+    #response-list.requests-grid > li{
+      border:1px solid #ddd;
+      border-radius:8px;
+      padding:10px;
+      background:#fff;
+    }
+    /* ✅ Status-Farben auf der ganzen Kachel */
+    #response-list.requests-grid > li.bestätigt{
+      background:#e6f6ea;           /* grün */
+      border-color:#2e7d32;
+    }
+    #response-list.requests-grid > li.abgelehnt{
+      background:#fdecea;           /* rot */
+      border-color:#c62828;
+    }
+    /* ✅ Chef-Ablehnung/Entfernen auch rot (damit es in Einsatzdetails rot bleibt) */
+    #response-list.requests-grid > li.abgelehnt_chef,
+    #response-list.requests-grid > li.entfernt_chef{
+      background:#fdecea;
+      border-color:#c62828;
+    }
+    /* Buttons in der Karte: sauber umbrechen */
+    #response-list.requests-grid button.inline{
+      margin-left:0;
+      margin-top:8px;
+      margin-right:8px;
+    }
+    @media (max-width: 1200px){
+      #response-list.requests-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+    @media (max-width: 650px){
+      #response-list.requests-grid{ grid-template-columns: 1fr; }
+    }
+
+    /* ===== Planung: sachlich & kompakt (Titel + bestätigte Namen) ===== */
+    #planning-calendar .fc-daygrid-event{
+      background: transparent !important;   /* kein blau */
+      border: 1px solid #ddd !important;
+      border-radius: 4px !important;
+      padding: 2px 4px !important;
+      box-shadow: none !important;
+      cursor: default !important;
+      white-space: normal;
+    }
+    #planning-calendar .fc-daygrid-event .fc-event-main{ color: inherit !important; }
+    #planning-calendar .plan-title{
+      font-size: 16px;
+      font-weight: 1000; /* Titel fett */
+      line-height: 1.2;
+
+      /* ✅ Umrandung wie in der Kalender-Ansicht */
+      display: inline-block;
+      padding: 2px 6px;
+      border-radius: 6px;
+      border: 2px solid transparent;
+      margin-bottom: 2px;
+    }
+    /* ✅ Planung: Titel-Box je nach Kategorie (CV blau, CP gold) */
+    #planning-calendar .plan-title.title-cv{ color:#111 !important; background:#dbeafe !important; border-color:#60a5fa !important; }
+    #planning-calendar .plan-title.title-cp{ color:#111 !important; background:#fff3cd !important; border-color:#f1c40f !important; }
+
+    #planning-calendar .plan-staff{
+      font-size: 13px;
+      line-height: 1.2;
+      color: #333;
+      margin-top: 1px;
+    }
+    #planning-calendar .plan-staff-row{display:block;padding:2px 4px;border-radius:4px;}
+    #planning-calendar .plan-staff-row.done{background:#e6f6ea;border:1px solid #2e7d32;}
+    #planning-calendar .plan-staff-times{color:#555;}
+
+
+
+  
+
+    /* ✅ verhindert FullCalendar-Standard-Blau in Planung (auch nach Tab-Wechsel) */
+    #planning-calendar .fc-h-event,
+    #planning-calendar .fc-daygrid-event-harness .fc-event,
+    #planning-calendar .fc-daygrid-event .fc-event-main-frame{
+      background: transparent !important;
+    }
+
+
+/* ✅ Einheitlicher Tabellen-Abstand (Report & Zähler) */
+.user-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.user-table th,
+.user-table td {
+  padding: 8px 10px;
+  vertical-align: middle;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Erste Spalte (Name) linksbündig */
+.user-table th:first-child,
+.user-table td:first-child {
+  text-align: left;
+  white-space: nowrap;
+}
+
+/* Kopfzeile kompakter */
+.user-table thead th {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+/* Summenzeile absetzen */
+.user-table tfoot .tfoot-sum td {
+  padding-top: 10px;
+  padding-bottom: 10px;
+  background: #f7f7f7;
+}
+
+</style>
+
+<style>
+/* === Voll gefüllte Status-Kreise === */
+.fc-daygrid-event-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    border: none !important;
+    margin-right: 4px;
+}
+
+.status-bestaetigt .fc-daygrid-event-dot {
+    background-color: #2ecc71 !important;
+}
+
+.status-offen .fc-daygrid-event-dot {
+    background-color: #f1c40f !important;
+}
+
+.status-abgelehnt .fc-daygrid-event-dot {
+    background-color: #e74c3c !important;
+}
+
+.status-ersatz .fc-daygrid-event-dot {
+    background-color: #3498db !important;
+}
+
+.status-zugesagt .fc-daygrid-event-dot {
+    background-color: #f39c12 !important; /* orange */
+}
+
+.status-abgelehnt_chef .fc-daygrid-event-dot,
+.status-entfernt_chef .fc-daygrid-event-dot {
+    background-color: #e74c3c !important; /* rot */
+}
+</style>
+
+<style>
+/* === OVERRIDE: Chef-Statuskreise (FINAL) === */
+#calendar .fc-daygrid-event-dot{
+  background-color:#b0b0b0 !important;
+}
+
+/* 🔵 Bewerbungen vorhanden */
+#calendar .status-event-bewerbung .fc-daygrid-event-dot{
+  background-color:#1e90ff !important;
+}
+
+/* 🟢 Mitarbeiteranzahl erreicht */
+#calendar .status-event-voll .fc-daygrid-event-dot{
+  background-color:#2ecc71 !important;
+}
+</style>
+
+<style>
+/* ✅ Ergänzung: Samstag & Sonntag grau färben (Spalten) */
+.fc-day-sat, .fc-day-sun {
+  background-color: #f2f2f2 !important;
+}
+</style>
+
+
+<style>
+/* ✅ Responsive: In Planung Zeiten unter Namen bei kleinem Bildschirm
+   + verhindert Umbruch innerhalb der Zeitspanne (09:00–22:00 bleibt zusammen) */
+@media (max-width: 600px) {
+  #planning-calendar .plan-staff-row{
+    display: block;
+  }
+
+  #planning-calendar .plan-staff-times{
+    display: block;
+    margin-left: 0;
+    font-size: 12px;
+    color: #555;
+    white-space: nowrap;          /* ✅ Start–Ende bleibt in einer Zeile */
+    overflow: hidden;             /* optional: falls extrem schmal */
+    text-overflow: ellipsis;      /* optional */
+  }
+}
+</style>
+
+
+<style>
+/* === Planner: größere Schrift & mehr Luft === */
+#planning-calendar .plan-title {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1.3;
+}
+
+#planning-calendar .plan-staff {
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+#planning-calendar .plan-staff-row {
+  padding: 4px 6px;
+}
+
+#planning-calendar .plan-staff-times {
+  font-size: 14px;
+}
+
+#planning-calendar .fc-daygrid-day-frame {
+  padding: 6px;
+}
+</style>
+
+
+<style>
+/* === Kategorie-Farben (CP/CV) === */
+#calendar .cat-cp,
+#planning-calendar .cat-cp{
+  background-color: #fff3cd !important; /* leicht gold */
+  border-color: #f1c40f !important;
+}
+#calendar .cat-cv,
+#planning-calendar .cat-cv{
+  background-color: #dbeafe !important; /* blau */
+  border-color: #60a5fa !important;
+}
+
+/* damit Text lesbar bleibt */
+#calendar .cat-cp .fc-event-main,
+#calendar .cat-cv .fc-event-main{
+  color:#111 !important;
+}
+
+/* ✅ Planung: Text identisch zur Kalender-Ansicht (schwarz) */
+#planning-calendar .fc-event-main,
+#planning-calendar .fc-event-title,
+#planning-calendar .fc-event-time,
+#planning-calendar .fc-event-main-frame{ color:#111 !important; }
+</style>
+
+
+<style>
+.badge{
+  display:inline-block;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  margin-left:6px;
+}
+.badge-cp{ background:#fff3cd; border:1px solid #f1c40f; color:#111; }
+.badge-cv{ background:#dbeafe; border:1px solid #60a5fa; color:#111; }
+
+.filter-card{
+  display:flex;
+  gap:12px;
+  align-items:center;
+  flex-wrap:wrap;
+  background:#fafafa;
+  border:1px solid #e5e5e5;
+  border-radius:10px;
+  padding:10px 12px;
+  margin-bottom:10px;
+}
+.filter-card label{ font-weight:600; }
+</style>
+
+
+
+
+
+
+<style>
+.money{ color:#b8860b; font-weight:800; }        /* gold */
+.money-soft{ color:#b8860b; font-weight:700; }
+</style>
+
+
+<style>
+/* ✅ Summe im Chef-Report & Zähler immer normal (nicht gold) */
+#report tfoot .tfoot-sum .money,
+#report tfoot .tfoot-sum .money-soft,
+#counter tfoot .tfoot-sum .money,
+#counter tfoot .tfoot-sum .money-soft{
+  color: inherit !important;
+  font-weight: inherit !important;
+}
+</style>
+
+
+<style>
+/* ✅ User-Report-Modal: Kosten normal schwarz + bessere Summe-Ausrichtung */
+#userReportModal td, #userReportModal th { vertical-align: middle; }
+#userReportModal .money, #userReportModal .money-soft { color: inherit !important; font-weight: inherit !important; }
+</style>
+
+
+<style>
+/* ✅ Planung: Einsatz-Umrandung immer schwarz (unabhängig von CP/CV) */
+#planning-calendar .fc-daygrid-event{
+  border-color: #000 !important;
+}
+</style>
+
+
+<style>
+/* ✅ Planung: heutigen Tag hervorheben */
+#planning-calendar .fc-day-today{
+  background: #e9fbe9 !important;   /* dezentes blau */
+}
+#planning-calendar .fc-day-today .fc-daygrid-day-number{
+  font-weight: 800;
+}
+</style>
+
+
+<style>
+/* ✅ Aktueller Tag: komplett farbig (Kalender + Planung) */
+#calendar .fc-day-today,
+#planning-calendar .fc-day-today{
+  background: #e9fbe9 !important;   /* dezentes Blau */
+}
+
+/* Tageszahl deutlicher */
+#calendar .fc-day-today .fc-daygrid-day-number,
+#planning-calendar .fc-day-today .fc-daygrid-day-number{
+  font-weight: 800;
+  color: #000;
+}
+
+/* Header (Wochentag) ebenfalls hervorheben */
+#calendar .fc-col-header-cell.fc-day-today,
+#planning-calendar .fc-col-header-cell.fc-day-today{
+  background: #dbeafe !important;
+}
+</style>
+<style>
+/* ✅ Planung: KEINE Hervorhebung für den heutigen Tag (weder Hintergrund noch Header) */
+#planning-calendar .fc-day-today{
+  background: transparent !important;
+}
+#planning-calendar .fc-col-header-cell.fc-day-today{
+  background: transparent !important;
+}
+#planning-calendar .fc-day-today .fc-daygrid-day-number{
+  font-weight: inherit !important;
+  color: inherit !important;
+}
+</style>
+
+
+
+<script>
+// ✅ CP/CV Badge neben Firma im Einsatzdetails-Modal
+function updateFirmaCategoryBadge(ev){
+  const cat = String(ev?.category || "CP").toUpperCase();
+  const cls = cat === "CV" ? "badge badge-cv" : "badge badge-cp";
+  const el = document.getElementById("d-firma-category");
+  if(el){
+    const txt = catToAuftraggeber(cat);
+    el.innerHTML = `<span class="${cls}">${txt}</span>`;
+  }
+}
+</script>
+
+
+<script>
+// ✅ Firma = Kategorie (CP / CV) im Einsatzdetail
+function setFirmaAsCategory(ev){
+  const cat = String(ev?.category || "CP").toUpperCase();
+  const el = document.getElementById("d-firma");
+  if(el){
+    el.textContent = cat;
+  }
+}
+</script>
+
+
+<style>
+/* ✅ Modal (Einsatz anlegen): CP/CV Buttons oben statt Dropdown */
+.modal-cat-toggle{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0 14px 0;}
+.modal-cat-btn{
+  padding:8px 14px;
+  border-radius:12px;
+  border:2px solid transparent;
+  font-weight:900;
+  cursor:pointer;
+  line-height:1;
+}
+.modal-cat-btn[data-value="CV"]{
+  background:#dbeafe;
+  border-color:#60a5fa;
+  color:#0b2a4a;
+}
+.modal-cat-btn[data-value="CP"]{
+  background:#fff3cd;
+  border-color:#f1c40f;
+  color:#000;
+}
+.modal-cat-btn.active{
+  box-shadow:0 0 0 3px rgba(0,0,0,0.08);
+  transform:translateY(-1px);
+}
+</style>
+
+
+<style>
+/* ✅ CP/CV Buttons: farbig + aktiver Zustand gut erkennbar */
+.category-toggle{display:flex;gap:10px;align-items:center;flex-wrap:wrap;}
+.cat-btn{
+  padding:8px 14px;
+  border-radius:12px;
+  border:2px solid transparent;
+  font-weight:900;
+  cursor:pointer;
+  line-height:1;
+  transition: transform .06s ease, box-shadow .12s ease, filter .12s ease;
+}
+.cat-btn[data-value="CV"]{
+  background:#dbeafe;
+  border-color:#60a5fa;
+  color:#0b2a4a;
+}
+.cat-btn[data-value="CP"]{
+  background:#fff3cd;
+  border-color:#f1c40f;
+  color:#000;
+}
+.cat-btn.active{
+  border-color:#111 !important;
+  box-shadow: 0 0 0 3px rgba(0,0,0,0.10);
+  transform: translateY(-1px);
+  filter: saturate(1.1);
+}
+.cat-btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(0,0,0,0.12); }
+</style>
+
+
+<style>
+.gold-headers thead th{
+  background: linear-gradient(180deg, #ffcc33, #e6b800) !important;
+  color:#000 !important;
+  border-bottom:2px solid #cfa600 !important;
+}
+</style>
+
+
+<style>
+/* ✅ Abstand unter Navbar – für alle Reiter */
+body { margin:0; }
+nav { position: sticky; top: 0; z-index: 50; }
+#calendar, #termine, #planning, #user-management, #report, #counter{
+  padding-top: 14px;
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
+}
+@media (max-width: 768px){
+  #calendar, #termine, #planning, #user-management, #report, #counter{
+    padding-top: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+</style>
+
+
+<style>
+/* ✅ Mobile: Tabellen horizontal scrollbar statt verzerrt */
+@media (max-width: 768px){
+  .table-scroll{
+    width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .table-scroll table{
+    min-width: 980px;
+    table-layout: fixed;
+  }
+  .table-scroll th,
+  .table-scroll td{
+    white-space: nowrap;
+  }
+}
+</style>
+
+
+<style>
+/* ✅ Global horizontal scrolling für ALLES (Mobile & Desktop bei Bedarf) */
+.scroll-x{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+}
+.scroll-x > *{
+  min-width: 1100px;
+}
+</style>
+
+
+<style>
+/* ✅ Mobile: Navbar horizontal scrollbar (Tabs) */
+nav { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
+nav .left{ display:flex; flex-wrap:nowrap; gap:10px; white-space:nowrap; }
+nav .left a{ display:inline-flex; flex:0 0 auto; }
+</style>
+
+
+<style>
+/* ✅ Mobile: make taps feel immediate, avoid 300ms delay / ghost clicks */
+.fc-event, .fc-daygrid-day-frame, nav a{
+  touch-action: manipulation;
+}
+</style>
+
+
+<style id="mobile-calendar-click-fix">
+/* ✅ iOS/Safari: overflow scrolling containers can delay/queue taps.
+   For the main calendar view we disable horizontal scroll container behavior. */
+.scroll-x.calendar-scroll{
+  overflow-x: visible !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+.scroll-x.calendar-scroll > *{
+  min-width: 0 !important;
+}
+/* make sure calendar itself doesn't force huge min-width */
+#calendar{ min-width: 0 !important; }
+</style>
+
+
+<style id="modal-mobile-fix">
+/* ✅ Modal should always be above sticky nav */
+.modal{ z-index: 9999 !important; }
+.modal .modal-content{
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
+  margin-top: 60px; /* space for sticky nav */
+}
+/* Close button always clickable and visible */
+.modal .close-btn{
+  position: sticky;
+  top: 6px;
+  float: right;
+  z-index: 10000;
+  background: rgba(255,255,255,0.9);
+  border-radius: 10px;
+  padding: 2px 8px;
+}
+</style>
+
+
+<style id="planning-remarks-small">
+/* ✅ Planung: Bemerkungen kleiner, damit alles besser passt */
+#planningBulkEditModal .muted,
+#planningCommentsModal .muted{
+  font-size: 11px !important;
+}
+#planningBulkEditModal #plan-bulk-list,
+#planningCommentsModal #plan-cmt-list{
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+}
+#planningBulkEditModal input[type="text"],
+#planningCommentsModal input[type="text"],
+#planningBulkEditModal textarea,
+#planningCommentsModal textarea{
+  font-size: 12px !important;
+}
+</style>
+
+
+<style id="fc-mobile-hitbox">
+@media (max-width: 768px){
+  #calendar .fc-daygrid-event{
+    padding: 4px 6px !important;
+    margin-top: 3px !important;
+  }
+  #calendar .fc-daygrid-event .fc-event-title{
+    font-size: 14px !important;
+  }
+}
+</style>
+
+
+<style id="ios-modal-paint-fix">
+/* ✅ iOS/Safari: force immediate repaint when opening modals */
+.modal{
+  position: fixed !important;
+  inset: 0 !important;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+.modal .modal-content{
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+}
+body.modal-open{
+  overflow: hidden !important;
+  touch-action: none !important;
+}
+</style>
+
+
+<style id="modal-scroll-hard-fix">
+/* ✅ HARD FIX: allow scrolling inside modals on mobile (incl. iOS) */
+body.modal-open{ touch-action: auto !important; }
+.modal{ touch-action: auto !important; }
+.modal .modal-content{
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: contain;
+}
+@media (max-width: 768px){
+  #editEventModal .modal-content{
+    max-height: calc(100vh - 40px) !important;
+  }
+}
+</style>
+
+
+<style id="mobile-edit-modal-compact">
+/* ✅ Mobile: Edit-Modal kompakter, damit Speichern sichtbar bleibt */
+@media (max-width: 768px){
+  #editEventModal .modal-content{
+    padding: 10px 12px !important;
+    max-height: calc(100vh - 20px) !important;
+  }
+
+  #editEventModal h3{
+    font-size: 16px !important;
+    margin-bottom: 8px !important;
+  }
+
+  #editEventModal label{
+    font-size: 13px !important;
+    margin-top: 6px !important;
+  }
+
+  #editEventModal input,
+  #editEventModal select{
+    font-size: 13px !important;
+    padding: 6px 8px !important;
+  }
+
+  #editEventModal .modal-actions{
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    padding: 8px 0 4px 0;
+  }
+
+  #editEventModal .modal-actions button{
+    font-size: 14px !important;
+    padding: 8px 12px !important;
+  }
+}
+</style>
+
+
+<style>
+/* ✅ Planung: NUR Header vom heutigen Tag leicht grün */
+#planning-calendar .fc-col-header-cell.fc-day-today {
+  background: #e6f6ea !important;
+}
+
+#planning-calendar .fc-col-header-cell.fc-day-today .fc-col-header-cell-cushion {
+  font-weight: 700;
+  color: #14532d;
+}
+</style>
+
+
+<style>
+/* Kompaktere Einsätze in Planung */
+.fc-event {
+  font-size: 11px !important;
+  padding: 2px 4px !important;
+  line-height: 1.2 !important;
+}
+.fc-daygrid-event {
+  white-space: normal !important;
+}
+.fc-daygrid-more-link {
+  display: none !important; /* kein +2 mehr */
+}
+</style>
+
+</head>
+<body>
+  <nav>
+    <div class="left">
+      {% set _role = role|default("chef") %}
+{% if _role == "planer" or _role == "planner_bbs" %}
+      <a href="#" id="tab-planning" class="active">🗂️ Planung</a>
+{% else %}
+      <a href="#" id="tab-calendar" class="active">📅 Kalender</a>
+            <a href="#" id="tab-termine">🗓️ Meine Termine</a>
+<a href="#" id="tab-planning">🗂️ Planung</a>
+      <a href="#" id="tab-users">👥 Personal</a>
+      <a href="#" id="tab-report">📊 Report</a>
+      <a href="#" id="tab-counter">🧮 Zähler</a>
+{% endif %}
+    </div>
+    <div class="right">
+      <span>{{ user }}</span>
+      <a href="/logout">Logout</a>
+    </div>
+  </nav>
+
+  <!-- Kalender -->
+  <div class="scroll-x calendar-scroll">
+<div id="calendar"></div>
+  </div>
+
+  <!-- Meine Termine (Chef) -->
+  <div class="scroll-x">
+<div id="termine" style="display:none;">
+    <h3 style="margin-top:10px;">🗓️ Meine bestätigten Termine</h3>
+
+    <div class="filter-row" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="termine-month"><b>Monat:</b></label>
+        <select id="termine-month">
+          <option value="1">Januar</option><option value="2">Februar</option><option value="3">März</option>
+          <option value="4">April</option><option value="5">Mai</option><option value="6">Juni</option>
+          <option value="7">Juli</option><option value="8">August</option><option value="9">September</option>
+          <option value="10">Oktober</option><option value="11">November</option><option value="12">Dezember</option>
+        </select>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <label for="termine-year"><b>Jahr:</b></label>
+        <input type="number" id="termine-year" min="2020" max="2100" step="1" style="max-width:120px;">
+      </div>
+    </div>
+
+    
+
+    <div class="table-scroll">
+<table class="user-table" style="margin-top:10px;">
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Titel</th>
+          <th>Ort</th>
+          <th>Start</th>
+          <th>Vorauss. Ende</th>
+          <th>Bemerkung</th>
+        </tr>
+      </thead>
+      <tbody id="termine-list"></tbody>
+    </table>
+</div>
+  </div>
+
+  <!-- Planung -->
+  <div class="scroll-x">
+<div id="planning" style="display:none;">
+    <div id="planning-calendar"></div>
+  </div>
+  </div>
+
+  <!-- Report -->
+  <div class="table-scroll">
+<div class="scroll-x">
+<div id="report" style="display:none;">
+    <h3>Arbeitszeiten des Personals</h3>
+    <div class="filter-card">
+      <label for="report-year">Jahr wählen:</label>
+      <input type="number" id="report-year" min="2020" max="2100" step="1">
+
+      <label>Kategorie:</label>
+      <div class="category-toggle" id="report-cat-toggle" aria-label="Kategorie wählen (Report)">
+        <button type="button" class="cat-btn" data-target="report-type" data-value="CV">CV</button>
+        <button type="button" class="cat-btn" data-target="report-type" data-value="CP">CP</button>
+      </div>
+      <select id="report-type" style="display:none;">
+        <option value="CV">Casutt Veranstaltungsservice</option>
+        <option value="CP">CP-Security-Solutions</option>
+</select>
+    </div>
+
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Januar</th>
+        <th>Februar</th>
+        <th>März</th>
+        <th>April</th>
+        <th>Mai</th>
+        <th>Juni</th>
+        <th>Juli</th>
+        <th>August</th>
+        <th>September</th>
+        <th>Oktober</th>
+        <th>November</th>
+        <th>Dezember</th>
+          <th>Gesamt-Stunden</th>
+          <th>Gesamt-Kosten</th>
+        </tr>
+      </thead>
+      <tbody id="report-list"></tbody>
+      <tfoot>
+        <tr class="tfoot-sum" id="report-sum-row">
+          <td><b>Summe</b></td>
+          <td id="rpt-sum-jan">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-feb">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-mar">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-apr">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-mai">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-jun">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-jul">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-aug">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-sep">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-okt">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-nov">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-dez">0,00 h<br>0,00 €</td>
+          <td id="rpt-sum-hours"><b>0,00 h</b></td>
+          <td id="rpt-sum-cost"><b>0,00 €</b></td>
+        </tr>
+      </tfoot>
+    </table>
+</div>
+    
+  </div>
+</div>
+
+
+  <!-- Zähler -->
+  <div class="table-scroll">
+<div class="scroll-x">
+<div id="counter" style="display:none;">
+    <h3>Zähler – Einsätze pro Mitarbeiter</h3>
+    <div class="filter-card">
+      <label for="counter-year">Jahr wählen:</label>
+      <input type="number" id="counter-year" min="2020" max="2100" step="1">
+
+      <label>Kategorie:</label>
+      <div class="category-toggle" id="counter-cat-toggle" aria-label="Kategorie wählen (Zähler)">
+        <button type="button" class="cat-btn" data-target="counter-type" data-value="CV">CV</button>
+        <button type="button" class="cat-btn" data-target="counter-type" data-value="CP">CP</button>
+      </div>
+      <select id="counter-type" style="display:none;">
+        <option value="CV">Casutt Veranstaltungsservice</option>
+        <option value="CP">CP-Security-Solutions</option>
+</select>
+    </div>
+
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Januar</th><th>Februar</th><th>März</th><th>April</th><th>Mai</th><th>Juni</th>
+          <th>Juli</th><th>August</th><th>September</th><th>Oktober</th><th>November</th><th>Dezember</th>
+          <th>Gesamt (Jahr)</th>
+        </tr>
+      </thead>
+      <tbody id="counter-list"></tbody>
+
+    <tfoot>
+      <tr class="tfoot-sum" id="counter-sum-row">
+        <td><b>Summe</b></td>
+        <td id="sum-jan">0</td>
+        <td id="sum-feb">0</td>
+        <td id="sum-mar">0</td>
+        <td id="sum-apr">0</td>
+        <td id="sum-mai">0</td>
+        <td id="sum-jun">0</td>
+        <td id="sum-jul">0</td>
+        <td id="sum-aug">0</td>
+        <td id="sum-sep">0</td>
+        <td id="sum-okt">0</td>
+        <td id="sum-nov">0</td>
+        <td id="sum-dez">0</td>
+        <td id="sum-year">0</td>
+      </tr>
+    </tfoot>
+    </table>
+</div>
+    
+  </div>
+</div>
+
+
+  <!-- Mitarbeiter Verwaltung -->
+
+  <div class="table-scroll">
+<div class="scroll-x">
+<div id="user-management" style="display:none;">
+    <h3>Personal verwalten</h3>
+
+    <form id="add-user-form" class="user-form">
+      <div class="form-row">
+        <input type="text" id="vorname" placeholder="Vorname" required>
+        <input type="text" id="nachname" placeholder="Nachname" required>
+      </div>
+
+      <div class="form-row">
+        <input type="email" id="email" placeholder="E-Mail (optional)">
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="new-username" placeholder="Benutzername" required>
+        <input type="password" id="new-password" placeholder="Passwort" required>
+      </div>
+
+      <div class="form-row">
+        <select id="new-role">
+          <option value="mitarbeiter">Mitarbeiter</option>
+          <option value="vorgesetzter">Vorgesetzter</option>
+            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
+            <option value="planner_bbs">Planner BBS</option>
+          <option value="planer">Planer</option>
+        
+        </select>
+
+        <select id="s34a">
+          <option value="nein">34a: Nein</option>
+          <option value="ja">34a: Ja</option>
+        </select>
+
+        <select id="s34a_art">
+          <option value="">-- Art auswählen --</option>
+          <option value="unterrichtung">Unterrichtung</option>
+          <option value="Sachkunde">Sachkunde</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="bewach_id" placeholder="Bewach-ID" required>
+        <input type="text" id="steuernummer" placeholder="Steuernummer" required>
+      </div>
+
+      <div class="form-row">
+        <select id="bsw">
+          <option value="nein">BSW: Nein</option>
+          <option value="ja">BSW: Ja</option>
+        </select>
+
+        <select id="sanitaeter">
+          <option value="nein">Sanitäter: Nein</option>
+          <option value="ja">Sanitäter: Ja</option>
+        </select>
+
+        <select id="pschein">
+          <option value="nein">P-Schein: Nein</option>
+          <option value="ja">P-Schein: Ja</option>
+        </select>
+
+        <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
+      </div>
+
+      <button type="submit" class="confirm">➕ Hinzufügen</button>
+    </form>
+
+    <h4>Personalliste</h4>
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Benutzername</th>
+          <th>Name</th>
+          <th>E-Mail</th>
+          <th>34a</th>
+          <th>Bewach-ID</th>
+          <th>Steuernummer</th>
+          <th>BSW</th>
+          <th>Sanitäter</th>
+          <th>P-Schein</th>
+          <th>Stundensatz</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="user-list"></tbody>
+    </table>
+</div>
+  </div>
+
+  <!-- Modal Einsatz anlegen -->
+  <div class="modal" id="eventModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeEventModal()">×</span>
+      <h3>Neuen Einsatz anlegen</h3>
+      <!-- ✅ Kategorie oben: Buttons (CV blau, CP gold) -->
+      <div class="modal-cat-toggle" id="create-ev-cat-toggle" aria-label="Auftraggeber wählen">
+        <button type="button" class="modal-cat-btn" data-target="ev-category" data-value="CV">CV</button>
+        <button type="button" class="modal-cat-btn" data-target="ev-category" data-value="CP">CP</button>
+      </div>
+      <select id="ev-category" style="display:none;">
+        <option value="CV">Casutt Veranstaltungsservice</option>
+        <option value="CP">CP-Security-Solutions</option>
+      </select>
+
+
+      <label>Titel</label>
+      <input id="title" placeholder="Titel des Einsatzes">
+
+      
+
+      <label>Ort</label>
+      <input id="ort" placeholder="Ort">
+
+      <label>Dienstkleidung</label>
+      <input id="dienst" placeholder="Dienstkleidung">
+
+      <label>Mitteilung</label>
+      <input id="auftrag" placeholder="Mitteilung">
+
+      <div class="form-row">
+        <div>
+          <label>Startzeit</label>
+          <input id="start-time" type="time" value="09:00">
+        </div>
+        <div>
+          <label>Voraussichtliche Endzeit</label>
+          <input id="planned-end-time" type="time" value="17:00">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div>
+          <label>Frist (Annahme bis)</label>
+          <input id="frist" type="datetime-local">
+        </div>
+      </div>
+
+      <label>Benötigte Mitarbeiter</label>
+      <input id="required-staff" type="number" min="1" value="1">
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="use-event-rate" checked onchange="toggleEventRateInputs('create')">
+        <label for="use-event-rate"><b>Stundensatz pro Einsatz festlegen</b></label>
+      </div>
+
+      <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
+      <input id="event-rate" type="number" step="0.01" min="0" placeholder="z.B. 20.00">
+
+      <div class="modal-actions">
+        <button class="release" onclick="saveEvent('geplant')">📄 Nur planen</button>
+        <button class="confirm" onclick="saveEvent('offen')">🚀 Direkt freigeben</button>
+      </div>
+      
+    </div>
+  </div>
+
+  <!-- Modal Einsatzdetails -->
+  <div class="modal" id="detailsModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeDetailsModal()">×</span>
+      <h3>Einsatzdetails <span id="d-category-badge"></span></h3>
+
+      <div class="detail-box"><b>Auftraggeber:</b> <span id="d-firma"></span></div>
+
+      <div class="detail-box"><b>Titel:</b> <span id="d-title"></span></div>
+      <div class="detail-box"><b>Ort:</b> <span id="d-ort"></span></div>
+      <div class="detail-box"><b>Dienstkleidung:</b> <span id="d-dienst"></span></div>
+      <div class="detail-box"><b>Mitteilung:</b> <span id="d-auftrag"></span></div>
+
+      <!-- ✅ nur Uhrzeit (keine Datum-Anzeige) -->
+      <div class="detail-box"><b>Start (Uhrzeit):</b> <span id="d-start"></span></div>
+
+      <div class="detail-box"><b>Vorauss. Ende:</b> <span id="d-planned-end"></span></div>
+      <div class="detail-box"><b>Frist:</b> <span id="d-frist"></span></div>
+      <div class="detail-box"><b>Benötigt:</b> <span id="d-required"></span></div>
+      <div class="detail-box"><b>Abrechnung:</b> <span id="d-rate-mode"></span></div>
+
+      <div class="modal-actions"></div>
+
+      <h4 id="confirmed-counter" title="">Bestätigt: 0</h4>
+      <ul id="response-list" class="requests-grid"></ul>
+
+      <div class="section">
+        <h4>Ersatz einsetzen</h4>
+        <div class="form-row">
+          <select id="replacement-user"></select>
+          <button class="confirm" onclick="assignReplacement()">➕ Zuweisen</button>
+        </div>
+      </div>
+
+      <!-- Zeiten pro Mitarbeiter -->
+      <div class="section" id="per-user-time-section" style="display:none;">
+        <h4>Zeiten pro Mitarbeiter anpassen</h4>
+
+        <div class="form-row">
+          <select id="time-user-select"></select>
+          <button class="confirm" type="button" onclick="prepareTimeEdit()">🕒 Zeiten anpassen</button>
+        </div>
+
+        <div id="time-edit-box" style="display:none;">
+          <div class="form-row">
+            <div>
+              <label>Startzeit (optional)</label>
+              <input type="time" id="time-start">
+            </div>
+          </div>
+          <div class="form-row">
+            <div>
+              <label>Bemerkung (optional – sieht der Mitarbeiter)</label>
+              <input type="text" id="time-remark" placeholder="z.B. Start wurde angepasst, bitte 10 Min früher da sein">
+            </div>
+          </div>
+<div class="form-row" style="margin-top:8px;">
+            <button class="confirm" type="button" onclick="saveSelectedUserTimes()">💾 Speichern</button>
+            <button class="reject" type="button" onclick="cancelTimeEdit()">Abbrechen</button>
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Einsatz bearbeiten -->
+  <div class="modal" id="editEventModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeEditEventModal()">×</span>
+      <h3>Einsatz bearbeiten</h3>
+
+      <input type="hidden" id="edit-event-id">
+
+      <label>Titel</label>
+      <input id="edit-ev-title" placeholder="Titel">
+
+      <label>Auftraggeber</label>
+      <select id="edit-ev-category">
+        <option value="CV">Casutt Veranstaltungsservice</option>
+        <option value="CP">CP-Security-Solutions</option>
+      </select>
+
+      <label>Ort</label>
+      <input id="edit-ev-ort" placeholder="Ort">
+
+      <label>Dienstkleidung</label>
+      <input id="edit-ev-dienst" placeholder="Dienstkleidung">
+
+      <label>Mitteilung</label>
+      <input id="edit-ev-auftrag" placeholder="Mitteilung">
+
+      <label>Start (Datum & Uhrzeit)</label>
+      <input id="edit-ev-start" type="datetime-local">
+
+      
+      <label>Voraussichtliche Endzeit</label>
+      <input id="edit-ev-planned-end" type="time">
+      <div class="form-row">
+        <div>
+          <label>Frist (Annahme bis)</label>
+          <input id="edit-ev-frist" type="datetime-local">
+        </div>
+        <div>
+          <label>Status</label>
+          <select id="edit-ev-status">
+            <option value="geplant">geplant</option>
+            <option value="offen">offen</option>
+          </select>
+        </div>
+      </div>
+
+      <label>Benötigte Mitarbeiter</label>
+      <input id="edit-ev-required" type="number" min="0" value="0">
+
+      <div class="checkbox-row">
+        <input type="checkbox" id="edit-use-event-rate" onchange="toggleEventRateInputs('edit')">
+        <label for="edit-use-event-rate"><b>Stundensatz pro Einsatz festlegen</b> (sonst: Mitarbeiter-Stundensätze)</label>
+      </div>
+
+      <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
+      <input id="edit-ev-rate" type="number" step="0.01" min="0">
+
+      <div class="modal-actions">
+        <button class="confirm" onclick="saveEventEdit()">💾 Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal Benutzer bearbeiten -->
+  <div class="modal" id="editUserModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeEditModal()">×</span>
+      <h3>Mitarbeiter bearbeiten</h3>
+
+      <label>Benutzername</label>
+      <input type="text" id="edit-username">
+
+      <label>Vorname</label>
+      <input type="text" id="edit-vorname">
+
+      <label>Nachname</label>
+      <input type="text" id="edit-nachname">
+
+      <label>E-Mail</label>
+      <input type="email" id="edit-email">
+
+      <label>Passwort</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="password" id="edit-password">
+        <button type="button" onclick="togglePassword('edit-password')">👁️</button>
+      </div>
+
+      <label>Rolle</label>
+      <select id="edit-role">
+        <option value="mitarbeiter">Mitarbeiter</option>
+        <option value="vorgesetzter">Vorgesetzter</option>
+          <option value="planer">Planer</option>
+      
+            <option value="planner_bbs">Planner BBS</option>
+            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
+        </select>
+
+      <label>34a</label>
+      <select id="edit-s34a">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>34a Art</label>
+      <select id="edit-s34a_art">
+        <option value="">--</option>
+        <option value="unterrichtung">Unterrichtung</option>
+        <option value="Sachkunde">Sachkunde</option>
+      </select>
+
+      <label>P-Schein</label>
+      <select id="edit-pschein">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Bewach-ID</label>
+      <input type="text" id="edit-bewach-id">
+
+      <label>Steuernummer</label>
+      <input type="text" id="edit-steuernummer">
+
+      <label>BSW</label>
+      <select id="edit-bsw">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Sanitäter</label>
+      <select id="edit-sanitaeter">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Stundensatz (€/h)</label>
+      <input type="number" id="edit-stundensatz" step="0.01" min="0">
+
+      <div class="modal-actions">
+        <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Mitarbeiter-Report-Details -->
+  <div class="table-scroll">
+<div class="modal" id="userReportModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeUserReportModal()">×</span>
+      <h3>Einsätze von <span id="report-username"></span></h3>
+
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>Datum</th>
+            <th>Titel</th>
+            <th>Ort</th>
+            <th>Start</th>
+            <th>Ende</th>
+            <th>Stunden</th>
+            <th>Stundensatz</th>
+            <th>Kosten</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody id="user-report-details"></tbody>
+        <tfoot>
+          <tr class="tfoot-sum">
+            <td colspan="5">Summe</td>
+            <td id="user-report-sum-hours">0.00 h</td>
+            <td></td>
+            <td id="user-report-sum-cost">0.00 €</td>
+            <td></td>
+          </tr>
+        </tfoot>
+      </table>
+</div>
+
+      
+    </div>
+  </div>
+
+  <!-- ✅ Modal: Endzeit ändern (aus Report) -->
+  <div class="modal" id="reportEndEditModal">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeReportEndEditModal()">×</span>
+      <h3>Endzeit ändern</h3>
+
+      <input type="hidden" id="rep-event-id">
+      <input type="hidden" id="rep-username">
+
+      <div class="detail-box"><b>Mitarbeiter:</b> <span id="rep-user-label"></span></div>
+      <div class="detail-box"><b>Einsatz:</b> <span id="rep-title-label"></span></div>
+
+      <label>Startzeit (optional)</label>
+      <input type="time" id="rep-start-time">
+
+      <label>Endzeit (HH:MM)</label>
+      <input type="time" id="rep-end-time">
+
+      <label>Stundensatz (optional, überschreibt)</label>
+      <input type="text" id="rep-rate" inputmode="decimal" placeholder="z.B. 20,00">
+
+      <label>Bemerkung (optional)</label>
+      <input type="text" id="rep-remark" placeholder="optional">
+
+      <div class="modal-actions">
+        <button class="confirm" onclick="saveReportEndTime()">💾 Speichern</button>
+      </div>
+    </div>
+  </div>
+
+  
+  
+  <!-- ✅ Modal: Planung – Zeiten für alle bestätigten Mitarbeiter -->
+  <div class="modal" id="planningBulkEditModal" style="display:none;">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closePlanningBulkEditModal()">×</span>
+      <h3>Zeiten & Bemerkungen (Planung)</h3>
+
+      <input type="hidden" id="plan-bulk-event-id">
+
+      <div class="detail-box">
+        <b>Einsatz:</b> <span id="plan-bulk-title"></span><br>
+        <span class="muted">Doppelklick auf einen Einsatzblock öffnet dieses Fenster.</span>
+      </div>
+
+      <div id="plan-bulk-list"></div>
+
+      <div class="modal-actions" style="margin-top:10px;">
+        <button class="confirm" onclick="savePlanningBulkEdits()">💾 Speichern</button>
+        <button class="reject" onclick="closePlanningBulkEditModal()">Abbrechen</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ✅ Modal: Planung – Planer sieht nur Kommentare (Doppelklick) -->
+  <div class="modal" id="planningCommentsModal" style="display:none;">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closePlanningCommentsModal()">×</span>
+      <h3>Kommentare (Planung)</h3>
+
+      <input type="hidden" id="plan-cmt-event-id">
+
+      <div class="detail-box">
+        <b>Einsatz:</b> <span id="plan-cmt-title"></span><br>
+        <span class="muted">Doppelklick auf einen Einsatzblock zeigt hier nur die Kommentare der bestätigten Mitarbeiter.</span>
+      </div>
+
+      <div id="plan-cmt-list"></div>
+
+      <div class="modal-actions" style="margin-top:10px;">
+        <button class="confirm" type="button" onclick="closePlanningCommentsModal()">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ✅ Modal: Einsatz duplizieren (Kalender) -->
+  <div class="modal" id="duplicateModal" style="display:none;">
+    <div class="modal-content" tabindex="-1">
+      <span class="close-btn" onclick="closeDuplicateModal()">×</span>
+      <h3>Einsatz duplizieren</h3>
+
+      <label>Einsatz auswählen</label>
+      <select id="dup-source-event"></select>
+
+      <div class="detail-box">
+        <b>Mehrere Daten auswählen</b>
+        
+
+        <div class="form-row" style="align-items:flex-end;">
+          <div>
+            <label>Datum</label>
+            <input type="date" id="dup-date">
+          </div>
+          <div style="flex:0;">
+            <button class="confirm" type="button" onclick="addDupDate()">➕ Hinzufügen</button>
+          </div>
+        </div>
+
+        
+        <ul id="dup-date-list" style="margin:6px 0 0 18px;"></ul>
+
+      </div>
+
+      <div class="modal-actions">
+        <button class="confirm" type="button" onclick="runDuplicate()">📄 Duplizieren</button>
+      </div>
+    </div>
+  </div>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+  <script>
+/* REPORT_SORT_BY_DATE */
+    function fmtDateOnlyDE(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = String(d.getFullYear());
+      return `${dd}.${mm}.${yy}`;
+    }
+  </script>
+  <script>
+    const ROLE = "{{ role|default('chef') }}";
+    const IS_PLANNER = (String(ROLE).toLowerCase() === 'planer' || String(ROLE).toLowerCase() === 'planner_bbs');
+    // ✅ Mobile helper: ensure taps open immediately (iOS/Safari sometimes delays click inside scroll containers)
+    function bindImmediateTap(el, handler){
+      if(!el) return;
+      // touchend fires reliably on mobile; passive:false so we can prevent default
+      el.addEventListener('touchend', function(e){
+        try{ e.preventDefault(); }catch(_){}
+        if(e.stopImmediatePropagation){ e.stopImmediatePropagation(); } else { e.stopPropagation(); }
+        handler(e);
+      }, { passive: false });
+      // fallback for desktop
+      el.addEventListener('click', function(e){
+        if(e.stopImmediatePropagation){ e.stopImmediatePropagation(); } else { e.stopPropagation(); }
+        handler(e);
+      });
+    }
+
+    // ✅ Global tap router: fixes "tap does nothing until next UI action" on mobile in scroll containers
+    // We attach event ids to DOM nodes in eventDidMount and open the right modal on pointerup/touchend.
+    window.__fcTapRouter = window.__fcTapRouter || (function(){
+      const state = {
+        mainMap: new Map(),     // id -> event (calendar)
+        planMap: new Map(),     // id -> event (planningCalendar)
+      };
+
+      function getEventById(which, id){
+        if(!id) return null;
+        if(which === 'planning'){
+          if(window.planningCalendar && typeof window.planningCalendar.getEventById === 'function'){
+            return window.planningCalendar.getEventById(id);
+          }
+          return state.planMap.get(id) || null;
+        }
+        if(window.calendar && typeof window.calendar.getEventById === 'function'){
+          return window.calendar.getEventById(id);
+        }
+        return state.mainMap.get(id) || null;
+      }
+
+      function onTap(e){
+        const el = e.target && (e.target.closest ? e.target.closest(".fc-event") : null);
+        if(!el) return;
+        const id = el.getAttribute("data-event-id");
+        const which = el.getAttribute("data-cal") || "main";
+        const ev = getEventById(which, id);
+        if(!ev) return;
+
+        // prevent delayed clicks
+        try{ e.preventDefault(); }catch(_){}
+        if(e.stopImmediatePropagation){ e.stopImmediatePropagation(); } else { e.stopPropagation(); }
+
+        // Always open details immediately
+        if(typeof openDetailsModal === 'function'){
+          openDetailsModal(ev);
+        }
+      }
+
+      // pointerup covers mouse+touch on modern browsers; capture=true to win against other handlers
+      document.addEventListener("pointerdown", onTap, true);
+      document.addEventListener("pointerup", onTap, true);
+      document.addEventListener("touchend", onTap, { capture: true, passive: false });
+
+      return {
+        register(which, eventObj){
+          if(!eventObj || !eventObj.id) return;
+          (which === 'planning' ? state.planMap : state.mainMap).set(String(eventObj.id), eventObj);
+        }
+      };
+    })();
+
+    
+    // ✅ Auftraggeber-Map (UI zeigt keine Abkürzungen)
+    function catToAuftraggeber(cat){
+      const c = String(cat || "").toUpperCase();
+      return (c === "CV") ? "Casutt Veranstaltungsservice" : "CP-Security-Solutions";
+    }
+
+
+    // ✅ Kategorie-Buttons (CV/CP) steuern die versteckten Selects
+    function syncCatButtons(toggleId, selectId){
+      const toggle = document.getElementById(toggleId);
+      const sel = document.getElementById(selectId);
+      if(!toggle || !sel) return;
+
+      const current = String(sel.value || "CV").toUpperCase();
+      toggle.querySelectorAll("button.cat-btn").forEach(btn=>{
+        const v = String(btn.dataset.value || "").toUpperCase();
+        btn.classList.toggle("active", v === current);
+      });
+    }
+
+    function applyGoldHeaders(){
+      const rptVal = String(document.getElementById("report-type")?.value || "CV").toUpperCase();
+      const ctrVal = String(document.getElementById("counter-type")?.value || "CV").toUpperCase();
+
+      const rptTable = document.querySelector("#report table.user-table");
+      const ctrTable = document.querySelector("#counter table.user-table");
+
+      if(rptTable) rptTable.classList.toggle("gold-headers", rptVal === "CP");
+      if(ctrTable) ctrTable.classList.toggle("gold-headers", ctrVal === "CP");
+    }
+
+    function initCategoryButtons(){
+      // Report
+      const rt = document.getElementById("report-type");
+      const rToggle = document.getElementById("report-cat-toggle");
+      if(rt && rToggle){
+        rToggle.querySelectorAll("button.cat-btn").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const v = String(btn.dataset.value || "CV").toUpperCase();
+            rt.value = v;
+            rt.dispatchEvent(new Event("change"));
+            syncCatButtons("report-cat-toggle","report-type");
+            applyGoldHeaders();
+          });
+        });
+        syncCatButtons("report-cat-toggle","report-type");
+      }
+
+      // Zähler
+      const ct = document.getElementById("counter-type");
+      const cToggle = document.getElementById("counter-cat-toggle");
+      if(ct && cToggle){
+        cToggle.querySelectorAll("button.cat-btn").forEach(btn=>{
+          btn.addEventListener("click", ()=>{
+            const v = String(btn.dataset.value || "CV").toUpperCase();
+            ct.value = v;
+            ct.dispatchEvent(new Event("change"));
+            syncCatButtons("counter-cat-toggle","counter-type");
+            applyGoldHeaders();
+          });
+        });
+        syncCatButtons("counter-cat-toggle","counter-type");
+      }
+
+      applyGoldHeaders();
+    }
+let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEventId=null;
+    let usersCache = {};
+    let usersList = [];
+    let currentEditUser = null;
+
+    function setActiveTab(activeId){
+      const ids = ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"];
+      ids.forEach(id=>{
+        const el = document.getElementById(id);
+        if(!el) return;
+        if(id === activeId) el.classList.add("active");
+        else el.classList.remove("active");
+      });
+    }
+
+
+    function hideTermine(){
+      const t = document.getElementById("termine");
+      if(t) t.style.display = "none";
+    }
+
+    const userByUsername = () => {
+      const map = {};
+      usersList.forEach(u => map[u.username] = u);
+      return map;
+    };
+
+    function toggleEventRateInputs(which){
+      if(which === 'create'){
+        const use = document.getElementById("use-event-rate").checked;
+        const rate = document.getElementById("event-rate");
+        rate.disabled = !use;
+        if(!use) rate.value = "";
+      } else {
+        const use = document.getElementById("edit-use-event-rate").checked;
+        const rate = document.getElementById("edit-ev-rate");
+        rate.disabled = !use;
+        if(!use) rate.value = "";
+      }
+    }
+
+    function toDateTimeLocalValue(d){
+      const pad = n => String(n).padStart(2,'0');
+      const yyyy = d.getFullYear();
+      const mm = pad(d.getMonth()+1);
+      const dd = pad(d.getDate());
+      const hh = pad(d.getHours());
+      const mi = pad(d.getMinutes());
+      return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
+    }
+
+    function fmtNumDE(n, digits=2){
+      const v = Number(n);
+      if(isNaN(v)) return "0,00";
+      return v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+
+    // ✅ Zahl aus deutschem Format lesen (z.B. "20,50" oder "20.50" oder "1.234,56")
+    function parseDeNumber(raw){
+      if(raw === null || raw === undefined) return null;
+      let t = String(raw).trim();
+      if(t === "") return null;
+      // Tausenderpunkte entfernen, Komma als Dezimalpunkt
+      t = t.replace(/\./g, "").replace(/,/g, ".");
+      const v = Number(t);
+      return isNaN(v) ? null : v;
+    }
+
+
+    // ✅ Tooltip-Helfer (für title="...") – verhindert kaputtes HTML bei Anführungszeichen etc.
+    function escapeAttr(s){
+      return String(s || "")
+        .replace(/&/g,"&amp;")
+        .replace(/</g,"&lt;")
+        .replace(/>/g,"&gt;")
+        .replace(/"/g,"&quot;")
+        .replace(/'/g,"&#39;");
+    }
+
+
+    function capYesNo(v){
+      const t = String(v||"").toLowerCase();
+      if(t === "ja") return "Ja";
+      if(t === "nein") return "Nein";
+      return v || "";
+    }
+
+    function fmtTimeOnly(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      return `${hh}:${mm}`;
+    }
+
+    // =========================
+    // 🗓️ Meine Termine (Chef)
+    // =========================
+    function stripTitleTime(t){
+      const s = String(t || "").trim();
+      return s.replace(/\s*\(\d{2}:\d{2}\)\s*$/,"").trim();
+    }
+
+    function fmtDateDE(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = String(d.getFullYear());
+      return `${dd}.${mm}.${yy}`;
+    }
+
+    function fmtDateTimeDE(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      return `${fmtDateDE(d)} ${fmtTimeOnly(d)}`;
+    }
+
+    function fmtHHMM(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const hh = String(d.getHours()).padStart(2,'0');
+      const mm = String(d.getMinutes()).padStart(2,'0');
+      return `${hh}:${mm}`;
+    }
+
+    async function loadMyTermine(){
+      const me = "{{ user }}";
+      const monthEl = document.getElementById("termine-month");
+      const yearEl  = document.getElementById("termine-year");
+      const selMonth = Number(monthEl?.value || 0);
+      const selYear  = Number(yearEl?.value || 0);
+
+      const tbody = document.getElementById("termine-list");
+      const countEl = document.getElementById("termine-count");
+      if(!tbody) return;
+
+      tbody.innerHTML = "";
+      if(countEl) countEl.textContent = "Lade…";
+
+      let res = await fetch("/events?ts="+Date.now());
+      let events = await res.json();
+
+      // ✅ Kategorie-Filter (ALL/CP/CV) für den Chef-Report
+      const catFilter = (document.getElementById("report-type")?.value || "CV").toUpperCase();
+      events = events.filter(ev => String(ev.category || "CP").toUpperCase() === catFilter);
+
+
+      // nur bestätigte für mich
+      let rows = [];
+      events.forEach(ev=>{
+        const r = ev.responses?.[me] || null;
+        if(!r || String(r.status||"").trim() !== "bestätigt") return;
+
+        const d = new Date(ev.start);
+        if(!isNaN(d) && selMonth && selYear){
+          const m = d.getMonth()+1;
+          const y = d.getFullYear();
+          if(m !== selMonth || y !== selYear) return;
+        }
+
+        const startLabel = (r.start_time && String(r.start_time).trim()) ? String(r.start_time).trim() : fmtHHMM(ev.start);
+        const endLabel = (r.end_time && String(r.end_time).trim())
+          ? String(r.end_time).trim()
+          : (ev.planned_end_time && String(ev.planned_end_time).trim() ? String(ev.planned_end_time).trim() : "-");
+
+        rows.push({
+          date: fmtDateDE(ev.start),
+          title: stripTitleTime(ev.title),
+          ort: ev.ort || "-",
+          start: startLabel || "-",
+          end: endLabel || "-",
+          remark: (r.remark || "").trim()
+        });
+      });
+
+      // sort by date asc
+      rows.sort((a,b)=> String(a.date).localeCompare(String(b.date), "de"));
+
+      rows.forEach(x=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${x.date}</td>
+          <td>${x.title || "-"}</td>
+          <td>${x.ort}</td>
+          <td>${x.start}</td>
+          <td>${x.end}</td>
+          <td style="white-space:normal;">${x.remark || ""}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      if(countEl) countEl.textContent = `${rows.length} Termine`;
+    }
+
+
+    // Report Jahres-Input
+    let yearInput = document.getElementById("report-year");
+    let now = new Date();
+    yearInput.value = now.getFullYear();
+    yearInput.addEventListener("change", loadReport);
+    const rptType = document.getElementById("report-type");
+    if(rptType){
+      const defV = (String(ROLE).toLowerCase() === 'vorgesetzter_cp') ? 'CP' : 'CV';
+      rptType.value = (rptType.value || defV);
+      if(!rptType.value) rptType.value = defV;
+      rptType.addEventListener("change", loadReport);
+      rptType.addEventListener("change", ()=>{ if(typeof syncCatButtons==="function") syncCatButtons("report-cat-toggle","report-type"); if(typeof applyGoldHeaders==="function") applyGoldHeaders(); });
+    }
+
+    // Zähler Jahres-Input
+    let counterYearInput = document.getElementById("counter-year");
+    if(counterYearInput){
+      counterYearInput.value = now.getFullYear();
+      counterYearInput.addEventListener("change", loadCounter);
+    }
+    const ctrType = document.getElementById("counter-type");
+    if(ctrType){ ctrType.value = (ctrType.value || "CV"); if(!ctrType.value) ctrType.value="CV"; ctrType.addEventListener("change", loadCounter); ctrType.addEventListener("change", ()=>{ if(typeof syncCatButtons==="function") syncCatButtons("counter-cat-toggle","counter-type"); if(typeof applyGoldHeaders==="function") applyGoldHeaders(); }); }
+
+
+    document.addEventListener('DOMContentLoaded', async function() {
+      // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
+      // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
+      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+        let resUsers = await fetch("/users");
+        let users = await resUsers.json();
+        usersList = users;
+        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      } else {
+        let resUsers = await fetch("/users_public");
+        let users = await resUsers.json();
+        usersList = users;
+        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      }
+
+      toggleEventRateInputs('create');
+
+      // Meine Termine: Default Monat/Jahr + Filter-Listener
+      const nowT = new Date();
+      const tMonth = document.getElementById("termine-month");
+      const tYear  = document.getElementById("termine-year");
+      if(tMonth && tYear){
+        tMonth.value = String(nowT.getMonth()+1);
+        tYear.value  = String(nowT.getFullYear());
+        tMonth.addEventListener("change", loadMyTermine);
+        tYear.addEventListener("change", loadMyTermine);
+      }
+
+
+      // Tabs
+      if(!IS_PLANNER){
+      document.getElementById("tab-calendar").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="block";
+        document.getElementById("planning").style.display="none";
+        hideTermine();
+document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-calendar");
+        window.location.reload();
+      };
+
+      // 🗓️ Meine Termine (Chef)
+      document.getElementById("tab-termine").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="none";
+        document.getElementById("termine").style.display="block";
+        document.getElementById("planning").style.display="none";
+document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-termine");
+        loadMyTermine();
+      };
+
+      }
+
+      if(!IS_PLANNER){
+        // Personal-Tab nur für Chef/Vorgesetzter
+        if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+          document.getElementById("tab-users").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+document.getElementById("planning").style.display="none";
+        hideTermine();
+document.getElementById("user-management").style.display="block";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-users");
+        loadUsers();
+          };
+        }
+      document.getElementById("tab-report").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+document.getElementById("planning").style.display="none";
+        hideTermine();
+document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="block";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-report");
+        const _rt = document.getElementById('report-type');
+        if(_rt && (!_rt.value)){
+          _rt.value = (String(ROLE).toLowerCase() === 'vorgesetzter_cp') ? 'CP' : 'CV';
+        }
+        loadReport();
+      };
+
+      // Zähler nur für Chef/Vorgesetzter
+      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+      document.getElementById("tab-counter").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+document.getElementById("planning").style.display="none";
+        hideTermine();
+document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="block";
+        setActiveTab("tab-counter");
+        loadCounter();
+      };
+      }
+
+      }
+
+      document.getElementById("tab-planning").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+document.getElementById("planning").style.display="block";
+        document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-planning");
+        // Planung initialisieren (einmalig) + aktualisieren
+        if(!planningCalendar){ initPlanningCalendar(); }
+        planningCalendar.refetchEvents();
+      };
+
+      if(IS_PLANNER){
+        // Nur Planung sichtbar
+        setActiveTab("tab-planning");
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+document.getElementById("planning").style.display="block";
+        document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        if(!planningCalendar){ initPlanningCalendar(); }
+        planningCalendar.refetchEvents();
+      }
+
+
+      // Kalender
+      if(!IS_PLANNER){
+      const CAN_MAIL_ALL = (ROLE === "vorgesetzter" || ROLE === "vorgesetzter_cp");
+      calendar=new FullCalendar.Calendar(document.getElementById('calendar'),{
+        initialView:'dayGridMonth',
+        locale:'de',
+        firstDay: 1,
+        buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
+        height:"85vh",
+
+        dayCellClassNames: (arg)=>{
+          const dow = arg.date.getDay();
+          return (dow===0 || dow===6) ? ['weekend'] : [];
+        },
+
+        customButtons: {
+          duplicateBtn: {
+            text: "📄 Duplizieren",
+            click: () => openDuplicateModal()
+          },
+          ...(CAN_MAIL_ALL ? {
+            mailAllBtn: {
+              text: "📧 E-Mail versenden",
+              click: () => sendEventMailFromCalendar()
+            }
+          } : {})
+        },
+        headerToolbar: {
+          left: CAN_MAIL_ALL ? "prev,next today duplicateBtn mailAllBtn" : "prev,next today duplicateBtn",
+          center: "title",
+          right: "dayGridMonth,dayGridWeek"
+        },
+        selectable:true,
+
+        eventDisplay: "list-item",
+        displayEventTime: true,
+        eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
+
+        dateClick: info => {
+          // ✅ Mobile: ignore taps on existing events (otherwise iOS queues and opens create modal)
+          try{
+            if(info && info.jsEvent && info.jsEvent.target && info.jsEvent.target.closest && info.jsEvent.target.closest('.fc-event')){
+              return;
+            }
+          }catch(_){}
+          // Mobile-friendly: single tap opens create modal
+          selectedDate = info.dateStr;
+          openEventModal();
+        },
+        eventClick: info => {
+          // ✅ Mobile: open immediately and stop any delayed/queued click behavior
+          try{ info.jsEvent && info.jsEvent.preventDefault(); }catch(_){}
+          try{ info.jsEvent && info.jsEvent.stopPropagation(); }catch(_){}
+          openDetailsModal(info.event);
+        },
+        eventDidMount: function(info){
+          // Attach id for global router (mobile)
+          try{
+            info.el.setAttribute("data-event-id", String(info.event.id || ""));
+            info.el.setAttribute("data-cal","main");
+            if(window.__fcTapRouter && window.__fcTapRouter.register){
+              window.__fcTapRouter.register('main', info.event);
+            }
+            // Also bind immediate tap on element as fallback
+            bindImmediateTap(info.el, () => openDetailsModal(info.event));
+            // ✅ Hard fix for iOS/Safari: open on pointerdown/touchstart to avoid queued taps
+            info.el.addEventListener('pointerdown', function(ev){
+              try{ ev.preventDefault(); }catch(_){}
+              try{ ev.stopPropagation(); }catch(_){}
+              openDetailsModal(info.event);
+            }, {capture:true});
+            info.el.addEventListener('touchstart', function(ev){
+              try{ ev.preventDefault(); }catch(_){}
+              try{ ev.stopPropagation(); }catch(_){}
+              openDetailsModal(info.event);
+            }, {capture:true, passive:false});
+
+          }catch(_){}
+        },
+
+        events: async (info,success)=>{
+          let res=await fetch("/events");
+          let events=await res.json();
+
+          // ✅ Titel zeigt IMMER Event.start (bleibt unverändert, egal was du pro Mitarbeiter setzt)
+          events.forEach(ev=>{
+            if(ev.start){
+              const d = new Date(ev.start);
+              if(!isNaN(d)){
+                const hh = String(d.getHours()).padStart(2,'0');
+                const mm = String(d.getMinutes()).padStart(2,'0');
+                const base = (ev.title || "").trim();
+                ev.title = `${base} (${hh}:${mm})`.trim();
+              }
+            }
+
+            if(ev.status==="geplant"){
+              ev.color="gray"; ev.textColor="gray";
+            }
+
+            if(ev.status==="offen"){
+              let confirmedCount = Object.values(ev.responses || {}).filter(r => r.status==="bestätigt").length;
+              const c = (confirmedCount >= (ev.required_staff || 0)) ? "green" : "darkblue";
+              ev.color = c; ev.textColor = c;
+            }
+          });
+
+          success(events);
+        }
+      });
+      calendar.render();
+      window.calendar = calendar;
+      }
+
+      // ===== Planung-Kalender =====
+      // Baut HTML für bestätigte Mitarbeiterliste.
+      // ✅ Neu:
+      // - Kevin (username "kevin") wird in der Planung magenta dargestellt.
+      // - Jeder Name erhält data-username, damit wir per Doppelklick Zeiten bearbeiten können.
+      function buildStaffList(ev){
+        const responses = ev.responses || {};
+        const items = [];
+
+        // ✅ Planer: Zeiten nur ab HEUTE (inkl.) anzeigen – Vergangenheit ohne Start/Ende
+        const isPlaner = (typeof IS_PLANNER !== 'undefined' && IS_PLANNER);
+        let showTimes = true;
+        if(isPlaner){
+          const today = new Date();
+          today.setHours(0,0,0,0);
+          const evDate = new Date(ev.start || '');
+          if(!isNaN(evDate)){
+            evDate.setHours(0,0,0,0);
+            if(evDate.getTime() < today.getTime()) showTimes = false;
+          }
+        }
+
+        // Basis-Startzeit (Uhrzeit) des Einsatzes
+        let baseStart = "-";
+        if(ev.start){
+          const d = new Date(ev.start);
+          if(!isNaN(d)){
+            const hh = String(d.getHours()).padStart(2,'0');
+            const mm = String(d.getMinutes()).padStart(2,'0');
+            baseStart = `${hh}:${mm}`;
+          }
+        }
+
+        for(const username in responses){
+          const r = responses[username] || {};
+          if(String(r.status || "").trim() === "bestätigt"){
+            const name = usersCache[username] || username;
+
+            // Startzeit: Chef-Startzeit (response.start_time) hat Priorität, sonst Event-Start
+            const st = (r.start_time && String(r.start_time).trim()) ? String(r.start_time).trim() : baseStart;
+
+            // Endzeit: kommt vom Mitarbeiter (response.end_time) – falls vorhanden, anzeigen
+            const et = (r.end_time && String(r.end_time).trim()) ? String(r.end_time).trim() : "";
+
+            // ✅ Zeile grün markieren, wenn Start UND Ende eingetragen sind (pro Mitarbeiter)
+                        // ✅ Zeile grün markieren, wenn Ende gesetzt ist und ein Start existiert (entweder eigener Start oder Einsatz-Start)
+            const hasStart = ((r.start_time && String(r.start_time).trim()) || (baseStart && baseStart !== "-"));
+            const hasEnd = (r.end_time && String(r.end_time).trim());
+            const done = hasStart && hasEnd;
+
+            // Anzeige: (Start) oder (Start–Ende)
+            const times = et ? `${st}–${et}` : st;
+
+            // ✅ Kevin (username "kevin") magenta
+            const isKevin = String(username).toLowerCase() === "kevin";
+            const remark = (r.remark || "").trim();
+            // ✅ Hover: Bemerkung als Tooltip (nur wenn vorhanden)
+            const tip = remark ? ` title="${escapeAttr(remark)}"` : "";
+            const nameHtml = `<span class="plan-staff-user" data-username="${username}"${tip} style="cursor:pointer;${isKevin ? "color:magenta;font-weight:700;" : ""}">${name}</span>`;
+            const rowClass = `plan-staff-row${(showTimes && done) ? " done" : ""}`;
+
+            if(showTimes){
+              items.push(`<div class="${rowClass}">${nameHtml}<br><span class="plan-staff-times">(${times})</span></div>`);
+            } else {
+              // Planer + Vergangenheit: nur Name (keine Zeiten)
+              items.push(`<div class="plan-staff-row">${nameHtml}</div>`);
+            }
+          }
+        }
+
+        // Sortiert für Ordnung (ohne HTML-Tags als grobe Ordnung)
+        items.sort((a,b)=>{
+          const ta = a.replace(/<[^>]*>/g,'').trim();
+          const tb = b.replace(/<[^>]*>/g,'').trim();
+          const ka = /^Kevin\s+Casutt\b/i.test(ta);
+          const kb = /^Kevin\s+Casutt\b/i.test(tb);
+          if(ka && !kb) return -1;
+          if(!ka && kb) return 1;
+          return ta.localeCompare(tb, "de");
+        });
+        if(items.length === 0) return "—";
+
+        // ✅ Planer-Ansicht: alle bestätigten anzeigen
+        return items.join("");
+      }
+
+
+      function initPlanningCalendar(){
+        planningCalendar = new FullCalendar.Calendar(document.getElementById('planning-calendar'),{
+          headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
+          initialView:'dayGridWeek',
+          locale:'de',
+          firstDay: 1,
+        buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
+          height:"85vh",
+
+        dayCellClassNames: (arg)=>{
+          const dow = arg.date.getDay();
+          return (dow===0 || dow===6) ? ['weekend'] : [];
+        },
+          selectable:false,
+          eventDisplay: "block",
+          displayEventTime: false,          dayHeaderContent: (arg) => {
+            const d = arg.date;
+            const dd = String(d.getDate()).padStart(2,'0');
+            const mm = String(d.getMonth()+1).padStart(2,'0');
+            const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];
+            return { html: `<b>${wd}., ${dd}.${mm}.</b>` };
+          },
+          dayMaxEventRows: false,
+          dayMaxEvents: false,
+
+          events: async (info,success)=>{
+            let res=await fetch("/events");
+            let events=await res.json();
+
+            // Für Planung: keine Titel-Uhrzeit-Anreicherung wie im Hauptkalender,
+            // stattdessen Titel + Mitarbeiterliste im Event-Block.
+            events.forEach(ev=>{
+              // Nur Tage mit Einsätzen anzeigen (alle Status)
+              const staff = buildStaffList(ev);
+              ev._plan_staff = staff;
+            });
+
+            success(events);
+          },
+
+          eventContent: (arg)=>{
+            const ev = arg.event.extendedProps || {};
+            const baseTitle = (arg.event.title || "").replace(/\s*\(\d{2}:\d{2}\)\s*$/, "");
+            const staff = (ev._plan_staff !== undefined) ? ev._plan_staff : "—";
+
+            // ✅ Titel in Planung: "(bestätigt/benötigt)" anzeigen, z.B. "VCT Show (6/6)"
+            const responses = ev.responses || {};
+            const confirmed = Object.values(responses).filter(r => String((r && r.status) || "").trim() === "bestätigt").length;
+
+            // robust: required_staff kann als Zahl oder String kommen
+            let required = 0;
+            if(ev.required_staff !== undefined && ev.required_staff !== null && String(ev.required_staff).trim() !== ""){
+              required = Number(ev.required_staff);
+            } else if(ev.required !== undefined && ev.required !== null && String(ev.required).trim() !== ""){
+              required = Number(ev.required);
+            }
+            if(isNaN(required) || required < 0) required = 0;
+
+            const title = `${(baseTitle || "(ohne Titel)")} (${confirmed}/${required})`;
+
+            const cat = String(ev.category || "CP").toUpperCase();
+            const titleCls = (cat === "CV") ? "plan-title title-cv" : "plan-title title-cp";
+
+            const wrap = document.createElement("div");
+            wrap.innerHTML = `
+              <div class="${titleCls}">${title}</div>
+              <div class="plan-staff">${staff}</div>
+            `;
+            return { domNodes: [wrap] };
+          },
+
+          // ✅ Planung: Doppelklick auf einen Einsatzblock
+          // - Chef/Vorgesetzter: Zeiten/Kommentare für ALLE bestätigten bearbeiten
+          // - Planer: NUR Kommentare sehen
+          eventDidMount: (info)=>{
+            info.el.addEventListener('click', (e)=>{
+              e.preventDefault();
+              if(e.stopImmediatePropagation){ e.stopImmediatePropagation(); } else { e.stopPropagation(); }
+
+              const props = info.event.extendedProps || {};
+              const event_id = (props.id || info.event.id);
+              const title = (info.event.title || props.title || "(ohne Titel)");
+
+              if(IS_PLANNER){
+                // Toggle: Doppelklick auf denselben Block schließt
+                const modal = document.getElementById('planningCommentsModal');
+                const curId = (document.getElementById('plan-cmt-event-id')?.value || '');
+                if(modal && modal.style.display === 'flex' && String(curId) === String(event_id)){
+                  closePlanningCommentsModal();
+                  return;
+                }
+                openPlanningCommentsModal(event_id, title, props);
+                return;
+              }
+
+              // ✅ Vorgesetzter-Varianten dürfen hier wie Chef bearbeiten
+              if(!(ROLE === 'vorgesetzter' || ROLE === 'chef' || ROLE === 'vorgesetzter_cp')) return;
+
+              // Toggle: Doppelklick auf denselben Block schließt das Popup
+              const modal = document.getElementById('planningBulkEditModal');
+              const curId = (document.getElementById('plan-bulk-event-id')?.value || '');
+              if(modal && modal.style.display === 'flex' && String(curId) === String(event_id)){
+                closePlanningBulkEditModal();
+                return;
+              }
+              openPlanningBulkEdit(event_id, title, props);
+            });
+          },
+
+          eventClick: ()=>{ /* Planung: nur Übersicht */ }
+});
+        planningCalendar.render();
+
+        
+      window.planningCalendar = planningCalendar;
+// Auto-Refresh (wenn sich was ändert, wird es spätestens nach 20s aktualisiert)
+        setInterval(()=>{ 
+          if(document.getElementById("planning").style.display !== "none"){
+            planningCalendar.refetchEvents();
+          }
+        }, 20000);
+      }
+
+
+      // User hinzufügen
+      if(!IS_PLANNER){
+      document.getElementById("add-user-form").onsubmit=async e=>{
+        e.preventDefault();
+        let data={
+          vorname:document.getElementById("vorname").value,
+          nachname:document.getElementById("nachname").value,
+          email:(document.getElementById("email").value || "").trim(),
+          username:document.getElementById("new-username").value,
+          password:document.getElementById("new-password").value,
+          role:document.getElementById("new-role").value,
+          s34a:document.getElementById("s34a").value,
+          s34a_art:document.getElementById("s34a_art").value,
+          pschein:document.getElementById("pschein").value,
+          bewach_id: document.getElementById("bewach_id").value,
+          steuernummer: document.getElementById("steuernummer").value,
+          bsw: document.getElementById("bsw").value,
+          sanitaeter: document.getElementById("sanitaeter").value,
+          stundensatz: document.getElementById("stundensatz").value
+        };
+        const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+        const rAdd = await resAdd.json().catch(()=>({}));
+        if(!resAdd.ok || rAdd.error){
+          alert(rAdd.error || "Hinzufügen fehlgeschlagen");
+          return;
+        }
+        loadUsers();
+        e.target.reset();
+      };
+      }
+    });
+
+    
+    // ===== Duplizieren (Kalender-Header) =====
+    let dupSelectedDates = [];
+
+    function openDuplicateModal(){
+      document.getElementById("duplicateModal").style.display = "flex";
+      dupSelectedDates = [];
+      document.getElementById("dup-date-list").innerHTML = "";
+document.getElementById("dup-date").value = "";
+
+      // Einsätze laden (aktuell im Kalender) – wir nutzen /events
+      loadDuplicateSourceOptions();
+      renderDupDateList();
+    }
+
+    function closeDuplicateModal(){
+      document.getElementById("duplicateModal").style.display = "none";
+    }
+
+    async function loadDuplicateSourceOptions(){
+      const sel = document.getElementById("dup-source-event");
+      sel.innerHTML = "<option value=''>Lade…</option>";
+
+      const res = await fetch("/events");
+      const events = await res.json();
+
+      // sort: Datum absteigend
+      events.sort((a,b)=> String(b.start||"").localeCompare(String(a.start||"")) );
+
+      sel.innerHTML = "";
+      events.forEach(ev=>{
+        const opt = document.createElement("option");
+        opt.value = ev.id;
+        const startTxt = ev.start ? fmtDateTimeDE(ev.start) : "";
+        opt.textContent = `${ev.title || "(ohne Titel)"} – ${startTxt}`;
+        sel.appendChild(opt);
+      });
+
+      if(events.length === 0){
+        sel.innerHTML = "<option value=''>Keine Einsätze vorhanden</option>";
+      }
+    }
+
+    function addDupDate(){
+      const d = (document.getElementById("dup-date").value || "").trim();
+      if(!d){ alert("Bitte ein Datum auswählen."); return; }
+      if(!/^\d{4}-\d{2}-\d{2}$/.test(d)){ alert("Ungültiges Datum."); return; }
+      if(!dupSelectedDates.includes(d)) dupSelectedDates.push(d);
+      renderDupDateList();
+    }
+
+    function removeDupDate(d){
+      dupSelectedDates = dupSelectedDates.filter(x=>x!==d);
+      renderDupDateList();
+    }
+
+    function renderDupDateList(){
+      dupSelectedDates.sort();
+      const ul = document.getElementById("dup-date-list");
+      ul.innerHTML = "";
+      dupSelectedDates.forEach(d=>{
+        const li = document.createElement("li");
+        li.innerHTML = `${d} <button class="reject inline" style="margin-left:8px;" type="button">Entfernen</button>`;
+        li.querySelector("button").onclick = ()=>removeDupDate(d);
+        ul.appendChild(li);
+      });
+      if(dupSelectedDates.length===0){
+        ul.innerHTML = "<li class='muted'>—</li>";
+      }
+    }
+
+    async function runDuplicate(){
+      const event_id = (document.getElementById("dup-source-event").value || "").trim();
+      if(!event_id){ alert("Bitte einen Einsatz auswählen."); return; }
+      if(!dupSelectedDates || dupSelectedDates.length === 0){
+        alert("Bitte mindestens ein Datum auswählen.");
+        return;
+      }
+
+      const res = await fetch("/events/duplicate", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ event_id, dates: dupSelectedDates })
+      });
+
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){
+        alert(r.error || "Duplizieren fehlgeschlagen");
+        return;
+      }
+
+      closeDuplicateModal();
+      if(calendar) calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+
+    // Einsatz anlegen
+    function openEventModal(){
+  const m = document.getElementById("eventModal");
+  if(!m) return;
+  document.body.classList.add("modal-open");
+  m.style.display="flex";
+  void m.offsetHeight;
+  requestAnimationFrame(()=>{ void m.offsetHeight; try{ m.scrollTop = 0; }catch(_){} try{ const c=m.querySelector('.modal-content'); c && c.focus && c.focus(); }catch(_){} });
+  try{ syncModalCatButtons(); }catch(e){}
+}
+    function closeEventModal(){ const m=document.getElementById("eventModal"); if(m) m.style.display="none"; document.body.classList.remove("modal-open"); }
+
+    async function saveEvent(status){
+      let time = document.getElementById("start-time").value;
+      let start = selectedDate + "T" + time;
+
+      const useEventRate = document.getElementById("use-event-rate").checked;
+
+      let data={
+        title:document.getElementById("title").value,
+        ort:document.getElementById("ort").value,
+        dienstkleidung:document.getElementById("dienst").value,
+        auftraggeber:document.getElementById("auftrag").value,
+        start:start,
+        status:status,
+        category:(document.getElementById("ev-category").value || "CP"),
+        required_staff: document.getElementById("required-staff").value,
+        planned_end_time: document.getElementById("planned-end-time").value,
+        frist: document.getElementById("frist").value,
+        use_event_rate: useEventRate ? 1 : 0,
+        stundensatz: useEventRate ? document.getElementById("event-rate").value : ""
+      };
+
+      const res = await fetch("/events",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){
+        alert(r.error || "Speichern fehlgeschlagen");
+        return;
+      }
+      closeEventModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+      }
+
+    // Details
+    function openDetailsModal(ev){
+      currentEventId = ev.extendedProps.id || ev.id;
+      buildDetailsModal(ev.extendedProps, ev);
+
+      const m = document.getElementById("detailsModal");
+      if(!m) return;
+
+      // ✅ iOS/Safari: force immediate paint (otherwise shows only after next UI action)
+      document.body.classList.add("modal-open");
+      m.style.display = "flex";
+      // force reflow
+      void m.offsetHeight;
+      requestAnimationFrame(()=>{ void m.offsetHeight; try{ m.scrollTop = 0; }catch(_){} try{ const c=m.querySelector('.modal-content'); c && c.focus && c.focus(); }catch(_){} });
+    }
+    function closeDetailsModal(){ const m=document.getElementById("detailsModal"); if(m) m.style.display="none"; document.body.classList.remove("modal-open"); }
+
+    async function refreshDetailsModal() {
+      let res = await fetch("/events");
+      let events = await res.json();
+
+      const catFilter = (document.getElementById("report-type")?.value || "CV").toUpperCase();
+      events = events.filter(ev => String(ev.category || "CP").toUpperCase() === catFilter);
+      let e = events.find(x => x.id === currentEventId);
+      if (e) buildDetailsModal(e, { title: e.title, start: new Date(e.start), id: e.id });
+    }
+
+    async function confirmResponse(user, decision) {
+      await fetch("/events/confirm", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ event_id: currentEventId, username: user, decision })
+      });
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    async function removeUserFromEvent(user){
+      if(!confirm(`Soll ${usersCache[user] || user} wirklich aus dem Einsatz entfernt werden?`)) return;
+      await fetch("/events/remove_user", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ event_id: currentEventId, username: user })
+      });
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    async function assignReplacement(){
+      const sel = document.getElementById("replacement-user");
+      const user = sel.value;
+      if(!user){ alert("Bitte eine Person auswählen."); return; }
+      await fetch("/events/assign_user", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ event_id: currentEventId, username: user })
+      });
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    async function duplicateEvent(id){
+      if(!id) return;
+      const res = await fetch('/events/duplicate', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ event_id: id })
+      });
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){
+        alert(r.error || 'Duplizieren fehlgeschlagen');
+        return;
+      }
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    async function deleteEvent() {
+      if (!currentEventId) return;
+      if (!confirm("Soll dieser Einsatz wirklich gelöscht werden?")) return;
+      await fetch("/events/" + currentEventId, { method: "DELETE" });
+      closeDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    async function releaseEvent(id){
+      await fetch("/events/release", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({event_id:id})
+      });
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    // Einsatz bearbeiten
+    function openEditEventModal(ev, props){
+
+      const p = props || {};
+      // Firma existiert in den Event-Daten ggf. nicht – dennoch sauber anzeigen
+      const firmaEl = document.getElementById("d-firma");
+      if(firmaEl){
+        const _c = String(p.category || "CP").toUpperCase()==="CV"?"CV":"CP";
+        firmaEl.textContent = catToAuftraggeber(_c);
+      }
+
+      // ✅ CP/CV Badge direkt neben Firma setzen
+      updateFirmaCategoryBadge(p);
+
+      document.getElementById("edit-event-id").value = p.id || ev.id || currentEventId;
+      const cleanTitle = (ev && ev.title) ? String(ev.title).replace(/\s*\(\d{2}:\d{2}\)\s*$/,"").trim() : "";
+      document.getElementById("edit-ev-title").value = (p.title ?? cleanTitle ?? "");
+      document.getElementById("edit-ev-category").value = ((p.category || "CP").toUpperCase() === "CV") ? "CV" : "CP";
+      document.getElementById("edit-ev-ort").value = (p.ort ?? "");
+      document.getElementById("edit-ev-dienst").value = (p.dienstkleidung ?? "");
+      document.getElementById("edit-ev-auftrag").value = (p.auftraggeber ?? "");
+
+      let startIso = "";
+      if (typeof p.start === "string" && p.start.length >= 16) {
+        startIso = p.start.slice(0,16);
+      } else if (ev && ev.start instanceof Date && !isNaN(ev.start)) {
+        startIso = toDateTimeLocalValue(ev.start);
+      } else if (ev && typeof ev.start === "string" && ev.start.length >= 16) {
+        startIso = ev.start.slice(0,16);
+      }
+      document.getElementById("edit-ev-start").value = startIso;
+
+      // Frist (optional)
+      let fristIso = "";
+      if (typeof p.frist === "string" && p.frist.length >= 16) {
+        fristIso = p.frist.slice(0,16);
+      }
+      document.getElementById("edit-ev-frist").value = fristIso;
+
+      document.getElementById("edit-ev-planned-end").value = p.planned_end_time || "";
+      document.getElementById("edit-ev-status").value = (p.status ?? "geplant");
+      document.getElementById("edit-ev-required").value = (p.required_staff ?? 0);
+
+      const useEventRate = (Number(p.use_event_rate ?? 1) === 1);
+      document.getElementById("edit-use-event-rate").checked = useEventRate;
+      document.getElementById("edit-ev-rate").value = useEventRate ? (p.stundensatz ?? "") : "";
+
+      toggleEventRateInputs('edit');
+
+      
+      // ✅ Modal-Stack: Details ausblenden, Edit anzeigen (Mobile Scroll Fix)
+      const details = document.getElementById('detailsModal');
+      if(details) details.style.display = 'none';
+      const m = document.getElementById('editEventModal');
+      if(!m) return;
+      document.body.classList.add('modal-open');
+      m.style.display = 'flex';
+      // force reflow + scroll to top
+      void m.offsetHeight;
+      requestAnimationFrame(()=>{
+        try{ m.scrollTop = 0; }catch(_){}
+        try{ const c=m.querySelector('.modal-content'); if(c){ c.scrollTop = 0; c.focus && c.focus(); } }catch(_){}
+      });
+    }
+function closeEditEventModal(){
+      const m = document.getElementById('editEventModal');
+      if(m) m.style.display = 'none';
+      // ✅ Details wieder anzeigen (falls vorhanden)
+      const d = document.getElementById('detailsModal');
+      if(d) d.style.display = 'flex';
+      // body bleibt modal-open solange Details offen ist
+      document.body.classList.add('modal-open');
+    }
+async function saveEventEdit(){
+      const useEventRate = document.getElementById("edit-use-event-rate").checked;
+
+      const payload = {
+        event_id: document.getElementById("edit-event-id").value,
+        title: document.getElementById("edit-ev-title").value,
+        ort: document.getElementById("edit-ev-ort").value,
+        dienstkleidung: document.getElementById("edit-ev-dienst").value,
+        auftraggeber: document.getElementById("edit-ev-auftrag").value,
+        category: (document.getElementById("edit-ev-category").value || "CP"),
+        start: document.getElementById("edit-ev-start").value,
+        frist: document.getElementById("edit-ev-frist").value,
+        planned_end_time: document.getElementById("edit-ev-planned-end").value,
+        status: document.getElementById("edit-ev-status").value,
+        required_staff: document.getElementById("edit-ev-required").value,
+        use_event_rate: useEventRate ? 1 : 0,
+        stundensatz: useEventRate ? document.getElementById("edit-ev-rate").value : ""
+      };
+      // ✅ Schutz: leere Pflichtfelder verhindern (sonst kann Einsatz "verschwinden")
+      if(!payload.title || !payload.title.trim()){
+        alert("Bitte einen Titel eingeben (darf nicht leer sein).");
+        return;
+      }
+      if(!payload.start || String(payload.start).trim().length < 16){
+        alert("Bitte ein Startdatum + Uhrzeit auswählen.");
+        return;
+      }
+
+
+      await fetch("/events/update",{
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(payload)
+      });
+
+      closeEditEventModal();
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    // Zeiten pro Mitarbeiter
+    function cancelTimeEdit(){
+      document.getElementById("time-edit-box").style.display = "none";
+      const rr = document.getElementById("time-remark"); if(rr) rr.value="";
+    }
+
+    function prepareTimeEdit(){
+      const sel = document.getElementById("time-user-select");
+      const user = sel.value;
+      if(!user){ alert("Bitte Mitarbeiter auswählen."); return; }
+
+      const r = (window._currentEventProps?.responses || {})[user] || {};
+      document.getElementById("time-start").value  = r.start_time || "";
+      document.getElementById("time-remark").value = r.remark || "";
+      document.getElementById("time-edit-box").style.display = "block";
+    }
+
+    async function saveSelectedUserTimes(){
+      const sel = document.getElementById("time-user-select");
+      const user = sel.value;
+      if(!user){ alert("Bitte Mitarbeiter auswählen."); return; }
+
+      const start_time = document.getElementById("time-start").value;
+      const remark = document.getElementById("time-remark").value || "";
+      const res = await fetch("/events/edit_entry", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ event_id: currentEventId, username: user, start_time, remark })
+      });
+
+      if(!res.ok){
+        const t = await res.text();
+        alert("Speichern fehlgeschlagen: " + t);
+        return;
+      }
+
+      cancelTimeEdit();
+      await refreshDetailsModal();
+      calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+      loadReport(); // falls Report offen
+    }
+
+    function buildDetailsModal(props, ev){
+      const p = props || {};
+      window._currentEventProps = p;
+
+      document.getElementById("d-title").textContent = p.title || (ev && ev.title) || "-";
+      // ✅ Firma = Kategorie (CP/CV)
+      const _cat = String(p.category || (ev && (ev.category || ev.extendedProps?.category)) || "CP").toUpperCase();
+      const firmaEl = document.getElementById("d-firma");
+      if(firmaEl){ firmaEl.textContent = catToAuftraggeber(_cat); }
+
+      document.getElementById("d-ort").textContent = p.ort || "-";
+      document.getElementById("d-dienst").textContent = p.dienstkleidung || "-";
+      document.getElementById("d-auftrag").textContent = p.auftraggeber || "-";
+
+      // ✅ nur Uhrzeit vom Event.start
+      document.getElementById("d-start").textContent = (p.start ? fmtTimeOnly(p.start) : (ev && ev.start ? fmtTimeOnly(ev.start) : "-"));
+
+      document.getElementById("d-planned-end").textContent = p.planned_end_time || "-";
+
+      // Frist anzeigen
+      const fr = (p.frist || "").trim();
+      if(fr){
+        const fd = new Date(fr);
+        document.getElementById("d-frist").textContent = isNaN(fd) ? fr : fmtDateTimeDE(fd);
+      } else {
+        document.getElementById("d-frist").textContent = "-";
+      }
+      document.getElementById("d-required").textContent = (p.required_staff ?? 0);
+
+      const useEventRate = (Number(p.use_event_rate ?? 1) === 1);
+      if(useEventRate){
+        const rate = (p.stundensatz === "" || p.stundensatz === null || p.stundensatz === undefined)
+          ? "-"
+          : (fmtNumDE(Number(p.stundensatz),2) + " €/h");
+        document.getElementById("d-rate-mode").textContent = `Einsatz-Stundensatz: ${rate}`;
+      } else {
+        document.getElementById("d-rate-mode").textContent = "Mitarbeiter-Stundensätze (aus Verwaltung)";
+      }
+
+      let actions=document.querySelector("#detailsModal .modal-actions");
+      actions.innerHTML="";
+
+      let del=document.createElement("button");
+      del.className="delete";
+      del.textContent="🗑️ Einsatz löschen";
+      del.onclick=()=>deleteEvent();
+      actions.appendChild(del);
+
+      let editBtn=document.createElement("button");
+      editBtn.className="confirm";
+      editBtn.textContent="✏️ Einsatz bearbeiten";
+      editBtn.onclick=()=>openEditEventModal(ev, p);
+      actions.appendChild(editBtn);
+
+      if(p.status==="geplant"){
+        let release=document.createElement("button");
+        release.className="release";
+        release.textContent="🚀 Freigeben";
+        release.onclick=()=>releaseEvent(p.id || ev.id);
+        actions.appendChild(release);
+      }
+
+      // Antworten + Start/Ende neben Name (pro Mitarbeiter)
+      let list=document.getElementById("response-list");
+      list.innerHTML="";
+      let confirmedNames=[];
+      // Basis-Startzeit (Uhrzeit) des Einsatzes für Anzeige bei Mitarbeitenden ohne Chef-Startzeit
+      let baseStartSource = p.start || (ev ? ev.start : null);
+      let baseStartHHMM = "-";
+      if(typeof baseStartSource === "string"){
+        const s = baseStartSource.trim();
+        const m = s.match(/^([0-9]{1,2}):([0-9]{2})$/);
+        if(m){
+          baseStartHHMM = String(m[1]).padStart(2,"0")+":"+m[2];
+        } else {
+          baseStartHHMM = fmtTimeOnly(s);
+        }
+      } else {
+        baseStartHHMM = fmtTimeOnly(baseStartSource);
+      }
+
+
+      // ✅ Reihenfolge in Einsatzdetails:
+// 1) bestätigte hintereinander
+// 2) alle anderen Status hintereinander (zugesagt/abgelehnt/entfernt/...)
+// (Stabile Gruppierung – keine unnötige Um-Sortierung)
+      const _respEntries = Object.entries(p.responses || {});
+      const _best = [];
+      const _other = [];
+
+      for(const [user, r0] of _respEntries){
+        const r = r0 || {};
+        const stStatus = String(r.status || "").trim();
+        // ✅ Wenn Mitarbeiter Zusage/Absage zurückzieht (status leer/NULL):
+        // keine Karte anzeigen => keine Umrandung / kein leeres Kästchen.
+        if(!stStatus) continue;
+
+        if(stStatus === "bestätigt") _best.push([user, r, stStatus]);
+        else _other.push([user, r, stStatus]);
+      }
+
+      for(const [user, r, stStatus] of _best.concat(_other)){
+        let fullname = usersCache[user] || user;
+
+        const st = (r.start_time && String(r.start_time).trim()) ? r.start_time : baseStartHHMM;
+        const en = (r.end_time && String(r.end_time).trim()) ? r.end_time : "";
+
+        let timeLabel = "";
+        if(st || en){
+          timeLabel =
+            ` <span style="font-weight:normal;color:#444;">(` +
+            `Start: <b>${st || "-"}</b> | Ende: <b>${en || "-"}</b>` +
+            `)</span>`;
+        }
+
+        let li=document.createElement("li");
+
+        // status als Klasse setzen (z.B. abgelehnt_chef, entfernt_chef)
+        li.classList.add(stStatus);
+
+        if(stStatus==="zugesagt"){
+          li.innerHTML=`<b>${fullname}</b>${timeLabel} ✅ Zugesagt ${r.remark?`<i>(${r.remark})</i>`:""}`;
+
+          let btnYes=document.createElement("button");
+          btnYes.textContent="✅ Bestätigen"; btnYes.className="confirm inline"; btnYes.onclick=()=>confirmResponse(user,"bestätigt");
+
+          let btnNo=document.createElement("button");
+          btnNo.textContent="❌ Ablehnen"; btnNo.className="reject inline"; btnNo.onclick=()=>confirmResponse(user,"abgelehnt");
+
+          li.appendChild(btnYes); li.appendChild(btnNo);
+
+        } else if(stStatus==="bestätigt"){
+          li.innerHTML=`<b>${fullname}</b>${timeLabel} ✅ Bestätigt ${r.remark?`<i>(${r.remark})</i>`:""}`;
+          confirmedNames.push(fullname);
+
+          let btnRemove=document.createElement("button");
+          btnRemove.textContent="🗑️ Entfernen";
+          btnRemove.className="reject inline";
+          btnRemove.onclick=()=>removeUserFromEvent(user);
+          li.appendChild(btnRemove);
+
+        } else if(stStatus==="abgelehnt" || stStatus==="abgelehnt_Vorgesetzter" || stStatus==="abgelehnt_chef"){
+          li.innerHTML=`<b>${fullname}</b>${timeLabel} ❌ Abgelehnt ${r.remark?`<i>(${r.remark})</i>`:""}`;
+
+        } else if(stStatus==="entfernt_Vorgesetzter" || stStatus==="entfernt_chef"){
+          li.innerHTML=`<b>${fullname}</b>${timeLabel} 🗑️ Entfernt ${r.remark?`<i>(${r.remark})</i>`:""}`;
+        }
+
+        // Nur anzeigen, wenn wir auch Inhalt gesetzt haben
+        if(li.innerHTML && li.innerHTML.trim() !== ""){
+          list.appendChild(li);
+        }
+      }
+document.getElementById("confirmed-counter").textContent =
+        "Bestätigt: "+confirmedNames.length+" / Benötigt: "+(p.required_staff || 0);
+      document.getElementById("confirmed-counter").title = confirmedNames.join(", ");
+
+      // Replacement
+      const replacementSelect = document.getElementById("replacement-user");
+      replacementSelect.innerHTML = "";
+
+      const candidates = usersList;
+
+      candidates.forEach(u=>{
+        const opt=document.createElement("option");
+        opt.value=u.username;
+        const resp = (p.responses||{})[u.username] || null;
+        let label = `${u.vorname} ${u.nachname}`;
+        if(resp && resp.status){ label += ` (${resp.status})`; }
+        opt.textContent = label;
+        replacementSelect.appendChild(opt);
+      });
+
+      if(candidates.length===0){
+        const opt=document.createElement("option");
+        opt.value="";
+        opt.textContent="Keine verfügbaren Kandidaten";
+        replacementSelect.appendChild(opt);
+      }
+
+      // Dropdown Zeiten: nur bestätigte
+      const timeSel = document.getElementById("time-user-select");
+      timeSel.innerHTML = "";
+
+      const confirmedUsers = Object.entries(p.responses || {})
+        .filter(([u, r]) => r.status === "bestätigt")
+        .map(([u]) => u);
+
+      if(confirmedUsers.length === 0){
+        const opt=document.createElement("option");
+        opt.value="";
+        opt.textContent="Keine bestätigten Mitarbeiter";
+        timeSel.appendChild(opt);
+        cancelTimeEdit();
+      } else {
+        confirmedUsers.forEach(u=>{
+          const opt=document.createElement("option");
+          opt.value=u;
+          opt.textContent=usersCache[u] || u;
+          timeSel.appendChild(opt);
+        });
+      }
+    }
+
+    // User Management
+    async function loadUsers(){
+      let res=await fetch("/users");
+      let users=await res.json();
+
+      // ✅ Alphabetisch nach Benutzername (A–Z)
+      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
+
+      usersList = users;
+      usersCache = {};
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+
+      let list=document.getElementById("user-list");
+      list.innerHTML="";
+      users.forEach(u=>{
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td><b>${u.username}</b></td>
+          <td>${u.vorname} ${u.nachname}</td>
+          <td>${u.email || "-"}</td>
+          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}</td>
+          <td>${u.bewach_id || "-"}</td>
+          <td>${u.steuernummer || "-"}</td>
+          <td>${capYesNo(u.bsw || "nein")}</td>
+          <td>${capYesNo(u.sanitaeter || "nein")}</td>
+          <td>${capYesNo(u.pschein || "nein")}</td>
+          <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
+          <td>
+            <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
+            <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
+          </td>
+        `;
+        list.appendChild(tr);
+      });
+
+
+
+      // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
+      function updateReportSumRow(){
+        const monthHours = Array(12).fill(0);
+        const monthCost  = Array(12).fill(0);
+        let totalHours = 0;
+        let totalCost  = 0;
+
+        usersList.forEach(u=>{
+          const username = u.username;
+          const d = reportData[username];
+          if(!d) return;
+          for(let mi=0; mi<12; mi++){
+            const md = d.months[mi];
+            monthHours[mi] += Number(md.hours || 0);
+            monthCost[mi]  += Number(md.cost  || 0);
+          }
+          totalHours += Number(d.totalHours || 0);
+          totalCost  += Number(d.totalCost  || 0);
+        });
+
+        const ids = ["rpt-sum-jan","rpt-sum-feb","rpt-sum-mar","rpt-sum-apr","rpt-sum-mai","rpt-sum-jun",
+                     "rpt-sum-jul","rpt-sum-aug","rpt-sum-sep","rpt-sum-okt","rpt-sum-nov","rpt-sum-dez"];
+        ids.forEach((id,i)=>{
+          const el = document.getElementById(id);
+          if(!el) return;
+          const h = monthHours[i];
+          const c = monthCost[i];
+          if(!h && !c){
+            el.innerHTML = `<span class="muted">-</span>`;
+          } else {
+            el.innerHTML = `<div><b>${fmtNumDE(h,2)} h</b></div><div><span class="money-soft">${fmtNumDE(c,2)} €</span></div>`;
+          }
+        });
+
+        const hEl = document.getElementById("rpt-sum-hours");
+        if(hEl) hEl.innerHTML = `<b>${fmtNumDE(totalHours,2)} h</b>`;
+        const cEl = document.getElementById("rpt-sum-cost");
+        if(cEl) cEl.innerHTML = `<b>${fmtNumDE(totalCost,2)} €</b>`;
+      }
+
+      updateReportSumRow();
+    }
+
+    async function deleteUser(username){
+      await fetch("/users/"+username,{method:"DELETE"});
+      loadUsers();
+    }
+
+    function openEditModal(user){
+      document.getElementById("edit-username").value=user.username;
+      currentEditUser = user.username;
+
+      document.getElementById("edit-vorname").value=user.vorname || "";
+      document.getElementById("edit-nachname").value=user.nachname || "";
+      document.getElementById("edit-email").value=user.email || "";
+      document.getElementById("edit-password").value=user.password||"";
+      document.getElementById("edit-role").value=user.role || "mitarbeiter";
+      document.getElementById("edit-s34a").value=user.s34a || "nein";
+      document.getElementById("edit-s34a_art").value=user.s34a_art || "";
+      document.getElementById("edit-pschein").value=user.pschein || "nein";
+
+      document.getElementById("edit-bewach-id").value=user.bewach_id || "";
+      document.getElementById("edit-steuernummer").value=user.steuernummer || "";
+      document.getElementById("edit-bsw").value=user.bsw || "nein";
+      document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
+
+      document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
+      document.getElementById("editUserModal").style.display="flex";
+    }
+
+    function closeEditModal(){ document.getElementById("editUserModal").style.display="none"; }
+
+    async function saveUserEdit(){
+      const oldUsername = currentEditUser;
+      const newUsernameRaw = document.getElementById("edit-username").value.trim();
+      const newUsername = newUsernameRaw; // Anzeige
+      const newUsernameUrl = encodeURIComponent(newUsernameRaw); // ✅ für URL
+
+      if(!newUsernameRaw){ alert("Benutzername darf nicht leer sein."); return; }
+
+      // 1) ggf. umbenennen
+      if(oldUsername !== newUsernameRaw){
+        const resRename = await fetch("/users/rename", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ old_username: oldUsername, new_username: newUsernameRaw })
+        });
+        const rRename = await resRename.json().catch(()=>({error:"Ungültige Server-Antwort"}));
+        if(!resRename.ok || rRename.error){
+          alert(rRename.error || "Umbenennen fehlgeschlagen");
+          return;
+        }
+        // ✅ wichtig: internen Edit-User aktualisieren
+        currentEditUser = newUsernameRaw;
+      }
+
+      // 2) Daten speichern
+      let data={
+        vorname:document.getElementById("edit-vorname").value,
+        nachname:document.getElementById("edit-nachname").value,
+        email:(document.getElementById("edit-email").value || "").trim(),
+        password:(document.getElementById("edit-password").value || "").trim() ? document.getElementById("edit-password").value : null,
+        role:document.getElementById("edit-role").value,
+        s34a:document.getElementById("edit-s34a").value,
+        s34a_art:document.getElementById("edit-s34a_art").value,
+        pschein:document.getElementById("edit-pschein").value,
+        bewach_id: document.getElementById("edit-bewach-id").value,
+        steuernummer: document.getElementById("edit-steuernummer").value,
+        bsw: document.getElementById("edit-bsw").value,
+        sanitaeter: document.getElementById("edit-sanitaeter").value,
+        stundensatz:document.getElementById("edit-stundensatz").value
+      };
+
+      const resSave = await fetch("/users/"+newUsernameUrl,{
+        method:"PUT", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(data)
+      });
+
+      const rSave = await resSave.json().catch(()=>({}));
+      if(!resSave.ok || rSave.error){
+        alert(rSave.error || "Speichern fehlgeschlagen");
+        return;
+      }
+
+      closeEditModal();
+
+      // ✅ sicher aktualisieren (Tabelle + Cache)
+      await loadUsers();
+
+      // optional: Kalender/Planung aktualisieren, falls Namen/Stundensatz geändert wurden
+      if(typeof calendar !== "undefined" && calendar) calendar.refetchEvents();
+      if(typeof planningCalendar !== "undefined" && planningCalendar) planningCalendar.refetchEvents();
+    }
+
+    function togglePassword(id){
+      let input=document.getElementById(id);
+      input.type=input.type==="password"?"text":"password";
+    }
+
+    // ✅ Hilfsfunktion: Endzeit kann am nächsten Tag liegen (z.B. 22:00–06:00)
+    function calcEndAndHours(startDate, endTimeStr){
+      if(!startDate || isNaN(startDate)) return { end: null, hours: 0 };
+
+      const eParts = String(endTimeStr || "").split(":");
+      if(eParts.length < 2) return { end: null, hours: 0 };
+
+      const eh = Number(eParts[0]); const em = Number(eParts[1]);
+      if(isNaN(eh) || isNaN(em)) return { end: null, hours: 0 };
+
+      const end = new Date(startDate);
+      end.setHours(eh, em, 0, 0);
+
+      // Wenn Endzeit "früher" ist als Startzeit -> nächster Tag
+      if(end.getTime() < startDate.getTime()){
+        end.setDate(end.getDate() + 1);
+      }
+
+      let hours = (end - startDate) / (1000*60*60);
+      if(!isFinite(hours) || hours < 0) hours = 0;
+
+      return { end, hours };
+    }
+
+    // REPORT laden + Endzeit-Edit Aktion
+    
+    // REPORT laden (Jahresübersicht: Jan–Dez)
+    async function loadReport(){
+      // Users + Cache
+      const usersUrl = (String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter')
+        ? "/users"
+        : "/users_public";
+      let ures = await fetch(usersUrl);
+      usersList = await ures.json();
+      const uMap = userByUsername();
+      usersCache = {};
+      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+
+      // Jahr
+      const yRaw = (document.getElementById("report-year")?.value || "").trim();
+      const year = yRaw ? parseInt(yRaw, 10) : (new Date()).getFullYear();
+
+      let res = await fetch("/events");
+      let events = await res.json();
+
+            const type = (document.getElementById("report-type")?.value || "CV").toUpperCase();
+
+const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+
+      // username -> { months: [{hours,cost,details:[]}], totalHours, totalCost }
+      let reportData = {};
+
+      function ensureUser(username){
+        if(!reportData[username]){
+          reportData[username] = {
+            months: Array.from({length:12}, ()=>({hours:0, cost:0, details:[]})),
+            totalHours: 0,
+            totalCost: 0
+          };
+        }
+        return reportData[username];
+      }
+
+      events.forEach(ev=>{
+        if(!ev || !ev.start) return;
+        const baseStart = new Date(ev.start);
+        if(isNaN(baseStart)) return;
+
+        // Filter: nur dieses Jahr
+        if(baseStart.getFullYear() !== year) return;
+
+        // ✅ Kategorie-Filter (Report-Type) – damit Doppelklick nur CP oder nur CV zeigt
+        const evCat = String(ev.category || "CP").toUpperCase();
+        if(evCat !== type) return;
+        const monthIdx = baseStart.getMonth(); // 0..11
+
+        for (let user in (ev.responses || {})) {
+          const r = ev.responses[user];
+          if(!r) continue;
+
+          if (r.status === "bestätigt" && r.end_time) {
+            // Startzeit: Event.start + ggf. Chef Startzeit pro Mitarbeiter
+            let startDate = new Date(baseStart);
+            if(r.start_time){
+              const parts = String(r.start_time).split(":");
+              if(parts.length >= 2){
+                const sh = Number(parts[0]); const sm = Number(parts[1]);
+                if(!isNaN(sh) && !isNaN(sm)) startDate.setHours(sh, sm, 0, 0);
+              }
+            }
+
+            // Endzeit
+            const eParts = String(r.end_time).split(":");
+            if(eParts.length < 2) continue;
+            const eh = Number(eParts[0]); const em = Number(eParts[1]);
+            if(isNaN(eh) || isNaN(em)) continue;
+
+            const calc = calcEndAndHours(startDate, r.end_time);
+            const end = calc.end;
+            let hours = calc.hours;
+
+            const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
+            let rate = 0;
+
+            // ✅ manuelle Überschreibung aus Report/Details (response.rate_override)
+            if(r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override) !== ""){
+              rate = Number(r.rate_override);
+              if(isNaN(rate)) rate = 0;
+            } else if(useEventRate){
+              rate = Number(ev.stundensatz ?? 0);
+              if (isNaN(rate)) rate = 0;
+            } else {
+              const u = uMap[user];
+              rate = Number(u?.stundensatz ?? 0);
+              if (isNaN(rate)) rate = 0;
+            }
+
+            const cost = hours * rate;
+
+            const bucket = ensureUser(user);
+            bucket.months[monthIdx].hours += hours;
+            bucket.months[monthIdx].cost  += cost;
+            bucket.months[monthIdx].details.push({
+              ev: ev,
+              hours: hours,
+              start_time: r.start_time || "",
+              end_time: r.end_time,
+              remark: r.remark,
+              rate: rate,
+              rate_override: (r.rate_override ?? ""),
+              cost: cost,
+              year: year,
+              monthIdx: monthIdx
+            });
+
+            bucket.totalHours += hours;
+            bucket.totalCost  += cost;
+          }
+        }
+      });
+
+      // Render
+      let list = document.getElementById("report-list");
+      list.innerHTML = "";
+
+      // Reihenfolge: wie User-Liste
+      usersList.forEach(u=>{
+        const username = u.username;
+        const d = reportData[username];
+        if(!d) return;
+
+        const tr = document.createElement("tr");
+
+        // Name
+        const tdName = document.createElement("td");
+        tdName.textContent = usersCache[username] || username;
+        tr.appendChild(tdName);
+
+        // Monate
+        for(let mi=0; mi<12; mi++){
+          const md = d.months[mi];
+          const td = document.createElement("td");
+          td.style.cursor = "pointer";
+
+          if(md.details.length === 0){
+            td.innerHTML = `<span class="muted">-</span>`;
+          } else {
+            td.innerHTML = `<div><b>${fmtNumDE(md.hours,2)} h</b></div><div>${fmtNumDE(md.cost,2)} €</div>`;
+          }
+
+          td.onclick = ()=>{
+            if(md.details.length === 0){
+              alert(`Keine Einsätze für ${usersCache[username] || username} im ${monthNames[mi]} ${year}.`);
+              return;
+            }
+            openUserReport(username, md.details, { year, monthIdx: mi, monthName: monthNames[mi] });
+          };
+
+          tr.appendChild(td);
+        }
+
+        // Totals
+        const tdH = document.createElement("td");
+        tdH.innerHTML = `<b>${fmtNumDE(d.totalHours,2)} h</b>`;
+        tr.appendChild(tdH);
+
+        const tdC = document.createElement("td");
+        tdC.innerHTML = `<b>${fmtNumDE(d.totalCost,2)} €</b>`;
+        tr.appendChild(tdC);
+
+        list.appendChild(tr);
+      });
+
+
+
+      // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
+      function updateReportSumRow(){
+        const monthHours = Array(12).fill(0);
+        const monthCosts = Array(12).fill(0);
+        let totalHours = 0;
+        let totalCost = 0;
+
+        // Summen aus den berechneten Daten (nicht aus HTML)
+        usersList.forEach(u=>{
+          const username = u.username;
+          const d = reportData[username];
+          if(!d) return;
+          for(let mi=0; mi<12; mi++){
+            const md = d.months[mi];
+            monthHours[mi] += Number(md.hours || 0);
+            monthCosts[mi] += Number(md.cost || 0);
+          }
+          totalHours += Number(d.totalHours || 0);
+          totalCost  += Number(d.totalCost || 0);
+        });
+
+        const map = [
+          ['rpt-sum-jan',0],['rpt-sum-feb',1],['rpt-sum-mar',2],['rpt-sum-apr',3],['rpt-sum-mai',4],['rpt-sum-jun',5],
+          ['rpt-sum-jul',6],['rpt-sum-aug',7],['rpt-sum-sep',8],['rpt-sum-okt',9],['rpt-sum-nov',10],['rpt-sum-dez',11]
+        ];
+        map.forEach(([id, idx])=>{
+          const el = document.getElementById(id);
+          if(!el) return;
+          const h = monthHours[idx];
+          const c = monthCosts[idx];
+          if(!h && !c){
+            el.innerHTML = `<span class="muted">-</span>`;
+          } else {
+            el.innerHTML = `<div><b>${fmtNumDE(h,2)} h</b></div><div><span class="money-soft">${fmtNumDE(c,2)} €</span></div>`;
+          }
+        });
+
+        const hEl = document.getElementById('rpt-sum-hours');
+        if(hEl) hEl.innerHTML = `<b>${fmtNumDE(totalHours,2)} h</b>`;
+        const cEl = document.getElementById('rpt-sum-cost');
+        if(cEl) cEl.innerHTML = `<b>${fmtNumDE(totalCost,2)} €</b>`;
+      }
+
+      updateReportSumRow();
+    }
+
+    
+    // ZÄHLER laden (Einsätze pro Mitarbeiter: Jan–Dez)
+    async function loadCounter(){
+      // Users + Cache
+      let ures = await fetch("/users");
+      usersList = await ures.json();
+      usersCache = {};
+      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+
+      // Jahr
+      const yRaw = (document.getElementById("counter-year")?.value || "").trim();
+      const year = yRaw ? parseInt(yRaw, 10) : (new Date()).getFullYear();
+
+      let res = await fetch("/events");
+      let events = await res.json();
+
+      const catFilter = (document.getElementById("counter-type")?.value || "CV").toUpperCase();
+      events = events.filter(ev => String(ev.category || "CP").toUpperCase() === catFilter);
+
+      // username -> { months:[12], total }
+      let counterData = {};
+      function ensureUser(username){
+        if(!counterData[username]){
+          counterData[username] = { months: Array.from({length:12}, ()=>0), total: 0 };
+        }
+        return counterData[username];
+      }
+
+      events.forEach(ev=>{
+        if(!ev || !ev.start) return;
+        const baseStart = new Date(ev.start);
+        if(isNaN(baseStart)) return;
+
+        if(baseStart.getFullYear() !== year) return;
+        const monthIdx = baseStart.getMonth();
+
+        for(const user in (ev.responses || {})){
+          const r = ev.responses[user];
+          if(!r) continue;
+          if(String(r.status || "").trim() === "bestätigt"){
+            const bucket = ensureUser(user);
+            bucket.months[monthIdx] += 1;
+            bucket.total += 1;
+          }
+        }
+      });
+
+      // Render
+      let list = document.getElementById("counter-list");
+      list.innerHTML = "";
+
+      // Reihenfolge: wie User-Liste
+      usersList.forEach(u=>{
+        const username = u.username;
+        const d = counterData[username] || { months: Array.from({length:12}, ()=>0), total: 0 };
+
+        const tr = document.createElement("tr");
+
+        const tdName = document.createElement("td");
+        tdName.textContent = usersCache[username] || username;
+        tr.appendChild(tdName);
+
+        for(let mi=0; mi<12; mi++){
+          const td = document.createElement("td");
+          const v = Number(d.months[mi] || 0);
+          td.innerHTML = v ? `<b>${v}</b>` : `<span class="muted">-</span>`;
+          tr.appendChild(td);
+        }
+
+        const tdT = document.createElement("td");
+        tdT.innerHTML = `<b>${Number(d.total || 0)}</b>`;
+        tr.appendChild(tdT);
+
+        list.appendChild(tr);
+      });
+
+  // ✅ Summenzeile (alle Mitarbeiter zusammen) im Zähler aktualisieren
+  function updateCounterSumRow(){
+    const monthSums = Array(12).fill(0);
+    let yearSum = 0;
+
+    // Summen aus den berechneten Daten (nicht aus HTML)
+    usersList.forEach(u=>{
+      const username = u.username;
+      const d = counterData[username] || { months: Array.from({length:12}, ()=>0), total: 0 };
+      for(let mi=0; mi<12; mi++){
+        monthSums[mi] += Number(d.months[mi] || 0);
+      }
+      yearSum += Number(d.total || 0);
+    });
+
+    const ids = ["sum-jan","sum-feb","sum-mar","sum-apr","sum-mai","sum-jun",
+                 "sum-jul","sum-aug","sum-sep","sum-okt","sum-nov","sum-dez"];
+    ids.forEach((id,i)=>{
+      const el = document.getElementById(id);
+      if(el) el.textContent = monthSums[i];
+    });
+    const yel = document.getElementById("sum-year");
+    if(yel) yel.textContent = yearSum;
+  }
+
+  updateCounterSumRow();
+}
+    function openUserReport(username, details, scope){
+
+      const who = usersCache[username] || username;
+      let head = who;
+      if(scope && scope.monthName && scope.year){ head = `${who} – ${scope.monthName} ${scope.year}`; }
+      else if(scope && scope.year){ head = `${who} – ${scope.year}`; }
+      document.getElementById("report-username").textContent = head;
+      let tbody=document.getElementById("user-report-details");
+      tbody.innerHTML="";
+
+      let sumHours = 0;
+      let sumCost  = 0;
+
+      // ✅ Immer nach Datum (Start) sortieren – damit die Liste im Report bei Doppelklick
+      // sauber nach Datum geordnet ist.
+      details.sort((a,b)=>{
+        const sa = new Date(a?.ev?.start || 0).getTime();
+        const sb = new Date(b?.ev?.start || 0).getTime();
+        if(sa !== sb) return sa - sb;
+
+        // Falls gleicher Tag: nach Startzeit (pro Mitarbeiter) sortieren
+        const ta = (a?.start_time || '').trim();
+        const tb = (b?.start_time || '').trim();
+        return ta.localeCompare(tb, 'de');
+      });
+
+      details.forEach(d=>{
+        let ev=d.ev;
+
+        let start = new Date(ev.start);
+        if(d.start_time){
+          let [sh, sm] = d.start_time.split(":");
+          start.setHours(Number(sh), Number(sm), 0, 0);
+        }
+
+        let calc = calcEndAndHours(start, d.end_time);
+        let end = calc.end;
+
+        const endLabel = end ? ((end.toDateString() !== start.toDateString())
+          ? fmtDateTimeDE(end)
+          : fmtTimeOnly(end)) : "-";
+
+        sumHours += d.hours;
+        sumCost  += d.cost;
+
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td>${fmtDateOnlyDE(start)}</td>
+          <td>${ev.title}</td>
+          <td>${ev.ort || "-"}</td>
+          <td>${fmtTimeOnly(start)}</td>
+          <td>${endLabel}</td>
+          <td>${fmtNumDE(d.hours,2)} h</td>
+          <td>${fmtNumDE(d.rate,2)} €/h</td>
+          <td>${fmtNumDE(d.cost,2)} €</td>
+          <td><button class="confirm">✏️ Bearbeiten</button></td>
+        `;
+        tr.querySelector("button").onclick = ()=>openReportEndEdit(username, ev, d.start_time, d.end_time, d.remark, d.rate_override);
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById("user-report-sum-hours").textContent = `${fmtNumDE(sumHours,2)} h`;
+      document.getElementById("user-report-sum-cost").textContent  = `${fmtNumDE(sumCost,2)} €`;
+
+      document.getElementById("userReportModal").style.display="flex";
+    }
+
+    function closeUserReportModal(){document.getElementById("userReportModal").style.display="none";}
+
+    // Report Endzeit ändern
+    function openReportEndEdit(username, ev, startTime, endTime, remark, rateOverride){
+      document.getElementById("rep-event-id").value = ev.id;
+      document.getElementById("rep-username").value = username;
+      document.getElementById("rep-user-label").textContent = usersCache[username] || username;
+      document.getElementById("rep-title-label").textContent = ev.title || "(ohne Titel)";
+      document.getElementById("rep-start-time").value = startTime || "";
+      document.getElementById("rep-end-time").value = endTime || "";
+      document.getElementById("rep-rate").value = (rateOverride !== undefined && rateOverride !== null && String(rateOverride) !== "") ? fmtNumDE(Number(rateOverride),2) : "";
+      document.getElementById("rep-remark").value = remark || "";
+      document.getElementById("reportEndEditModal").style.display="flex";
+    }
+    function closeReportEndEditModal(){ document.getElementById("reportEndEditModal").style.display="none"; }
+
+    async function saveReportEndTime(){
+      const event_id = document.getElementById("rep-event-id").value;
+      const username = document.getElementById("rep-username").value;
+      const start_time = document.getElementById("rep-start-time").value;
+      const end_time = document.getElementById("rep-end-time").value;
+
+      const rate_raw = (document.getElementById("rep-rate").value || "").trim();
+      const remark   = document.getElementById("rep-remark").value || "";
+
+      // ✅ Stundensatz: Komma oder Punkt akzeptieren
+      let rate_override = null;
+      if(rate_raw !== ""){
+        const parsed = parseDeNumber(rate_raw);
+        if(parsed === null){
+          alert("Stundensatz ungültig. Bitte z.B. 20,00 eingeben.");
+          return;
+        }
+        rate_override = parsed;
+      }
+
+      const res = await fetch("/events/edit_entry", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ event_id, username, start_time, end_time, rate_override, remark })
+      });
+
+      if(!res.ok){
+        const t = await res.text();
+        alert("Speichern fehlgeschlagen: " + t);
+        return;
+      }
+
+      closeReportEndEditModal();
+
+      // ✅ Report neu berechnen (damit € sofort stimmen)
+      await loadReport();
+
+      // optional: Kalender/Planung aktualisieren
+      if(typeof calendar !== "undefined" && calendar) calendar.refetchEvents();
+      if(typeof planningCalendar !== "undefined" && planningCalendar) planningCalendar.refetchEvents();
+
+      // Detail-Modal schließen (User kann per Doppelklick sofort wieder öffnen)
+      closeUserReportModal();
+    }
+
+    // =========================
+    // 🗂️ Planung: Bulk-Zeiten bearbeiten (für alle bestätigten)
+    // =========================
+    function openPlanningBulkEdit(event_id, title, props){
+      document.getElementById("plan-bulk-event-id").value = event_id || "";
+      document.getElementById("plan-bulk-title").textContent = (title || "").replace(/\s*\(\d{2}:\d{2}\)\s*$/,"").trim();
+
+      const list = document.getElementById("plan-bulk-list");
+      list.innerHTML = "";
+
+      const responses = (props && props.responses) ? props.responses : {};
+      const baseStart = props && props.start ? fmtTimeOnly(props.start) : "-";
+
+      const confirmed = [];
+      for(const username in responses){
+        const r = responses[username] || {};
+        if(String(r.status || "").trim() === "bestätigt"){
+          confirmed.push({ username, r });
+        }
+      }
+
+      confirmed.sort((a,b)=>{
+        const an = (usersCache[a.username] || a.username);
+        const bn = (usersCache[b.username] || b.username);
+        return an.localeCompare(bn, "de");
+      });
+
+      if(confirmed.length === 0){
+        list.innerHTML = ``;
+      } else {
+        confirmed.forEach((x)=>{
+          const username = x.username;
+          const r = x.r || {};
+          const name = usersCache[username] || username;
+
+          const st = (r.start_time && String(r.start_time).trim()) ? String(r.start_time).trim() : (baseStart && baseStart !== "-" ? baseStart : "");
+          const et = (r.end_time && String(r.end_time).trim()) ? String(r.end_time).trim() : "";
+          const rm = (r.remark || "").trim();
+
+          const row = document.createElement("div");
+          row.className = "detail-box";
+          row.style.marginBottom = "10px";
+          row.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;">${name}</div>
+            <div class="form-row">
+              <div>
+                <label>Start</label>
+                <input type="time" class="plan-bulk-start" data-username="${username}" value="${st}">
+              </div>
+              <div>
+                <label>Ende</label>
+                <input type="time" class="plan-bulk-end" data-username="${username}" value="${et}">
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <label>Bemerkung</label>
+                <input type="text" class="plan-bulk-remark" data-username="${username}" value="${rm}" placeholder="optional">
+              </div>
+            </div>
+            <div style="border-top:1px dashed #ddd;margin-top:8px;"></div>
+          `;
+          list.appendChild(row);
+        });
+      }
+
+      document.getElementById("planningBulkEditModal").style.display = "flex";
+    }
+
+    function closePlanningBulkEditModal(){
+      document.getElementById("planningBulkEditModal").style.display = "none";
+    }
+
+
+    // =========================
+    // 🗂️ Planung (Planer): nur Kommentare anzeigen
+    // =========================
+    function openPlanningCommentsModal(event_id, title, props){
+      document.getElementById("plan-cmt-event-id").value = event_id || "";
+      document.getElementById("plan-cmt-title").textContent = (title || "").replace(/\s*\(\d{2}:\d{2}\)\s*$/,"").trim();
+
+      const list = document.getElementById("plan-cmt-list");
+      list.innerHTML = "";
+
+      const responses = (props && props.responses) ? props.responses : {};
+
+      const confirmedWithComments = [];
+      for(const username in responses){
+        const r = responses[username] || {};
+        if(String(r.status || "").trim() !== "bestätigt") continue;
+        const remark = (r.remark || "").trim();
+        if(!remark) continue;
+        confirmedWithComments.push({ username, remark });
+      }
+
+      confirmedWithComments.sort((a,b)=>{
+        const an = (usersCache[a.username] || a.username);
+        const bn = (usersCache[b.username] || b.username);
+        return an.localeCompare(bn, "de");
+      });
+
+      if(confirmedWithComments.length === 0){
+        list.innerHTML = ``;
+      } else {
+        confirmedWithComments.forEach(x=>{
+          const name = usersCache[x.username] || x.username;
+          const box = document.createElement("div");
+          box.className = "detail-box";
+          box.style.marginBottom = "10px";
+          box.innerHTML = `
+            <div style="font-weight:700;margin-bottom:6px;">${name}</div>
+            <div style="white-space:pre-wrap;">${escapeAttr(x.remark).replace(/\n/g,"<br>")}</div>
+          `;
+          list.appendChild(box);
+        });
+      }
+
+      document.getElementById("planningCommentsModal").style.display = "flex";
+    }
+
+    function closePlanningCommentsModal(){
+      document.getElementById("planningCommentsModal").style.display = "none";
+    }
+
+    async function savePlanningBulkEdits(){
+      const event_id = document.getElementById("plan-bulk-event-id").value;
+      if(!event_id){ alert("Kein Einsatz gewählt."); return; }
+
+      // Inputs nur aus dem Bulk-Modal lesen (verhindert "fremde" Inputs bei mehreren offenen Modals)
+      const modal = document.getElementById("planningBulkEditModal");
+      const starts  = Array.from(modal.querySelectorAll(".plan-bulk-start"));
+      const ends    = Array.from(modal.querySelectorAll(".plan-bulk-end"));
+      const remarks = Array.from(modal.querySelectorAll(".plan-bulk-remark"));
+
+      // Änderungen pro Mitarbeiter sammeln
+      const byUser = {};
+      const ensureUser = (u)=>{
+        const username = (u || "").trim();
+        if(!username) return null;
+        if(!byUser[username]) byUser[username] = { start_time:"", end_time:"", remark:"" };
+        return username;
+      };
+
+      starts.forEach(i=>{
+        const u = ensureUser(i.getAttribute("data-username"));
+        if(!u) return;
+        byUser[u].start_time = (i.value || "").trim();
+      });
+      ends.forEach(i=>{
+        const u = ensureUser(i.getAttribute("data-username"));
+        if(!u) return;
+        byUser[u].end_time = (i.value || "").trim();
+      });
+      remarks.forEach(i=>{
+        const u = ensureUser(i.getAttribute("data-username"));
+        if(!u) return;
+        byUser[u].remark = (i.value || "");
+      });
+
+      const users = Object.keys(byUser);
+      if(users.length === 0){
+        alert("Keine Mitarbeiter gefunden.");
+        return;
+      }
+
+      // Speichern: für ALLE ausgewählten Mitarbeiter (auch wenn Felder leer sind → kann Werte löschen)
+      const failed = [];
+      for(const u of users){
+        const payload = {
+          event_id,
+          username: u,
+          start_time: (byUser[u].start_time || ""),
+          end_time: (byUser[u].end_time || ""),   // immer mitsenden (damit 'leeren' möglich ist)
+          remark: (byUser[u].remark || "")
+        };
+
+        let res;
+        try{
+          res = await fetch("/events/edit_entry", {
+            method:"POST",
+            headers:{"Content-Type":"application/json"},
+            body: JSON.stringify(payload)
+          });
+        } catch(err){
+          failed.push(`${u}: Netzwerkfehler`);
+          continue;
+        }
+
+        if(!res.ok){
+          let t = "";
+          try{ t = await res.text(); } catch(_){}
+          failed.push(`${u}: ${t || res.status}`);
+        }
+      }
+
+      if(failed.length){
+        alert("Nicht alles konnte gespeichert werden:\n\n" + failed.join("\n"));
+        return;
+      }
+
+      closePlanningBulkEditModal();
+
+      if(typeof calendar !== "undefined" && calendar) calendar.refetchEvents();
+      if(typeof planningCalendar !== "undefined" && planningCalendar) planningCalendar.refetchEvents();
+      if(typeof loadReport === "function") loadReport();
+    }
+
+
+    /* REPORT_SORT_BY_DATE */
+    function fmtDateOnlyDE(dt){
+      const d = new Date(dt);
+      if(isNaN(d)) return "-";
+      const dd = String(d.getDate()).padStart(2,'0');
+      const mm = String(d.getMonth()+1).padStart(2,'0');
+      const yy = String(d.getFullYear());
+      return `${dd}.${mm}.${yy}`;
+    }
+    
+</script>
+
+<script>
+function setCategoryBadge(cat){
+  const el = document.getElementById("d-category-badge");
+  if(!el) return;
+  const c = String(cat||"CP").toUpperCase()==="CV"?"CV":"CP";
+  const txt = catToAuftraggeber(c);
+  el.innerHTML = `<span class="badge badge-${c.toLowerCase()}">${txt}</span>`;
+}
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  // ✅ Defaults: Report & Zähler starten mit CV
+  const rt = document.getElementById("report-type");
+  if(rt && (!rt.value)) rt.value = "CV";
+  const ct = document.getElementById("counter-type");
+  if(ct && (!ct.value)) ct.value = "CV";
+
+  // Buttons initialisieren + Kopfzeilen einfärben
+  if(typeof initCategoryButtons === "function") initCategoryButtons();
+});
+</script>
+
+
+<script>
+/* ✅ Modal-Kategorie Buttons (Create) */
+function syncModalCatButtons(){
+  const sel = document.getElementById("ev-category");
+  const toggle = document.getElementById("create-ev-cat-toggle");
+  if(!sel || !toggle) return;
+  const current = String(sel.value || "CV").toUpperCase();
+  toggle.querySelectorAll("button.modal-cat-btn").forEach(btn=>{
+    const v = String(btn.dataset.value || "").toUpperCase();
+    btn.classList.toggle("active", v === current);
+  });
+}
+function initModalCatButtons(){
+  const sel = document.getElementById("ev-category");
+  const toggle = document.getElementById("create-ev-cat-toggle");
+  if(!sel || !toggle) return;
+
+  toggle.querySelectorAll("button.modal-cat-btn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      const v = String(btn.dataset.value || "CV").toUpperCase();
+      sel.value = v;
+      sel.dispatchEvent(new Event("change"));
+      syncModalCatButtons();
+    });
+  });
+
+  sel.addEventListener("change", syncModalCatButtons);
+  if(!sel.value) sel.value = "CV";
+  syncModalCatButtons();
+}
+document.addEventListener("DOMContentLoaded", initModalCatButtons);
+</script>
+
+
+<script>
+(function(){
+  let role = String("{{ role }}").trim().toLowerCase();
+  if(role === "planner bbs") role = "planner_bbs";
+  if(role === "vorgesetzter cp") role = "vorgesetzter_cp";
+
+  const hide = (id)=>{ const el=document.getElementById(id); if(el) el.style.display="none"; };
+  const hideTab = (tabId)=>{ const el=document.getElementById(tabId); if(el) el.style.display="none"; };
+
+  // Planner BBS: nur Planung + nur CV
+  if(role === "planner_bbs"){
+    // Tabs ausblenden (alles außer Planung)
+    ["tab-calendar","tab-termine","tab-users","tab-report","tab-counter"].forEach(hideTab);
+
+    // Wenn es eine zentrale Funktion gibt, nutze sie (init + refetch + view)
+    if(typeof showPlanningTab === "function"){
+      try{ showPlanningTab(); }catch(e){}
+    }else{
+      // Fallback
+      ["calendar","termine","user-management","report","counter"].forEach(hide);
+      const planning = document.getElementById("planning");
+      if(planning) planning.style.display = "block";
+      const planningTab = document.getElementById("tab-planning");
+      if(planningTab) { try{ planningTab.click(); }catch(e){} }
+      try{
+        if(typeof initPlanningCalendar === "function" && !planningCalendar){ initPlanningCalendar(); }
+        if(planningCalendar){ planningCalendar.refetchEvents(); planningCalendar.render(); window.dispatchEvent(new Event("resize")); }
+      }catch(e){}
+    }
+
+    // Nur CV: CP-Buttons ausblenden (falls vorhanden)
+    document.querySelectorAll('[id*="cat-toggle"], .category-toggle, .modal-cat-toggle').forEach(tgl=>{
+      tgl.querySelectorAll("button").forEach(b=>{
+        const v = String(b.dataset.value||"").toUpperCase();
+        if(v === "CP") b.style.display = "none";
+      });
+    });
+  }
+
+  // Vorgesetzter CP: alles wie Vorgesetzter, aber ohne Personal & ohne Zähler,
+  // und Report NUR CP (Filter weg + Kopfzeile Gold)
+  if(role === "vorgesetzter_cp"){
+    // Zähler weg
+    hideTab("tab-counter");
+    hide("counter");
+
+    // Personal weg (Tab heißt tab-users)
+    hideTab("tab-users");
+    hide("user-management");
+
+    // Report: CP erzwingen + Filter UI ausblenden
+    const rtgl = document.getElementById("report-cat-toggle");
+    if(rtgl){
+      rtgl.querySelectorAll("button").forEach(b=>{
+        const v = String(b.dataset.value||"").toUpperCase();
+        if(v === "CV") b.style.display = "none";
+        if(v === "CP"){ b.classList.add("active"); }
+    // Kategorie-Label im Report entfernen
+    const rptFilter = document.querySelector("#report .filter-card");
+    if(rptFilter){
+      rptFilter.querySelectorAll("label").forEach(l=>{
+        if(String(l.textContent||"").toLowerCase().includes("kategorie")) l.style.display="none";
+      });
+    }
+  });
+      rtgl.style.display = "none";
+    }
+
+    // Falls es ein Select gibt (z.B. report-type), auf CP fixieren und ausblenden
+    const rsel = document.getElementById("report-category") || document.getElementById("report-type");
+    if(rsel){
+      rsel.value = "CP";
+      rsel.style.display = "none";
+      const prev = rsel.previousElementSibling;
+      if(prev && prev.tagName && prev.tagName.toLowerCase()==="label") prev.style.display="none";
+      rsel.addEventListener("change", ()=>{ rsel.value="CP"; });
+    }
+
+    // Kopfzeile Gold im Report erzwingen
+    const forceGold = ()=>{
+      const t = document.querySelector("#report table.user-table");
+      if(t) t.classList.add("gold-headers");
+    };
+    forceGold(); setTimeout(forceGold, 100);
+  }
+})();
+</script>
+
+
+<script>
+/* ✅ Mobile Fix (iOS/Safari):
+   - verhindert "queued/ghost clicks" in overflow scroll containers
+   - sorgt dafür, dass Tabs (Navbar) auf Touch-Geräten sofort reagieren, ohne Doppelauslösung
+*/
+(function(){
+  function closest(el, sel){ return el && el.closest ? el.closest(sel) : null; }
+
+  // Wenn wir per pointerup schon manuell klicken, schlucken wir den danach folgenden "ghost click".
+  let swallowNextNavClick = false;
+
+  // Tabs: sofortiges Umschalten auf Touch-Geräten
+  document.addEventListener('pointerup', function(e){
+    const a = closest(e.target, 'nav a');
+    if(!a) return;
+
+    // Nur für Touch/Pen: dort ist der Ghost-Click am häufigsten
+    const pt = String(e.pointerType || '').toLowerCase();
+    if(pt === 'touch' || pt === 'pen'){
+      swallowNextNavClick = true;
+      try{ e.preventDefault(); }catch(_){}
+      try{ e.stopImmediatePropagation(); }catch(_){}
+      try{ a.click(); }catch(_){}
+    }
+  }, true);
+
+  // Ghost-Click abfangen (kommt oft direkt nach touch/pointerup)
+  document.addEventListener('click', function(e){
+    const a = closest(e.target, 'nav a');
+    if(!a) return;
+    if(swallowNextNavClick){
+      swallowNextNavClick = false;
+      try{ e.preventDefault(); }catch(_){}
+      try{ e.stopImmediatePropagation(); }catch(_){}
+      return;
+    }
+  }, true);
+
+  // Wenn ein Modal offen ist: Hintergrund-Scroll darf keine Taps "klauen"
+  document.addEventListener('touchmove', function(e){
+    const openModal = document.querySelector('.modal[style*="display: flex"], .modal[style*="display:flex"]');
+    if(openModal && !openModal.contains(e.target)){
+      e.preventDefault();
+    }
+  }, {passive:false});
+})();
+</script>
+
+
+<script id="modal-relocate-fix">
+/* ✅ Mobile fix: move all modals directly under <body> to avoid being clipped by overflow/scroll containers */
+document.addEventListener('DOMContentLoaded', function(){
+  try{
+    document.querySelectorAll('.modal').forEach(function(m){
+      if(m && m.parentElement !== document.body){
+        document.body.appendChild(m);
+      }
+    });
+  }catch(e){}
+});
+</script>
+
+</body>
+</html>
+
+
+<script>
+// ✅ Kategorie-Badge bei Firma im Einsatzdetails-Modal setzen
+function setFirmaCategoryBadge(ev){
+  const cat = (ev?.category || "CP").toUpperCase();
+  const badgeClass = cat === "CV" ? "badge badge-cv" : "badge badge-cp";
+  const el = document.getElementById("d-firma-category");
+  if(el){
+    el.innerHTML = `<span class="${badgeClass}">${cat}</span>`;
+  }
+}
+</script>
+
+<script>
+async function sendEventMailFromCalendar(){
+  if(!confirm("E-Mail an alle Mitarbeiter senden?")){
+    return;
+  }
+  const res = await fetch("/events/send_mail_all", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({})
+  });
+  const r = await res.json().catch(()=>({}));
+  if(!res.ok || r.error){
+    alert(r.error || "E-Mail konnte nicht gesendet werden");
+    return;
+  }
+  alert("E-Mail wurde an alle Mitarbeiter versendet.");
+}
+</script>

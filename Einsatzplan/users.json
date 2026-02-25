@@ -1,0 +1,60 @@
+[
+    {
+        "vorname": "kevin",
+        "nachname": "Muster",
+        "email": "kevin@example.com",
+        "handy": "015112345678",
+        "username": "kevin",
+        "password": "1234",
+        "role": "vorgesetzter",
+        "s34a": "nein",
+        "s34a_art": "",
+        "stelle": "Vollzeit",
+        "pschein": "nein"
+    },
+    {
+        "vorname": "Amine",
+        "nachname": "Saleh",
+        "email": "aminesaleh299@gmail.com",
+        "handy": "017664027458",
+        "username": "Amine",
+        "password": "1234",
+        "role": "mitarbeiter",
+        "s34a": "nein",
+        "s34a_art": "sachkunde",
+        "pschein": "ja",
+        "stelle": "Security / Fahrer / Service",
+        "firma": "CP-Solutions",
+        "stundensatz": "20"
+    },
+    {
+        "vorname": "Jakub",
+        "nachname": "LOL",
+        "email": "chris.anderson.sidehustle@gmail.com",
+        "handy": "017664027458",
+        "username": "jakub",
+        "password": "1234",
+        "role": "mitarbeiter",
+        "s34a": "nein",
+        "s34a_art": "",
+        "pschein": "nein",
+        "stelle": "Service",
+        "firma": "BBS",
+        "stundensatz": "20"
+    },
+    {
+        "vorname": "Lukas",
+        "nachname": "pfennig",
+        "email": "ass05063@omeie.com",
+        "handy": "ssssss",
+        "username": "lukas",
+        "password": "1234",
+        "role": "mitarbeiter",
+        "s34a": "ja",
+        "s34a_art": "sachkunde",
+        "stelle": "Security",
+        "pschein": "ja",
+        "firma": "CP-Solutions",
+        "stundensatz": "20"
+    }
+]
