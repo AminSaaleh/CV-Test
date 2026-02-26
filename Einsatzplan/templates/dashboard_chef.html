@@ -1444,7 +1444,20 @@ body.modal-open{ touch-action: auto !important; }
       <label>Einsatz auswählen</label>
       <select id="dup-source-event"></select>
 
-      <div class="detail-box">
+      
+      <label>Auftraggeber für Duplikate</label>
+      <div class="category-toggle" id="dup-cat-toggle" aria-label="Auftraggeber wählen (Duplizieren)">
+        <button type="button" class="cat-btn" data-target="dup-cat-mode" data-value="CV">CV</button>
+        <button type="button" class="cat-btn" data-target="dup-cat-mode" data-value="CP">CP</button>
+        <button type="button" class="cat-btn" data-target="dup-cat-mode" data-value="BOTH">Beide</button>
+      </div>
+      <select id="dup-cat-mode" style="display:none;">
+        <option value="CV">CV</option>
+        <option value="CP">CP</option>
+        <option value="BOTH">BOTH</option>
+      </select>
+
+<div class="detail-box">
         <b>Mehrere Daten auswählen</b>
         
 
@@ -1621,6 +1634,38 @@ body.modal-open{ touch-action: auto !important; }
 
       applyGoldHeaders();
     }
+
+    // ✅ Duplizieren: Kategorie (CP/CV/Beide) Buttons steuern dup-cat-mode
+    function syncDupCatButtons(){
+      const sel = document.getElementById("dup-cat-mode");
+      const tgl = document.getElementById("dup-cat-toggle");
+      if(!sel || !tgl) return;
+      const cur = String(sel.value || "CP").toUpperCase();
+      tgl.querySelectorAll("button.cat-btn").forEach(btn=>{
+        const v = String(btn.dataset.value || "").toUpperCase();
+        btn.classList.toggle("active", v === cur);
+      });
+    }
+
+    function initDuplicateCategoryButtons(){
+      const sel = document.getElementById("dup-cat-mode");
+      const tgl = document.getElementById("dup-cat-toggle");
+      if(!sel || !tgl) return;
+
+      tgl.querySelectorAll("button.cat-btn").forEach(btn=>{
+        btn.addEventListener("click", ()=>{
+          const v = String(btn.dataset.value || "CP").toUpperCase();
+          sel.value = v;
+          syncDupCatButtons();
+        });
+      });
+
+      // default
+      if(!sel.value) sel.value = "CP";
+      syncDupCatButtons();
+    }
+
+
 let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEventId=null;
     let usersCache = {};
     let usersList = [];
@@ -2368,10 +2413,27 @@ document.getElementById("dup-date").value = "";
       events.forEach(ev=>{
         const opt = document.createElement("option");
         opt.value = ev.id;
+        opt.dataset.category = String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP';
         const startTxt = ev.start ? fmtDateTimeDE(ev.start) : "";
         opt.textContent = `${ev.title || "(ohne Titel)"} – ${startTxt}`;
         sel.appendChild(opt);
       });
+
+      // ✅ Kategorie-Vorschlag anhand des ausgewählten Einsatzes (CP/CV)
+      const applyDupCatFromSelection = ()=>{
+        const opt = sel.options[sel.selectedIndex];
+        const cat = (opt && opt.dataset && opt.dataset.category) ? String(opt.dataset.category).toUpperCase() : "CP";
+        const modeSel = document.getElementById("dup-cat-mode");
+        if(modeSel){
+          modeSel.value = (cat === "CV") ? "CV" : "CP";
+        }
+        if(typeof syncDupCatButtons === "function"){
+          syncDupCatButtons();
+        }
+      };
+      sel.onchange = applyDupCatFromSelection;
+      // direkt einmal setzen
+      setTimeout(applyDupCatFromSelection, 0);
 
       if(events.length === 0){
         sel.innerHTML = "<option value=''>Keine Einsätze vorhanden</option>";
@@ -2414,15 +2476,28 @@ document.getElementById("dup-date").value = "";
         return;
       }
 
-      const res = await fetch("/events/duplicate", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ event_id, dates: dupSelectedDates })
-      });
+      const modeSel = document.getElementById("dup-cat-mode");
+      const mode = String(modeSel?.value || "CP").toUpperCase();
 
-      const r = await res.json().catch(()=>({}));
-      if(!res.ok || r.error){
-        alert(r.error || "Duplizieren fehlgeschlagen");
+      // ✅ Wenn "Beide": wir duplizieren zweimal (einmal CV, einmal CP)
+      const cats = (mode === "BOTH") ? ["CV","CP"] : [ (mode === "CV") ? "CV" : "CP" ];
+
+      const failed = [];
+      for(const cat of cats){
+        const res = await fetch("/events/duplicate", {
+          method:"POST",
+          headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({ event_id, dates: dupSelectedDates, category: cat })
+        });
+
+        const r = await res.json().catch(()=>({}));
+        if(!res.ok || r.error){
+          failed.push(`${cat}: ${r.error || "Duplizieren fehlgeschlagen"}`);
+        }
+      }
+
+      if(failed.length){
+        alert("Duplizieren fehlgeschlagen:\n\n" + failed.join("\n"));
         return;
       }
 
@@ -3014,7 +3089,12 @@ document.getElementById("confirmed-counter").textContent =
     }
 
     async function deleteUser(username){
-      await fetch("/users/"+username,{method:"DELETE"});
+      const ok = confirm(
+        `⚠️ Mitarbeiter "${username}" wirklich löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!`
+      );
+      if(!ok) return;
+
+      await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
     }
 
@@ -3821,6 +3901,8 @@ document.addEventListener("DOMContentLoaded", function(){
 
   // Buttons initialisieren + Kopfzeilen einfärben
   if(typeof initCategoryButtons === "function") initCategoryButtons();
+      try{ initDuplicateCategoryButtons(); }catch(e){}
+      
 });
 </script>
 
