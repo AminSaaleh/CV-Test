@@ -2338,10 +2338,14 @@ document.getElementById("planning").style.display="block";
     
     // ===== Duplizieren (Kalender-Header) =====
     let dupSelectedDates = [];
+    let dupSourceCategoryById = {}; // event_id -> 'CP'/'CV'
+
 
     function openDuplicateModal(){
       document.getElementById("duplicateModal").style.display = "flex";
       dupSelectedDates = [];
+      dupSourceCategoryById = {};
+
       document.getElementById("dup-date-list").innerHTML = "";
 document.getElementById("dup-date").value = "";
 
@@ -2368,9 +2372,10 @@ document.getElementById("dup-date").value = "";
       events.forEach(ev=>{
         const opt = document.createElement("option");
         opt.value = ev.id;
+        dupSourceCategoryById[String(ev.id)] = (String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP');
         opt.dataset.category = String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP';
         const startTxt = ev.start ? fmtDateTimeDE(ev.start) : "";
-        opt.textContent = `${ev.title || "(ohne Titel)"} – ${startTxt}`;
+        opt.textContent = `[${dupSourceCategoryById[String(ev.id)]}] ${(ev.title || \"(ohne Titel)\")} – ${startTxt}`;
         sel.appendChild(opt);
       });
 
@@ -2409,12 +2414,34 @@ document.getElementById("dup-date").value = "";
 
     async function runDuplicate(){
       const sel = document.getElementById("dup-source-event");
-      const event_id = (sel?.value || "").trim();
+      const event_id = (sel && sel.value ? String(sel.value).trim() : "");
       if(!event_id){ alert("Bitte einen Einsatz auswählen."); return; }
       if(!dupSelectedDates || dupSelectedDates.length === 0){
         alert("Bitte mindestens ein Datum auswählen.");
         return;
       }
+
+      // ✅ Auftraggeber automatisch vom ausgewählten Einsatz übernehmen (CP bleibt CP, CV bleibt CV)
+      const category = (dupSourceCategoryById && dupSourceCategoryById[String(event_id)])
+        ? String(dupSourceCategoryById[String(event_id)]).toUpperCase()
+        : "CP";
+
+      const res = await fetch("/events/duplicate", {
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ event_id, dates: dupSelectedDates, category })
+      });
+
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){
+        alert(r.error || "Duplizieren fehlgeschlagen");
+        return;
+      }
+
+      closeDuplicateModal();
+      if(calendar) calendar.refetchEvents();
+      if(planningCalendar) planningCalendar.refetchEvents();
+    }
 
       // ✅ Auftraggeber automatisch vom ausgewählten Einsatz übernehmen (CP bleibt CP, CV bleibt CV)
       const opt = sel.options[sel.selectedIndex];
@@ -2452,7 +2479,7 @@ document.getElementById("dup-date").value = "";
       closeDuplicateModal();
       if(calendar) calendar.refetchEvents();
       if(planningCalendar) planningCalendar.refetchEvents();
-    
+    }
 
 
     // Einsatz anlegen
