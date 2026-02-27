@@ -2375,7 +2375,7 @@ document.getElementById("dup-date").value = "";
         dupSourceCategoryById[String(ev.id)] = (String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP');
         opt.dataset.category = String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP';
         const startTxt = ev.start ? fmtDateTimeDE(ev.start) : "";
-        opt.textContent = `[${dupSourceCategoryById[String(ev.id)]}] ${(ev.title || \"(ohne Titel)\")} – ${startTxt}`;
+        opt.textContent = `[${dupSourceCategoryById[String(ev.id)]}] ${(ev.title || "(ohne Titel)")} – ${startTxt}`;
         sel.appendChild(opt);
       });
 
@@ -2443,43 +2443,6 @@ document.getElementById("dup-date").value = "";
       if(planningCalendar) planningCalendar.refetchEvents();
     }
 
-      // ✅ Auftraggeber automatisch vom ausgewählten Einsatz übernehmen (CP bleibt CP, CV bleibt CV)
-      const opt = sel.options[sel.selectedIndex];
-      const category = (opt && opt.dataset && opt.dataset.category) ? String(opt.dataset.category).toUpperCase() : "CP";
-
-      const res = await fetch("/events/duplicate", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ event_id, dates: dupSelectedDates, category })
-      });
-
-      const r = await res.json().catch(()=>({}));
-      if(!res.ok || r.error){
-        alert(r.error || "Duplizieren fehlgeschlagen");
-        return;
-      }
-
-      closeDuplicateModal();
-      if(calendar) calendar.refetchEvents();
-      if(planningCalendar) planningCalendar.refetchEvents();
-    }
-
-      const res = await fetch("/events/duplicate", {
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ event_id, dates: dupSelectedDates })
-      });
-
-      const r = await res.json().catch(()=>({}));
-      if(!res.ok || r.error){
-        alert(r.error || "Duplizieren fehlgeschlagen");
-        return;
-      }
-
-      closeDuplicateModal();
-      if(calendar) calendar.refetchEvents();
-      if(planningCalendar) planningCalendar.refetchEvents();
-    }
 
 
     // Einsatz anlegen
