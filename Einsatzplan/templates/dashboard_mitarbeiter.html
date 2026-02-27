@@ -806,7 +806,6 @@
 
       <div class="modal-actions" id="response-buttons">
         <button class="confirm" id="btn-zusagen">✅ Zusagen</button>
-        <button class="reject" id="btn-absagen">❌ Absagen</button>
         <button class="release" id="btn-withdraw">↩️ Zurückziehen</button>
       </div>
     </div>
@@ -1354,7 +1353,6 @@ tYear.addEventListener("change", loadTermine);
       calendar.render();
 
             document.getElementById("btn-zusagen").onclick = () => sendResponse("zugesagt");
-      document.getElementById("btn-absagen").onclick = () => sendResponse("abgelehnt");
       document.getElementById("btn-withdraw").onclick = () => withdrawResponse();
 
       document.getElementById("btn-endtime").onclick = async () => {
@@ -1377,6 +1375,12 @@ tYear.addEventListener("change", loadTermine);
     }
 
     async function sendResponse(status) {
+      // ❗ Mitarbeiter dürfen nicht mehr "Absagen" senden.
+      // Nur Zusagen oder Zurückziehen ist erlaubt.
+      if(String(status||"").trim() === "abgelehnt"){
+        alert("Absagen ist nicht möglich. Bitte ziehe deine Reaktion zurück oder kontaktiere den Chef.");
+        return;
+      }
       let remarkBlock = document.getElementById("remark-block");
       let remark = remarkBlock.style.display === "none" ? "" : document.getElementById("r-remark").value;
 
