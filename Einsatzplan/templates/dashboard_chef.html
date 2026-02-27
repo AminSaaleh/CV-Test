@@ -1022,6 +1022,86 @@ body.modal-open{ touch-action: auto !important; }
 
         <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
       </div>
+      <!-- Personalbogen (zusätzliche Angaben) -->
+      <hr style="margin:12px 0;">
+      <h4 style="margin:6px 0;">Personalbogen</h4>
+
+      <div class="form-row">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Mitarbeiter-Bild (optional)</label>
+          <input type="file" id="new-photo" accept="image/*">
+          <div style="margin-top:6px;">
+            <img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
+          </div>
+        </div>
+        <div style="flex:1;">
+          <label style="font-size:12px;">Geburtsdatum</label>
+          <input type="date" id="geburtsdatum">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="staatsangehoerigkeit" placeholder="Staatsangehörigkeit">
+        <select id="amtliches_dokument">
+          <option value="">Amtliches Dokument (optional)</option>
+          <option value="Personalausweis">Personalausweis</option>
+          <option value="Reisepass">Reisepass</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="dokumentennr" placeholder="Dokumentennr. (intern)">
+        <input type="text" id="ausstellende_behoerde" placeholder="Ausstellende Behörde">
+      </div>
+
+      <div class="form-row">
+        <label style="font-size:12px;">Ausstellungsdatum</label>
+        <input type="date" id="ausstellungsdatum">
+        <select id="sanitaeter_art">
+          <option value="">Sanitäter Art (optional)</option>
+          <option value="Rettungssanitäter">Rettungssanitäter</option>
+          <option value="Rettungsassistent">Rettungsassistent</option>
+        </select>
+      </div>
+
+      <div class="form-row" style="flex-wrap:wrap;gap:10px;">
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gssk"> GSSK</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="fachkraft"> Fachkraft S&S</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="behoerdlich"> Behördlich/Studium</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
+      </div>
+
+      <div class="form-row">
+        <select id="fuehrerschein_klasse">
+          <option value="">Führerschein Klasse (optional)</option>
+          <option value="B">B</option>
+          <option value="C">C</option>
+          <option value="CE">CE</option>
+        </select>
+        <input type="text" id="sonstige" placeholder="Sonstige (optional)">
+      </div>
+
+      <div class="form-row">
+        <div style="flex:1;">
+          <label style="font-size:12px;">Fremdsprachen (Mehrfachauswahl)</label>
+          <select id="sprachen" multiple style="height:90px;">
+            <option value="Deutsch">Deutsch</option>
+            <option value="Englisch">Englisch</option>
+            <option value="Französisch">Französisch</option>
+            <option value="Italienisch">Italienisch</option>
+            <option value="Spanisch">Spanisch</option>
+            <option value="Türkisch">Türkisch</option>
+            <option value="Arabisch">Arabisch</option>
+            <option value="Russisch">Russisch</option>
+            <option value="Polnisch">Polnisch</option>
+          </select>
+          <div class="muted" style="font-size:11px;margin-top:4px;">Tipp: Strg/Cmd für Mehrfachauswahl</div>
+        </div>
+      </div>
+
 
       <button type="submit" class="confirm">➕ Hinzufügen</button>
     </form>
@@ -1030,6 +1110,7 @@ body.modal-open{ touch-action: auto !important; }
     <table class="user-table">
       <thead>
         <tr>
+          <th>Foto</th>
           <th>Benutzername</th>
           <th>Name</th>
           <th>E-Mail</th>
@@ -1107,7 +1188,83 @@ body.modal-open{ touch-action: auto !important; }
       <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
       <input id="event-rate" type="number" step="0.01" min="0" placeholder="z.B. 20.00">
 
-      <div class="modal-actions">
+      
+      <hr style="margin:12px 0;">
+      <h4 style="margin:6px 0;">Personalbogen</h4>
+
+      <label>Foto (optional)</label>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+        <img id="edit-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
+        <input type="file" id="edit-photo" accept="image/*">
+        <button type="button" class="confirm" onclick="uploadEditPhoto()">⬆️ Foto hochladen</button>
+        <button type="button" class="confirm" onclick="downloadClientPdf(currentEditUser)">📄 PDF-Auszug</button>
+      </div>
+
+      <label>Geburtsdatum</label>
+      <input type="date" id="edit-geburtsdatum">
+
+      <label>Staatsangehörigkeit</label>
+      <input type="text" id="edit-staatsangehoerigkeit">
+
+      <label>Amtliches Dokument</label>
+      <select id="edit-amtliches_dokument">
+        <option value="">-</option>
+        <option value="Personalausweis">Personalausweis</option>
+        <option value="Reisepass">Reisepass</option>
+      </select>
+
+      <label>Dokumentennr. (intern)</label>
+      <input type="text" id="edit-dokumentennr">
+
+      <label>Ausstellende Behörde</label>
+      <input type="text" id="edit-ausstellende_behoerde">
+
+      <label>Ausstellungsdatum</label>
+      <input type="date" id="edit-ausstellungsdatum">
+
+      <label>Sanitäter Art</label>
+      <select id="edit-sanitaeter_art">
+        <option value="">-</option>
+        <option value="Rettungssanitäter">Rettungssanitäter</option>
+        <option value="Rettungsassistent">Rettungsassistent</option>
+      </select>
+
+      <div class="form-row" style="flex-wrap:wrap;gap:10px;margin-top:6px;">
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-brandschutzhelfer"> Brandschutzhelfer/in</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-deeskalation"> Deeskalationstraining</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-gssk"> GSSK</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-fachkraft"> Fachkraft S&S</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-personenschutz"> Personenschutz</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-behoerdlich"> Behördlich/Studium</label>
+        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde</label>
+      </div>
+
+      <label>Führerschein Klasse</label>
+      <select id="edit-fuehrerschein_klasse">
+        <option value="">-</option>
+        <option value="B">B</option>
+        <option value="C">C</option>
+        <option value="CE">CE</option>
+      </select>
+
+      <label>Sonstige</label>
+      <input type="text" id="edit-sonstige">
+
+      <label>Fremdsprachen (Mehrfachauswahl)</label>
+      <select id="edit-sprachen" multiple style="height:90px;">
+        <option value="Deutsch">Deutsch</option>
+        <option value="Englisch">Englisch</option>
+        <option value="Französisch">Französisch</option>
+        <option value="Italienisch">Italienisch</option>
+        <option value="Spanisch">Spanisch</option>
+        <option value="Türkisch">Türkisch</option>
+        <option value="Arabisch">Arabisch</option>
+        <option value="Russisch">Russisch</option>
+        <option value="Polnisch">Polnisch</option>
+      </select>
+      <div class="muted" style="font-size:11px;margin-top:4px;">Tipp: Strg/Cmd für Mehrfachauswahl</div>
+
+<div class="modal-actions">
         <button class="release" onclick="saveEvent('geplant')">📄 Nur planen</button>
         <button class="confirm" onclick="saveEvent('offen')">🚀 Direkt freigeben</button>
       </div>
@@ -1847,6 +2004,30 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
 
 
     document.addEventListener('DOMContentLoaded', async function() {
+      // Personal: Foto-Vorschau (Neu)
+      const newPhoto = document.getElementById("new-photo");
+      const newPrev  = document.getElementById("new-photo-preview");
+      if(newPhoto && newPrev){
+        newPhoto.addEventListener("change", ()=>{
+          const f = newPhoto.files && newPhoto.files[0];
+          if(!f){ newPrev.style.display="none"; newPrev.src=""; return; }
+          newPrev.src = URL.createObjectURL(f);
+          newPrev.style.display="block";
+        });
+      }
+
+      // Personal: Foto-Vorschau (Bearbeiten)
+      const editPhoto = document.getElementById("edit-photo");
+      const editPrev  = document.getElementById("edit-photo-preview");
+      if(editPhoto && editPrev){
+        editPhoto.addEventListener("change", ()=>{
+          const f = editPhoto.files && editPhoto.files[0];
+          if(!f){ /* keep existing preview */ return; }
+          editPrev.src = URL.createObjectURL(f);
+          editPrev.style.display="block";
+        });
+      }
+
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
       if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
@@ -2363,7 +2544,25 @@ document.getElementById("planning").style.display="block";
           steuernummer: document.getElementById("steuernummer").value,
           bsw: document.getElementById("bsw").value,
           sanitaeter: document.getElementById("sanitaeter").value,
-          stundensatz: document.getElementById("stundensatz").value
+          stundensatz: document.getElementById("stundensatz").value,
+          geburtsdatum: document.getElementById("geburtsdatum").value,
+          staatsangehoerigkeit: document.getElementById("staatsangehoerigkeit").value,
+          amtliches_dokument: document.getElementById("amtliches_dokument").value,
+          dokumentennr: document.getElementById("dokumentennr").value,
+          ausstellende_behoerde: document.getElementById("ausstellende_behoerde").value,
+          ausstellungsdatum: document.getElementById("ausstellungsdatum").value,
+          sanitaeter_art: document.getElementById("sanitaeter_art").value,
+          brandschutzhelfer: document.getElementById("brandschutzhelfer").checked ? "ja" : "nein",
+          deeskalation: document.getElementById("deeskalation").checked ? "ja" : "nein",
+          gssk: document.getElementById("gssk").checked ? "ja" : "nein",
+          fachkraft: document.getElementById("fachkraft").checked ? "ja" : "nein",
+          personenschutz: document.getElementById("personenschutz").checked ? "ja" : "nein",
+          behoerdlich: document.getElementById("behoerdlich").checked ? "ja" : "nein",
+          waffensachkunde: document.getElementById("waffensachkunde").checked ? "ja" : "nein",
+          fuehrerschein_klasse: document.getElementById("fuehrerschein_klasse").value,
+          sonstige: document.getElementById("sonstige").value,
+          sprachen: Array.from(document.getElementById("sprachen").selectedOptions).map(o=>o.value).join(", ")
+
         };
         const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
         const rAdd = await resAdd.json().catch(()=>({}));
@@ -2371,8 +2570,19 @@ document.getElementById("planning").style.display="block";
           alert(rAdd.error || "Hinzufügen fehlgeschlagen");
           return;
         }
+        // optional: Foto hochladen (nachdem User existiert)
+        const pIn = document.getElementById("new-photo");
+        if(pIn && pIn.files && pIn.files[0]){
+          const fd = new FormData();
+          fd.append("photo", pIn.files[0]);
+          await fetch("/users/" + encodeURIComponent(data.username) + "/photo", { method:"POST", body: fd });
+        }
+
         loadUsers();
         e.target.reset();
+        const pv=document.getElementById("new-photo-preview");
+        if(pv){ pv.style.display="none"; pv.src=""; }
+
       };
       }
     });
@@ -3017,6 +3227,7 @@ document.getElementById("confirmed-counter").textContent =
       users.forEach(u=>{
         let tr=document.createElement("tr");
         tr.innerHTML=`
+          <td>${u.photo_url ? `<img src="${u.photo_url}" style="height:34px;width:28px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">` : `<span class="muted">-</span>`}</td>
           <td><b>${u.username}</b></td>
           <td>${u.vorname} ${u.nachname}</td>
           <td>${u.email || "-"}</td>
@@ -3029,6 +3240,7 @@ document.getElementById("confirmed-counter").textContent =
           <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
           <td>
             <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
+            <button class="confirm" onclick="downloadClientPdf('${u.username}')">📄 PDF</button>
             <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
           </td>
         `;
@@ -3088,7 +3300,28 @@ document.getElementById("confirmed-counter").textContent =
 
       await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
+    
+    function downloadClientPdf(username){
+      if(!username) return;
+      window.location = "/users/" + encodeURIComponent(username) + "/client_pdf";
     }
+
+    async function uploadEditPhoto(){
+      if(!currentEditUser){ alert("Kein Mitarbeiter ausgewählt"); return; }
+      const inp = document.getElementById("edit-photo");
+      if(!inp || !inp.files || !inp.files[0]){ alert("Bitte zuerst ein Foto auswählen."); return; }
+      const fd = new FormData();
+      fd.append("photo", inp.files[0]);
+      const res = await fetch("/users/" + encodeURIComponent(currentEditUser) + "/photo", { method:"POST", body: fd });
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){ alert(r.error || "Upload fehlgeschlagen"); return; }
+      // Vorschau aktualisieren
+      const pv = document.getElementById("edit-photo-preview");
+      if(pv){ pv.src = r.photo_url; pv.style.display="block"; }
+      await loadUsers();
+    }
+
+}
 
     function openEditModal(user){
       document.getElementById("edit-username").value=user.username;
@@ -3109,6 +3342,45 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
 
       document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
+
+      // Personalbogen
+      document.getElementById("edit-geburtsdatum").value = (user.geburtsdatum || "");
+      document.getElementById("edit-staatsangehoerigkeit").value = (user.staatsangehoerigkeit || "");
+      document.getElementById("edit-amtliches_dokument").value = (user.amtliches_dokument || "");
+      document.getElementById("edit-dokumentennr").value = (user.dokumentennr || "");
+      document.getElementById("edit-ausstellende_behoerde").value = (user.ausstellende_behoerde || "");
+      document.getElementById("edit-ausstellungsdatum").value = (user.ausstellungsdatum || "");
+      document.getElementById("edit-sanitaeter_art").value = (user.sanitaeter_art || "");
+
+      document.getElementById("edit-brandschutzhelfer").checked = String(user.brandschutzhelfer||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-deeskalation").checked = String(user.deeskalation||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-gssk").checked = String(user.gssk||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-fachkraft").checked = String(user.fachkraft||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-personenschutz").checked = String(user.personenschutz||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-behoerdlich").checked = String(user.behoerdlich||"nein").toLowerCase()==="ja";
+      document.getElementById("edit-waffensachkunde").checked = String(user.waffensachkunde||"nein").toLowerCase()==="ja";
+
+      document.getElementById("edit-fuehrerschein_klasse").value = (user.fuehrerschein_klasse || "");
+      document.getElementById("edit-sonstige").value = (user.sonstige || "");
+
+      // Sprachen (CSV -> MultiSelect)
+      const langCsv = String(user.sprachen || "");
+      const langs = langCsv.split(",").map(s=>s.trim()).filter(Boolean);
+      const sel = document.getElementById("edit-sprachen");
+      Array.from(sel.options).forEach(o=>{ o.selected = langs.includes(o.value); });
+
+      // Foto Vorschau
+      const pv = document.getElementById("edit-photo-preview");
+      if(pv){
+        if(user.photo_url){
+          pv.src = user.photo_url;
+          pv.style.display = "block";
+        } else {
+          pv.src = "";
+          pv.style.display = "none";
+        }
+      }
+
       document.getElementById("editUserModal").style.display="flex";
     }
 
@@ -3151,7 +3423,25 @@ document.getElementById("confirmed-counter").textContent =
         steuernummer: document.getElementById("edit-steuernummer").value,
         bsw: document.getElementById("edit-bsw").value,
         sanitaeter: document.getElementById("edit-sanitaeter").value,
-        stundensatz:document.getElementById("edit-stundensatz").value
+        stundensatz:document.getElementById("edit-stundensatz").value,
+        geburtsdatum: document.getElementById("edit-geburtsdatum").value,
+        staatsangehoerigkeit: document.getElementById("edit-staatsangehoerigkeit").value,
+        amtliches_dokument: document.getElementById("edit-amtliches_dokument").value,
+        dokumentennr: document.getElementById("edit-dokumentennr").value,
+        ausstellende_behoerde: document.getElementById("edit-ausstellende_behoerde").value,
+        ausstellungsdatum: document.getElementById("edit-ausstellungsdatum").value,
+        sanitaeter_art: document.getElementById("edit-sanitaeter_art").value,
+        brandschutzhelfer: document.getElementById("edit-brandschutzhelfer").checked ? "ja" : "nein",
+        deeskalation: document.getElementById("edit-deeskalation").checked ? "ja" : "nein",
+        gssk: document.getElementById("edit-gssk").checked ? "ja" : "nein",
+        fachkraft: document.getElementById("edit-fachkraft").checked ? "ja" : "nein",
+        personenschutz: document.getElementById("edit-personenschutz").checked ? "ja" : "nein",
+        behoerdlich: document.getElementById("edit-behoerdlich").checked ? "ja" : "nein",
+        waffensachkunde: document.getElementById("edit-waffensachkunde").checked ? "ja" : "nein",
+        fuehrerschein_klasse: document.getElementById("edit-fuehrerschein_klasse").value,
+        sonstige: document.getElementById("edit-sonstige").value,
+        sprachen: Array.from(document.getElementById("edit-sprachen").selectedOptions).map(o=>o.value).join(", ")
+
       };
 
       const resSave = await fetch("/users/"+newUsernameUrl,{
