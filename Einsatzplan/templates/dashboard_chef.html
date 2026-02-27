@@ -2340,6 +2340,12 @@ document.getElementById("planning").style.display="block";
     let dupSelectedDates = [];
     let dupSourceCategoryById = {}; // event_id -> 'CP'/'CV'
 
+    // Kategorie robust aus Event-Objekt lesen (Backend liefert je nach Quelle category oder extendedProps.category)
+    function normalizeDupCategory(raw){
+      const c = String(raw || 'CP').toUpperCase();
+      return (c === 'CV') ? 'CV' : 'CP';
+    }
+
 
     function openDuplicateModal(){
       document.getElementById("duplicateModal").style.display = "flex";
@@ -2372,8 +2378,10 @@ document.getElementById("dup-date").value = "";
       events.forEach(ev=>{
         const opt = document.createElement("option");
         opt.value = ev.id;
-        dupSourceCategoryById[String(ev.id)] = (String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP');
-        opt.dataset.category = String(ev.category || 'CP').toUpperCase()==='CV'?'CV':'CP';
+        const catRaw = (ev && (ev.category ?? (ev.extendedProps && (ev.extendedProps.category ?? ev.extendedProps.CATEGORY ?? ev.extendedProps.kategorie ?? ev.extendedProps.Kategorie))));
+        const cat = normalizeDupCategory(catRaw);
+        dupSourceCategoryById[String(ev.id)] = cat;
+        opt.dataset.category = cat;
         const startTxt = ev.start ? fmtDateTimeDE(ev.start) : "";
         opt.textContent = `[${dupSourceCategoryById[String(ev.id)]}] ${(ev.title || "(ohne Titel)")} – ${startTxt}`;
         sel.appendChild(opt);
@@ -2422,9 +2430,9 @@ document.getElementById("dup-date").value = "";
       }
 
       // ✅ Auftraggeber automatisch vom ausgewählten Einsatz übernehmen (CP bleibt CP, CV bleibt CV)
-      const category = (dupSourceCategoryById && dupSourceCategoryById[String(event_id)])
-        ? String(dupSourceCategoryById[String(event_id)]).toUpperCase()
-        : "CP";
+      const category = normalizeDupCategory(
+        (dupSourceCategoryById && dupSourceCategoryById[String(event_id)])
+      );
 
       const res = await fetch("/events/duplicate", {
         method:"POST",
