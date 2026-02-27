@@ -2534,13 +2534,17 @@ document.getElementById("dup-date").value = "";
     function closeDetailsModal(){ const m=document.getElementById("detailsModal"); if(m) m.style.display="none"; document.body.classList.remove("modal-open"); }
 
     async function refreshDetailsModal() {
-      let res = await fetch("/events");
-      let events = await res.json();
+      // Nach Aktionen (bestätigen/ablehnen/entfernen) sofort die aktuellsten Daten laden
+      const res = await fetch("/events");
+      const events = await res.json();
 
-      const catFilter = (document.getElementById("report-type")?.value || "CV").toUpperCase();
-      events = events.filter(ev => String(ev.category || "CP").toUpperCase() === catFilter);
-      let e = events.find(x => x.id === currentEventId);
-      if (e) buildDetailsModal(e, { title: e.title, start: new Date(e.start), id: e.id });
+      // IMPORTANT: nicht über category filtern, weil das Backend je nach Endpoint die Kategorie
+      // evtl. anders liefert (sonst findet man den aktuellen Einsatz nicht und das Modal bleibt "alt").
+      const e = events.find(x => String(x.id) === String(currentEventId));
+
+      if (e) {
+        buildDetailsModal(e, { title: e.title, start: new Date(e.start), id: e.id });
+      }
     }
 
     async function confirmResponse(user, decision) {
