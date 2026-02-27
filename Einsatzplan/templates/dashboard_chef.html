@@ -220,6 +220,11 @@
 #calendar .status-event-voll .fc-daygrid-event-dot{
   background-color:#2ecc71 !important;
 }
+
+/* 🔴 Mindestens eine Absage (Mitarbeiter) */
+#calendar .status-event-absage .fc-daygrid-event-dot{
+  background-color:#e74c3c !important;
+}
 </style>
 
 <style>
@@ -2080,6 +2085,20 @@ document.getElementById("planning").style.display="block";
 
             if(ev.status==="offen"){
               let confirmedCount = Object.values(ev.responses || {}).filter(r => r.status==="bestätigt").length;
+              // ✅ Absagen sichtbar machen (Mitarbeiter-Absage = status "abgelehnt")
+              let declinedCount = Object.values(ev.responses || {}).filter(r => String(r.status||"").trim()==="abgelehnt").length;
+
+              // Dot-Status (Kalender): voll / bewerbung / absage
+              ev.classNames = (ev.classNames || []);
+              if(confirmedCount >= (ev.required_staff || 0)) ev.classNames.push("status-event-voll");
+              else ev.classNames.push("status-event-bewerbung");
+              if(declinedCount > 0) ev.classNames.push("status-event-absage");
+
+              // Titel: Absage-Zähler als kleines Icon anzeigen (damit Chef es sofort sieht)
+              if(declinedCount > 0){
+                ev.title = `${ev.title} ❌${declinedCount}`.trim();
+              }
+
               const c = (confirmedCount >= (ev.required_staff || 0)) ? "green" : "darkblue";
               ev.color = c; ev.textColor = c;
             }
