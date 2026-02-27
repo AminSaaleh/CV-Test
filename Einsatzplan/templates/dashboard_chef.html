@@ -2085,19 +2085,6 @@ document.getElementById("planning").style.display="block";
 
             if(ev.status==="offen"){
               let confirmedCount = Object.values(ev.responses || {}).filter(r => r.status==="bestätigt").length;
-              // ✅ Absagen sichtbar machen (Mitarbeiter-Absage = status "abgelehnt")
-              let declinedCount = Object.values(ev.responses || {}).filter(r => String(r.status||"").trim()==="abgelehnt").length;
-
-              // Dot-Status (Kalender): voll / bewerbung / absage
-              ev.classNames = (ev.classNames || []);
-              if(confirmedCount >= (ev.required_staff || 0)) ev.classNames.push("status-event-voll");
-              else ev.classNames.push("status-event-bewerbung");
-              if(declinedCount > 0) ev.classNames.push("status-event-absage");
-
-              // Titel: Absage-Zähler als kleines Icon anzeigen (damit Chef es sofort sieht)
-              if(declinedCount > 0){
-                ev.title = `${ev.title} ❌${declinedCount}`.trim();
-              }
 
               const c = (confirmedCount >= (ev.required_staff || 0)) ? "green" : "darkblue";
               ev.color = c; ev.textColor = c;
@@ -2204,6 +2191,42 @@ document.getElementById("planning").style.display="block";
           initialView:'dayGridWeek',
           locale:'de',
           firstDay: 1,
+
+          // ✅ Wochen-Titel mit Punkt nach Start-Tag (z.B. 23. – 29. März 2026)
+          datesSet: (arg) => {
+            try{
+              const start = arg.view.currentStart;
+              const endExclusive = arg.view.currentEnd;
+              const end = new Date(endExclusive.getTime() - 1); // end ist exklusiv
+
+              const sd = start.getDate();
+              const ed = end.getDate();
+
+              const sameMonth = start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+
+              const startMonth = start.toLocaleDateString('de-DE', { month: 'long' });
+              const endMonth   = end.toLocaleDateString('de-DE',   { month: 'long' });
+              const yearEnd    = end.getFullYear();
+              const yearStart  = start.getFullYear();
+
+              let title = "";
+              if(sameMonth){
+                title = `${sd}. – ${ed}. ${startMonth} ${yearStart}`;
+              } else {
+                // über Monats-/Jahresgrenze
+                title = `${sd}. ${startMonth} – ${ed}. ${endMonth} ${yearEnd}`;
+                if(yearStart !== yearEnd){
+                  title = `${sd}. ${startMonth} ${yearStart} – ${ed}. ${endMonth} ${yearEnd}`;
+                }
+              }
+
+              const root = document.getElementById('planning-calendar');
+              const tEl = root ? root.querySelector('.fc-toolbar-title') : null;
+              if(tEl) tEl.textContent = title;
+            }catch(_){}
+          },
+
+
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
           height:"85vh",
 
