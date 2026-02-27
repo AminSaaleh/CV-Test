@@ -1283,97 +1283,97 @@ def edit_entry():
 
 @app.route("/events/duplicate", methods=["POST"])
 def duplicate_event():
-    """Chef/Vorgesetzter: Einsatz duplizieren – optional auf mehrere Daten.
-    Payload:
-      - event_id: Quelleinsatz-ID (Pflicht)
-      - dates: Liste von 'YYYY-MM-DD' (optional)
-      - start: einzelner ISO 'YYYY-MM-DDTHH:MM' (optional; fallback)
-    Verhalten:
-      - Wenn dates gesetzt ist: pro Datum wird ein neuer Einsatz erstellt.
-        Uhrzeit wird aus Quelle (start) übernommen.
-      - Wenn start gesetzt ist: genau ein neuer Einsatz mit dieser Startzeit.
-    """
+    """Chef/Vorgesetzter: Einsatz duplizieren (stabil & fehlertolerant)."""
     if session.get("role") not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
-    d = request.json or {}
-    source_id = (d.get("event_id") or "").strip()
-    if not source_id:
-        return jsonify({"error": "event_id fehlt"}), 400
+    try:
+        d = request.json or {}
+        source_id = (d.get("event_id") or "").strip()
+        if not source_id:
+            return jsonify({"error": "event_id fehlt"}), 400
 
-    dates = d.get("dates") or []
-    single_start = (d.get("start") or "").strip()
+        dates = d.get("dates") or []
+        single_start = (d.get("start") or "").strip()
 
-    db = get_db()
-    src = db.execute("SELECT * FROM event WHERE id=%s", (source_id,)).fetchone()
-    if not src:
-        return jsonify({"error": "Event nicht gefunden"}), 404
+        db = get_db()
+        src = db.execute("SELECT * FROM event WHERE id=%s", (source_id,)).fetchone()
+        if not src:
+            return jsonify({"error": "Event nicht gefunden"}), 404
 
-    # Quelle-Uhrzeit ermitteln (HH:MM)
-    src_start = (src["start"] or "").strip()
-    src_time = "09:00"
-    m = re.match(r"^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})", src_start)
-    if m:
-        src_time = m.group(1)
-    else:
-        # Fallback: wenn nur Uhrzeit gespeichert wäre
-        m2 = re.match(r"^(\d{1,2}:\d{2})$", src_start)
-        if m2:
-            hhmm = m2.group(1).split(":")
-            src_time = f"{int(hhmm[0]):02d}:{hhmm[1]}"
+        # --- Kategorie sauber normalisieren ---
+        src_cat = (src.get("category") or "CP").strip().upper()
+        if src_cat not in ("CP", "CV"):
+            src_cat = "CP"
 
-    def insert_new(start_val: str):
-        new_id = str(uuid.uuid4())
-        src_cat = (src.get('category') or 'CP').strip().upper()
-        if src_cat not in ('CP','CV'):
-            src_cat = 'CP'
-        db.execute(
-            """INSERT INTO event
-               (id,title,ort,dienstkleidung,auftraggeber,start,planned_end_time,frist,status,category,required_staff,use_event_rate,stundensatz)
-           VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            (
-                new_id,
-                src["title"] or "",
-                src["ort"] or "",
-                src["dienstkleidung"] or "",
-                src["auftraggeber"] or "",
-                start_val,
-                src["planned_end_time"] or "",
-                (src["frist"] or ""),
-                src["status"] or "geplant",
-                src_cat,
-                int(src["required_staff"] or 0),
-                int(src["use_event_rate"] if src["use_event_rate"] is not None else 1),
-                src["stundensatz"]
+        # --- Uhrzeit aus Quelle holen ---
+        src_start = (src.get("start") or "").strip()
+        src_time = "09:00"
+        m = re.match(r"^\d{4}-\d{2}-\d{2}T(\d{2}:\d{2})", src_start)
+        if m:
+            src_time = m.group(1)
+
+        def insert_new(start_val: str) -> str:
+            new_id = str(uuid.uuid4())
+            db.execute(
+                """
+                INSERT INTO event
+                  (id,title,ort,dienstkleidung,auftraggeber,start,
+                   planned_end_time,frist,status,category,
+                   required_staff,use_event_rate,stundensatz)
+                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (
+                    new_id,
+                    src.get("title") or "",
+                    src.get("ort") or "",
+                    src.get("dienstkleidung") or "",
+                    src.get("auftraggeber") or "",
+                    start_val,
+                    src.get("planned_end_time") or "",
+                    src.get("frist") or "",
+                    src.get("status") or "geplant",
+                    src_cat,
+                    int(src.get("required_staff") or 0),
+                    int(src.get("use_event_rate") if src.get("use_event_rate") is not None else 1),
+                    src.get("stundensatz"),
+                ),
             )
-        )
-        return new_id
+            return new_id
 
-    created_ids = []
+        created_ids = []
 
-    # Mehrere Daten
-    if isinstance(dates, list) and len(dates) > 0:
-        for ds in dates:
-            ds = (ds or "").strip()
-            if not re.match(r"^\d{4}-\d{2}-\d{2}$", ds):
-                continue
-            start_val = f"{ds}T{src_time}"
-            created_ids.append(insert_new(start_val))
+        # --- Mehrere Daten ---
+        if isinstance(dates, list) and dates:
+            for ds in dates:
+                ds = (ds or "").strip()
+                if not re.match(r"^\d{4}-\d{2}-\d{2}$", ds):
+                    continue
+                created_ids.append(insert_new(f"{ds}T{src_time}"))
 
-        if not created_ids:
-            return jsonify({"error": "Keine gültigen Datumswerte übergeben"}), 400
+            if not created_ids:
+                db.rollback()
+                return jsonify({"error": "Keine gültigen Datumswerte"}), 400
 
+            db.commit()
+            return jsonify({"status": "ok", "new_event_ids": created_ids}), 200
+
+        # --- Einzeltermin ---
+        start_val = single_start or src_start
+        if not start_val:
+            return jsonify({"error": "start fehlt"}), 400
+
+        new_id = insert_new(start_val)
         db.commit()
-        return jsonify({"status": "ok", "new_event_ids": created_ids})
+        return jsonify({"status": "ok", "new_event_id": new_id}), 200
 
-    # Einzelstart
-    start_val = single_start or src_start
-    if not start_val:
-        return jsonify({"error": "start fehlt"}), 400
-
-    new_id = insert_new(start_val)
-    db.commit()
-    return jsonify({"status": "ok", "new_event_id": new_id})
+    except Exception as e:
+        try:
+            db.rollback()
+        except Exception:
+            pass
+        print("DUPLICATE ERROR:", repr(e))
+        return jsonify({"error": "Duplizieren fehlgeschlagen", "detail": str(e)}), 500
 
 
 
@@ -1417,6 +1417,7 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+
 
 
 
