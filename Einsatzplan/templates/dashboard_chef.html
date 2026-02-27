@@ -405,22 +405,6 @@
   background: #dbeafe !important;
 }
 </style>
-<style>
-/* ✅ Planung: KEINE Hervorhebung für den heutigen Tag (weder Hintergrund noch Header) */
-#planning-calendar .fc-day-today{
-  background: transparent !important;
-}
-#planning-calendar .fc-col-header-cell.fc-day-today{
-  background: transparent !important;
-}
-#planning-calendar .fc-day-today .fc-daygrid-day-number{
-  font-weight: inherit !important;
-  color: inherit !important;
-}
-</style>
-
-
-
 <script>
 // ✅ CP/CV Badge neben Firma im Einsatzdetails-Modal
 function updateFirmaCategoryBadge(ev){
@@ -758,6 +742,73 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
+
+<style>
+/* ✅ Personal: einheitliches, modernes Layout */
+#user-management{max-width:1100px;margin:0 auto;}
+#user-management h3{margin-bottom:10px;}
+#user-management .user-form{
+  background:#fff;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:16px;
+  padding:16px;
+  box-shadow:0 8px 22px rgba(0,0,0,.06);
+}
+#user-management .user-form h4{margin:14px 0 8px 0;}
+#user-management .user-form hr{border:none;border-top:1px solid rgba(0,0,0,.08);margin:14px 0;}
+#user-management .user-form .form-row{
+  display:grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:12px;
+  align-items:end;
+  margin-bottom:12px;
+}
+#user-management .user-form label{
+  font-size:12px;
+  opacity:.85;
+  display:block;
+  margin:0 0 4px 2px;
+}
+#user-management .user-form input,
+#user-management .user-form select{
+  width:100%;
+  box-sizing:border-box;
+}
+#user-management .check-grid{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap:10px 14px;
+  padding:10px 12px;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:12px;
+  background:rgba(0,0,0,.02);
+  margin-bottom:12px;
+}
+#user-management .check-grid label{margin:0;font-size:13px;display:flex;gap:8px;align-items:center;}
+#user-management .photo-box{
+  border:1px dashed rgba(0,0,0,.18);
+  border-radius:12px;
+  padding:10px 12px;
+  background:rgba(0,0,0,.02);
+}
+#user-management .user-table{width:100%;overflow:auto;display:block;}
+#user-management .user-table thead, 
+#user-management .user-table tbody{display:table;width:100%;table-layout:fixed;}
+#user-management .user-table th, #user-management .user-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+</style>
+
+
+<style>
+/* ✅ Heute wieder grün markieren (Kalender + Planung) */
+#calendar .fc-daygrid-day.fc-day-today,
+#planning-calendar .fc-daygrid-day.fc-day-today{
+  background:#e9fbe9 !important;
+}
+#calendar .fc-col-header-cell.fc-day-today,
+#planning-calendar .fc-col-header-cell.fc-day-today{
+  background:#e6f6ea !important;
+}
+</style>
 </head>
 <body>
   <nav>
@@ -1027,15 +1078,15 @@ body.modal-open{ touch-action: auto !important; }
       <h4 style="margin:6px 0;">Personalbogen</h4>
 
       <div class="form-row">
-        <div style="flex:1;">
-          <label style="font-size:12px;">Mitarbeiter-Bild (optional)</label>
+        <div class="photo-box">
+          <label>Mitarbeiter-Bild (optional)</label>
           <input type="file" id="new-photo" accept="image/*">
           <div style="margin-top:6px;">
             <img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
           </div>
         </div>
         <div style="flex:1;">
-          <label style="font-size:12px;">Geburtsdatum</label>
+          <label>Geburtsdatum</label>
           <input type="date" id="geburtsdatum">
         </div>
       </div>
@@ -1055,7 +1106,7 @@ body.modal-open{ touch-action: auto !important; }
       </div>
 
       <div class="form-row">
-        <label style="font-size:12px;">Ausstellungsdatum</label>
+        <label>Ausstellungsdatum</label>
         <input type="date" id="ausstellungsdatum">
         <select id="sanitaeter_art">
           <option value="">Sanitäter Art (optional)</option>
@@ -1064,7 +1115,7 @@ body.modal-open{ touch-action: auto !important; }
         </select>
       </div>
 
-      <div class="form-row" style="flex-wrap:wrap;gap:10px;">
+      <div class="check-grid">
         <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
         <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
         <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gssk"> GSSK</label>
@@ -1086,7 +1137,7 @@ body.modal-open{ touch-action: auto !important; }
 
       <div class="form-row">
         <div style="flex:1;">
-          <label style="font-size:12px;">Fremdsprachen (Mehrfachauswahl)</label>
+          <label>Fremdsprachen (Mehrfachauswahl)</label>
           <select id="sprachen" multiple style="height:90px;">
             <option value="Deutsch">Deutsch</option>
             <option value="Englisch">Englisch</option>
@@ -3300,7 +3351,8 @@ document.getElementById("confirmed-counter").textContent =
 
       await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
-    
+    }
+
     function downloadClientPdf(username){
       if(!username) return;
       window.location = "/users/" + encodeURIComponent(username) + "/client_pdf";
@@ -3320,8 +3372,6 @@ document.getElementById("confirmed-counter").textContent =
       if(pv){ pv.src = r.photo_url; pv.style.display="block"; }
       await loadUsers();
     }
-
-}
 
     function openEditModal(user){
       document.getElementById("edit-username").value=user.username;
