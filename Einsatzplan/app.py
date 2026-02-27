@@ -6,9 +6,15 @@
 #   export SECRET_KEY="."
 #   python app.py
 #
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file, abort
 import os, uuid, re
 from datetime import datetime
+import io
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.lib.utils import ImageReader
+
 
 
 def normalize_role(role: str) -> str:
@@ -266,6 +272,29 @@ def init_db():
             bsw TEXT,
             sanitaeter TEXT,
             stundensatz DOUBLE PRECISION,
+
+            -- Erweiterung: Personalbogen (intern)
+            photo_url TEXT,
+            geburtsdatum TEXT,                -- ISO: YYYY-MM-DD
+            staatsangehoerigkeit TEXT,
+            amtliches_dokument TEXT,          -- 'Personalausweis' | 'Reisepass'
+            dokumentennr TEXT,
+            ausstellende_behoerde TEXT,
+            ausstellungsdatum TEXT,           -- ISO: YYYY-MM-DD
+
+            -- Qualifikationen / Fähigkeiten
+            sanitaeter_art TEXT,              -- 'Rettungssanitäter' | 'Rettungsassistent'
+            brandschutzhelfer TEXT,           -- ja/nein
+            deeskalation TEXT,                -- ja/nein
+            gssk TEXT,                        -- ja/nein
+            fachkraft TEXT,                   -- ja/nein
+            personenschutz TEXT,              -- ja/nein
+            behoerdlich TEXT,                 -- ja/nein (behördliche Ausbildung/Studium)
+            waffensachkunde TEXT,             -- ja/nein
+            fuehrerschein_klasse TEXT,        -- 'B' | 'C' | 'CE' | ''
+            sonstige TEXT,
+            sprachen TEXT,                    -- CSV oder JSON (Frontend sendet CSV)
+
             consent_given BOOLEAN DEFAULT FALSE,
             consent_name TEXT,
             consent_date TEXT
@@ -322,6 +351,24 @@ def init_db():
         ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
         ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
         ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
+        ("photo_url", "ALTER TABLE users ADD COLUMN photo_url TEXT"),
+        ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
+        ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
+        ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
+        ("dokumentennr", "ALTER TABLE users ADD COLUMN dokumentennr TEXT"),
+        ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
+        ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
+        ("sanitaeter_art", "ALTER TABLE users ADD COLUMN sanitaeter_art TEXT"),
+        ("brandschutzhelfer", "ALTER TABLE users ADD COLUMN brandschutzhelfer TEXT"),
+        ("deeskalation", "ALTER TABLE users ADD COLUMN deeskalation TEXT"),
+        ("gssk", "ALTER TABLE users ADD COLUMN gssk TEXT"),
+        ("fachkraft", "ALTER TABLE users ADD COLUMN fachkraft TEXT"),
+        ("personenschutz", "ALTER TABLE users ADD COLUMN personenschutz TEXT"),
+        ("behoerdlich", "ALTER TABLE users ADD COLUMN behoerdlich TEXT"),
+        ("waffensachkunde", "ALTER TABLE users ADD COLUMN waffensachkunde TEXT"),
+        ("fuehrerschein_klasse", "ALTER TABLE users ADD COLUMN fuehrerschein_klasse TEXT"),
+        ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
+        ("sprachen", "ALTER TABLE users ADD COLUMN sprachen TEXT"),
         ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
         ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
         ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
@@ -368,8 +415,8 @@ def init_db():
         db.execute(
             '''
             INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ''',
             (
                 "AdminTest", "Test1234", "vorgesetzter",
@@ -545,8 +592,8 @@ def add_user():
     try:
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 d.get("password") or "",
@@ -562,6 +609,24 @@ def add_user():
                 d.get("bsw") or "nein",
                 d.get("sanitaeter") or "nein",
                 stundensatz,
+                d.get("photo_url") or "",
+                (d.get("geburtsdatum") or "").strip(),
+                (d.get("staatsangehoerigkeit") or "").strip(),
+                (d.get("amtliches_dokument") or "").strip(),
+                (d.get("dokumentennr") or "").strip(),
+                (d.get("ausstellende_behoerde") or "").strip(),
+                (d.get("ausstellungsdatum") or "").strip(),
+                (d.get("sanitaeter_art") or "").strip(),
+                d.get("brandschutzhelfer") or "nein",
+                d.get("deeskalation") or "nein",
+                d.get("gssk") or "nein",
+                d.get("fachkraft") or "nein",
+                d.get("personenschutz") or "nein",
+                d.get("behoerdlich") or "nein",
+                d.get("waffensachkunde") or "nein",
+                (d.get("fuehrerschein_klasse") or "").strip(),
+                (d.get("sonstige") or "").strip(),
+                (d.get("sprachen") or "").strip(),
             ),
         )
         db.commit()
@@ -599,8 +664,8 @@ def rename_user():
         # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -615,7 +680,25 @@ def rename_user():
                 old["steuernummer"] or "",
                 old["bsw"] or "nein",
                 old["sanitaeter"] or "nein",
-                old["stundensatz"]
+                old["stundensatz"],
+                old.get("photo_url") or "",
+                (old.get("geburtsdatum") or "").strip(),
+                (old.get("staatsangehoerigkeit") or "").strip(),
+                (old.get("amtliches_dokument") or "").strip(),
+                (old.get("dokumentennr") or "").strip(),
+                (old.get("ausstellende_behoerde") or "").strip(),
+                (old.get("ausstellungsdatum") or "").strip(),
+                (old.get("sanitaeter_art") or "").strip(),
+                old.get("brandschutzhelfer") or "nein",
+                old.get("deeskalation") or "nein",
+                old.get("gssk") or "nein",
+                old.get("fachkraft") or "nein",
+                old.get("personenschutz") or "nein",
+                old.get("behoerdlich") or "nein",
+                old.get("waffensachkunde") or "nein",
+                (old.get("fuehrerschein_klasse") or "").strip(),
+                (old.get("sonstige") or "").strip(),
+                (old.get("sprachen") or "").strip()
             )
         )
 
@@ -648,7 +731,11 @@ def edit_user(username):
 
     updates = dict(u)
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
-              "bewach_id", "steuernummer", "bsw", "sanitaeter"]:
+              "bewach_id", "steuernummer", "bsw", "sanitaeter",
+              "photo_url", "geburtsdatum", "staatsangehoerigkeit", "amtliches_dokument", "dokumentennr",
+              "ausstellende_behoerde", "ausstellungsdatum",
+              "sanitaeter_art", "brandschutzhelfer", "deeskalation", "gssk", "fachkraft", "personenschutz",
+              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -669,13 +756,36 @@ def edit_user(username):
     db.execute(
         """UPDATE users SET
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
-           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, stundensatz=%s
+           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, stundensatz=%s,
+           photo_url=%s, geburtsdatum=%s, staatsangehoerigkeit=%s, amtliches_dokument=%s, dokumentennr=%s,
+           ausstellende_behoerde=%s, ausstellungsdatum=%s,
+           sanitaeter_art=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft=%s, personenschutz=%s,
+           behoerdlich=%s, waffensachkunde=%s, fuehrerschein_klasse=%s, sonstige=%s, sprachen=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
             updates["s34a"], updates["s34a_art"], updates["pschein"],
             updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"],
-            updates["stundensatz"], username
+            updates["stundensatz"],
+            updates.get("photo_url") or "",
+            updates.get("geburtsdatum") or "",
+            updates.get("staatsangehoerigkeit") or "",
+            updates.get("amtliches_dokument") or "",
+            updates.get("dokumentennr") or "",
+            updates.get("ausstellende_behoerde") or "",
+            updates.get("ausstellungsdatum") or "",
+            updates.get("sanitaeter_art") or "",
+            updates.get("brandschutzhelfer") or "nein",
+            updates.get("deeskalation") or "nein",
+            updates.get("gssk") or "nein",
+            updates.get("fachkraft") or "nein",
+            updates.get("personenschutz") or "nein",
+            updates.get("behoerdlich") or "nein",
+            updates.get("waffensachkunde") or "nein",
+            updates.get("fuehrerschein_klasse") or "",
+            updates.get("sonstige") or "",
+            updates.get("sprachen") or "",
+            username
         )
     )
     db.commit()
@@ -691,6 +801,173 @@ def delete_user(username):
     db.execute("DELETE FROM users WHERE username=%s", (username,))
     db.commit()
     return jsonify({"status": "ok"})
+
+
+
+# ---------------- Mitarbeiter: Foto Upload & PDF-Auszug ----------------
+UPLOAD_DIR = os.path.join(app.root_path, "static", "uploads", "users")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+ALLOWED_PHOTO_EXT = {".jpg", ".jpeg", ".png", ".webp"}
+
+
+def _safe_photo_ext(filename: str) -> str:
+    ext = os.path.splitext((filename or "").lower())[1]
+    return ext if ext in ALLOWED_PHOTO_EXT else ".jpg"
+
+
+@app.route("/users/<username>/photo", methods=["POST"])
+def upload_user_photo(username):
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    if "photo" not in request.files:
+        return jsonify({"error": "Datei-Feld 'photo' fehlt"}), 400
+
+    f = request.files["photo"]
+    if not f or not (f.filename or "").strip():
+        return jsonify({"error": "Keine Datei gewählt"}), 400
+
+    db = get_db()
+    u = db.execute("SELECT username FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+
+    ext = _safe_photo_ext(f.filename)
+    fn = f"{username}_{uuid.uuid4().hex}{ext}"
+    abs_path = os.path.join(UPLOAD_DIR, fn)
+    f.save(abs_path)
+
+    rel_url = f"/static/uploads/users/{fn}"
+    db.execute("UPDATE users SET photo_url=%s WHERE username=%s", (rel_url, username))
+    db.commit()
+    return jsonify({"status": "ok", "photo_url": rel_url})
+
+
+def _yesno_label(v: str) -> str:
+    return "Ja" if str(v or "").strip().lower() == "ja" else "Nein"
+
+
+@app.route("/users/<username>/client_pdf", methods=["GET"])
+def user_client_pdf(username):
+    # ✅ Chef/Vorgesetzter dürfen exportieren
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
+        abort(404)
+
+    # --- PDF bauen (Auftraggeber-Auszug) ---
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    w, h = A4
+
+    margin = 18 * mm
+    x = margin
+    y = h - margin
+
+    # Titel
+    full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
+    c.setFont("Helvetica-Bold", 16)
+    c.drawString(x, y, "Mitarbeiterprofil (Auszug)")
+    y -= 10 * mm
+
+    # Foto (optional)
+    photo_url = (u.get("photo_url") or "").strip()
+    if photo_url.startswith("/static/"):
+        abs_photo = os.path.join(app.root_path, photo_url.lstrip("/"))
+        try:
+            img = ImageReader(abs_photo)
+            img_w = 30 * mm
+            img_h = 40 * mm
+            c.drawImage(img, w - margin - img_w, h - margin - img_h, img_w, img_h, preserveAspectRatio=True, mask='auto')
+        except Exception:
+            pass
+
+    # Basisdaten
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(x, y, "Basisdaten")
+    y -= 6 * mm
+    c.setFont("Helvetica", 11)
+    c.drawString(x, y, f"Name: {full_name}")
+    y -= 6 * mm
+
+    # 34a + Bewacher-ID
+    s34a = str(u.get("s34a") or "").strip().lower()
+    s34a_txt = "Ja" if s34a == "ja" else "Nein"
+    s34a_art = (u.get("s34a_art") or "").strip()
+    if s34a == "ja" and s34a_art:
+        s34a_txt += f" ({s34a_art})"
+
+    c.drawString(x, y, f"§34a Qualifikation: {s34a_txt}")
+    y -= 6 * mm
+    c.drawString(x, y, f"Bewacher-ID: {(u.get('bewach_id') or '-').strip() or '-'}")
+    y -= 10 * mm
+
+    # Qualifikationen
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(x, y, "Qualifikationen / Fähigkeiten")
+    y -= 6 * mm
+    c.setFont("Helvetica", 11)
+
+    lines = []
+
+    # Sanitäter
+    if str(u.get("sanitaeter") or "").strip().lower() == "ja":
+        art = (u.get("sanitaeter_art") or "").strip()
+        lines.append(f"Sanitätsdienstausbildung: Ja{(' ('+art+')') if art else ''}")
+    else:
+        lines.append("Sanitätsdienstausbildung: Nein")
+
+    lines += [
+        f"Brandschutzhelfer/in: {_yesno_label(u.get('brandschutzhelfer'))}",
+        f"Deeskalationstraining: {_yesno_label(u.get('deeskalation'))}",
+        f"GSSK: {_yesno_label(u.get('gssk'))}",
+        f"Fachkraft für Schutz & Sicherheit: {_yesno_label(u.get('fachkraft'))}",
+        f"Personenschutzausbildung: {_yesno_label(u.get('personenschutz'))}",
+        f"Behördliche Ausbildung/Studium: {_yesno_label(u.get('behoerdlich'))}",
+        f"Waffensachkunde: {_yesno_label(u.get('waffensachkunde'))}",
+    ]
+
+    fs = (u.get("fuehrerschein_klasse") or "").strip()
+    lines.append(f"Führerschein: {fs if fs else '-'}")
+
+    other = (u.get("sonstige") or "").strip()
+    if other:
+        lines.append(f"Sonstige: {other}")
+
+    for ln in lines:
+        c.drawString(x, y, ln)
+        y -= 6 * mm
+        if y < 30 * mm:
+            c.showPage()
+            y = h - margin
+            c.setFont("Helvetica", 11)
+
+    y -= 4 * mm
+
+    # Sprachen
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(x, y, "Fremdsprachen")
+    y -= 6 * mm
+    c.setFont("Helvetica", 11)
+    langs = (u.get("sprachen") or "").strip()
+    c.drawString(x, y, langs if langs else "-")
+    y -= 10 * mm
+
+    # Footer
+    c.setFont("Helvetica", 9)
+    c.drawString(x, 12 * mm, f"Export am {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+
+    c.showPage()
+    c.save()
+
+    buf.seek(0)
+    filename = f"mitarbeiter_{username}_auszug.pdf"
+    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename)
 
 
 # ---------------- Events API ----------------
