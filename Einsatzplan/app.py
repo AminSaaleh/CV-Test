@@ -1324,9 +1324,12 @@ def duplicate_event():
 
     def insert_new(start_val: str):
         new_id = str(uuid.uuid4())
+        src_cat = (src.get('category') or 'CP').strip().upper()
+        if src_cat not in ('CP','CV'):
+            src_cat = 'CP'
         db.execute(
             """INSERT INTO event
-               (id,title,ort,dienstkleidung,auftraggeber,start,planned_end_time,frist,status,required_staff,use_event_rate,stundensatz)
+               (id,title,ort,dienstkleidung,auftraggeber,start,planned_end_time,frist,status,category,required_staff,use_event_rate,stundensatz)
            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_id,
@@ -1338,6 +1341,7 @@ def duplicate_event():
                 src["planned_end_time"] or "",
                 (src["frist"] or ""),
                 src["status"] or "geplant",
+                src_cat,
                 int(src["required_staff"] or 0),
                 int(src["use_event_rate"] if src["use_event_rate"] is not None else 1),
                 src["stundensatz"]
