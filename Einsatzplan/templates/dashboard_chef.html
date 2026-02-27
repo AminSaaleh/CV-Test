@@ -2397,7 +2397,7 @@ document.getElementById("dup-date").value = "";
       events.forEach(ev=>{
         const opt = document.createElement("option");
         opt.value = ev.id;
-        const catRaw = (ev && (ev.category ?? (ev.extendedProps && (ev.extendedProps.category ?? ev.extendedProps.CATEGORY ?? ev.extendedProps.kategorie ?? ev.extendedProps.Kategorie))));
+        const catRaw = (ev && (ev.category ?? ev.event_category ?? ev.eventCategory ?? ev.ev_category ?? (ev.extendedProps && (ev.extendedProps.category ?? ev.extendedProps.CATEGORY ?? ev.extendedProps.kategorie ?? ev.extendedProps.Kategorie ?? ev.extendedProps.event_category ?? ev.extendedProps.eventCategory ?? ev.extendedProps.ev_category))));
         const cat = normalizeDupCategory(catRaw);
         dupSourceCategoryById[String(ev.id)] = cat;
         opt.dataset.category = cat;
@@ -2456,7 +2456,7 @@ document.getElementById("dup-date").value = "";
       const res = await fetch("/events/duplicate", {
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body: JSON.stringify({ event_id, dates: dupSelectedDates, category })
+        body: JSON.stringify({ event_id, dates: dupSelectedDates, category, cat: category, source_category: category, event_category: category })
       });
 
       const r = await res.json().catch(()=>({}));
