@@ -167,187 +167,6 @@
   background: #f7f7f7;
 }
 
-
-
-    /* ---- Professional UI overrides ---- */
-    body{
-      background: #0b1020;
-    }
-    .container, .dashboard-container{
-      max-width: 1200px;
-      margin: 0 auto;
-    }
-    h3, h4{
-      letter-spacing: .2px;
-    }
-    .card{
-      background: rgba(255,255,255,.06);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0,0,0,.18);
-      backdrop-filter: blur(6px);
-    }
-    /* form grid */
-    .form-grid{
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 12px;
-    }
-    .col-12{grid-column: span 12;}
-    .col-6{grid-column: span 6;}
-    .col-4{grid-column: span 4;}
-    .col-3{grid-column: span 3;}
-    .col-8{grid-column: span 8;}
-    .col-9{grid-column: span 9;}
-    .field label{
-      display:block;
-      font-size: 12px;
-      opacity: .9;
-      margin-bottom: 6px;
-    }
-    .field input, .field select, .field textarea{
-      width: 100%;
-      border-radius: 12px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.22);
-      color: #fff;
-      outline: none;
-    }
-    .field input:focus, .field select:focus, .field textarea:focus{
-      border-color: rgba(255,255,255,.30);
-      box-shadow: 0 0 0 3px rgba(255,255,255,.08);
-    }
-    .muted{opacity:.7}
-    /* buttons */
-    .btn{
-      border: 1px solid rgba(255,255,255,.16);
-      background: rgba(255,255,255,.08);
-      color:#fff;
-      padding: 10px 12px;
-      border-radius: 12px;
-      cursor:pointer;
-      font-weight: 600;
-      display:inline-flex;
-      gap:8px;
-      align-items:center;
-      justify-content:center;
-      transition: transform .06s ease, background .2s ease, border-color .2s ease;
-      white-space: nowrap;
-    }
-    .btn:hover{background: rgba(255,255,255,.12); border-color: rgba(255,255,255,.22)}
-    .btn:active{transform: translateY(1px)}
-    .btn-primary{background: rgba(66, 135, 245, .22); border-color: rgba(66,135,245,.35)}
-    .btn-primary:hover{background: rgba(66, 135, 245, .28)}
-    .btn-secondary{background: rgba(255,255,255,.10)}
-    .btn-danger{background: rgba(239, 68, 68, .18); border-color: rgba(239,68,68,.30)}
-    .btn-danger:hover{background: rgba(239, 68, 68, .24)}
-    /* table */
-    .table-wrap{
-      width: 100%;
-      overflow-x: auto;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.10);
-    }
-    table.user-table{
-      width: 100%;
-      min-width: 980px;
-      border-collapse: collapse;
-      background: rgba(255,255,255,.04);
-    }
-    .user-table th, .user-table td{
-      padding: 12px 12px;
-      border-bottom: 1px solid rgba(255,255,255,.08);
-      vertical-align: top;
-    }
-    .user-table th{
-      text-align: left;
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: .6px;
-      opacity: .85;
-      position: sticky;
-      top: 0;
-      background: rgba(15, 23, 42, .92);
-      backdrop-filter: blur(6px);
-      z-index: 1;
-    }
-    .th-actions{min-width: 320px;}
-    .td-actions{min-width: 320px;}
-    .actions{display:flex; gap:10px; flex-wrap: wrap; justify-content: flex-end;}
-    .user-photo{
-      height: 42px; width: 36px; object-fit: cover;
-      border-radius: 10px;
-      border: 1px solid rgba(255,255,255,.18);
-      box-shadow: 0 6px 16px rgba(0,0,0,.20);
-      background: rgba(255,255,255,.06);
-    }
-    .user-main{display:flex; flex-direction:column; gap:3px}
-    .user-name{font-weight: 800}
-    .user-sub{font-size: 12px; opacity: .7}
-    .badge{
-      display:inline-flex;
-      padding: 6px 10px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(255,255,255,.06);
-      font-size: 12px;
-      margin: 0 6px 6px 0;
-      white-space: nowrap;
-    }
-    /* mobile */
-    @media (max-width: 900px){
-      .col-6{grid-column: span 12;}
-      .col-4{grid-column: span 12;}
-      .col-3{grid-column: span 6;}
-      .th-actions,.td-actions{min-width: 360px;}
-    }
-
-    /* FullCalendar: "Heute" wieder grün */
-    .fc .fc-daygrid-day.fc-day-today,
-    .fc .fc-timegrid-col.fc-day-today{
-      background: rgba(34, 197, 94, .16) !important;
-      box-shadow: inset 0 0 0 1px rgba(34, 197, 94, .35) !important;
-    }
-
-
-    /* Existing Personal-Form (user-form) vereinheitlichen */
-    form.user-form{
-      background: rgba(255,255,255,.04);
-      border: 1px solid rgba(255,255,255,.10);
-      border-radius: 16px;
-      padding: 16px;
-    }
-    .user-form .form-row{
-      display: grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-    .user-form .form-row > *{ grid-column: span 12; }
-    .user-form .form-row > input,
-    .user-form .form-row > select,
-    .user-form .form-row > textarea{
-      border-radius: 12px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,.14);
-      background: rgba(0,0,0,.22);
-      color:#fff;
-      outline:none;
-    }
-    .user-form .form-row > input:focus,
-    .user-form .form-row > select:focus,
-    .user-form .form-row > textarea:focus{
-      border-color: rgba(255,255,255,.30);
-      box-shadow: 0 0 0 3px rgba(255,255,255,.08);
-    }
-    /* 2-Spalten Layout ab Tablet */
-    @media (min-width: 900px){
-      .user-form .form-row.two > *{ grid-column: span 6; }
-      .user-form .form-row.three > *{ grid-column: span 4; }
-    }
-
 </style>
 
 <style>
@@ -990,6 +809,62 @@ body.modal-open{ touch-action: auto !important; }
   background:#e6f6ea !important;
 }
 </style>
+
+<style>
+/* Einheitliche Buttons (Farben bleiben aus style.css) */
+button.confirm, button.reject, button.inline, .user-table button.confirm, .user-table button.reject{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  border-radius:10px;
+  padding:8px 12px;
+  font-size:14px;
+  line-height:1;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.user-table td:last-child{
+  min-width:320px;
+  white-space:nowrap;
+}
+.user-table td:last-child button{ margin:2px 8px 2px 0; }
+.table-scroll{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  border-radius:12px;
+}
+.user-table{
+  width:100%;
+  min-width:1050px; /* sorgt dafür, dass Aktionen sichtbar bleiben */
+  border-collapse:collapse;
+}
+.user-table th, .user-table td{ vertical-align:middle; }
+.user-table .photo-thumb{
+  width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid rgba(0,0,0,.12);
+}
+
+/* Formular: einheitliche Abstände, ohne Farbschema zu verändern */
+#add-user-form{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:10px 14px;
+  align-items:end;
+}
+#add-user-form label{ font-weight:600; }
+#add-user-form input, #add-user-form select, #add-user-form textarea{
+  width:100%;
+  box-sizing:border-box;
+}
+#add-user-form .full{ grid-column:1 / -1; }
+#add-user-form .btn-row{ grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+
+@media (max-width: 900px){
+  #add-user-form{ grid-template-columns:1fr; }
+  .user-table{ min-width:900px; }
+}
+</style>
+
 </head>
 <body>
   <nav>
@@ -1054,6 +929,7 @@ body.modal-open{ touch-action: auto !important; }
       </thead>
       <tbody id="termine-list"></tbody>
     </table>
+    </div>
 </div>
   </div>
 
@@ -1195,7 +1071,7 @@ body.modal-open{ touch-action: auto !important; }
     <h3>Personal verwalten</h3>
 
     <form id="add-user-form" class="user-form">
-      <div class="form-row two">
+      <div class="form-row">
         <input type="text" id="vorname" placeholder="Vorname" required>
         <input type="text" id="nachname" placeholder="Nachname" required>
       </div>
@@ -1204,7 +1080,7 @@ body.modal-open{ touch-action: auto !important; }
         <input type="email" id="email" placeholder="E-Mail (optional)">
       </div>
 
-      <div class="form-row two">
+      <div class="form-row">
         <input type="text" id="new-username" placeholder="Benutzername" required>
         <input type="password" id="new-password" placeholder="Passwort" required>
       </div>
@@ -1339,22 +1215,26 @@ body.modal-open{ touch-action: auto !important; }
     </form>
 
     <h4>Personalliste</h4>
-<div class="table-wrap" role="region" aria-label="Personalliste" tabindex="0">
-  <table class="user-table">
-    <thead>
-      <tr>
-        <th>Foto</th>
-        <th>Mitarbeiter</th>
-        <th>34a</th>
-        <th>Bewacher-ID</th>
-        <th>Qualifikationen</th>
-        <th>Sprachen</th>
-        <th class="th-actions">Aktionen</th>
-      </tr>
-    </thead>
-    <tbody id="user-list"></tbody>
-  </table>
-</div>
+    <div class="table-scroll">
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Foto</th>
+          <th>Benutzername</th>
+          <th>Name</th>
+          <th>E-Mail</th>
+          <th>34a</th>
+          <th>Bewach-ID</th>
+          <th>Steuernummer</th>
+          <th>BSW</th>
+          <th>Sanitäter</th>
+          <th>P-Schein</th>
+          <th>Stundensatz</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="user-list"></tbody>
+    </table>
 </div>
   </div>
 
@@ -2099,63 +1979,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       return v || "";
     }
 
-    
-
-    // --- UI helpers (safe rendering) ---
-    function escapeHtml(str){
-      return String(str ?? "")
-        .replaceAll("&","&amp;")
-        .replaceAll("<","&lt;")
-        .replaceAll(">","&gt;")
-        .replaceAll('"',"&quot;")
-        .replaceAll("'","&#039;");
-    }
-
-    function badge(label){
-      return `<span class="badge">${escapeHtml(label)}</span>`;
-    }
-
-    function renderQualiBadges(u){
-      const b = [];
-      // vorhandene Felder
-      if(String(u.bsw||"").toLowerCase()==="ja") b.push("BSW");
-      if(String(u.sanitaeter||"").toLowerCase()==="ja"){
-        const t = (u.sanitaet_ausbildung_type||"").trim();
-        b.push(t ? `Sanität (${t})` : "Sanität");
-      }
-      if(String(u.pschein||"").toLowerCase()==="ja") b.push("P-Schein");
-
-      // neue Checkbox-Felder (falls vorhanden)
-      const map = [
-        ["brandschutzhelfer","Brandschutz"],
-        ["deeskalation","Deeskalation"],
-        ["gssk","GSSK"],
-        ["fachkraft_sus","Fachkraft SuS"],
-        ["personenschutz","Personenschutz"],
-        ["waffensachkunde","Waffensachkunde"],
-        ["behoerdliche_ausb","Behördlich/Studium"],
-      ];
-      map.forEach(([key,label])=>{
-        if(String(u[key]||"").toLowerCase()==="ja") b.push(label);
-      });
-
-      const fs = (u.fuehrerschein_klasse||"").trim();
-      if(fs) b.push(`FS: ${fs}`);
-
-      if(!b.length) return `<span class="muted">—</span>`;
-      return b.map(badge).join(" ");
-    }
-
-    function renderLanguageBadges(u){
-      // erwartet: u.languages als Array oder CSV
-      let langs = u.languages;
-      if(typeof langs === "string"){
-        langs = langs.split(",").map(s=>s.trim()).filter(Boolean);
-      }
-      if(!Array.isArray(langs) || !langs.length) return `<span class="muted">—</span>`;
-      return langs.slice(0,6).map(badge).join(" ") + (langs.length>6 ? ` <span class="muted">+${langs.length-6}</span>`:"");
-    }
-function fmtTimeOnly(dt){
+    function fmtTimeOnly(dt){
       const d = new Date(dt);
       if(isNaN(d)) return "-";
       const hh = String(d.getHours()).padStart(2,'0');
@@ -3512,23 +3336,21 @@ document.getElementById("confirmed-counter").textContent =
       users.forEach(u=>{
         let tr=document.createElement("tr");
         tr.innerHTML=`
-          <td>${u.photo_url ? `<img class="user-photo" src="${u.photo_url}" alt="Foto von ${escapeHtml(u.vorname||'')} ${escapeHtml(u.nachname||'')}" />` : `<span class="muted">—</span>`}</td>
+          <td>${u.photo_url ? `<img src="${u.photo_url}" style="height:34px;width:28px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">` : `<span class="muted">-</span>`}</td>
+          <td><b>${u.username}</b></td>
+          <td>${u.vorname} ${u.nachname}</td>
+          <td>${u.email || "-"}</td>
+          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}</td>
+          <td>${u.bewach_id || "-"}</td>
+          <td>${u.steuernummer || "-"}</td>
+          <td>${capYesNo(u.bsw || "nein")}</td>
+          <td>${capYesNo(u.sanitaeter || "nein")}</td>
+          <td>${capYesNo(u.pschein || "nein")}</td>
+          <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
           <td>
-            <div class="user-main">
-              <div class="user-name">${escapeHtml((u.vorname||"") + " " + (u.nachname||"")).trim() || "—"}</div>
-              <div class="user-sub">${escapeHtml(u.username||"")}</div>
-            </div>
-          </td>
-          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " <span class='muted'>("+(escapeHtml(u.s34a_art||""))+")</span>" : ""}</td>
-          <td>${escapeHtml(u.bewach_id || "—")}</td>
-          <td>${renderQualiBadges(u)}</td>
-          <td>${renderLanguageBadges(u)}</td>
-          <td class="td-actions">
-            <div class="actions">
-              <button class="btn btn-secondary" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
-              <button class="btn btn-primary" onclick="downloadClientPdf('${u.username}')">📄 PDF</button>
-              <button class="btn btn-danger" onclick="deleteUser('${u.username}')">🗑️ Löschen</button>
-            </div>
+            <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
+            <button class="confirm" onclick="downloadClientPdf('${u.username}')">📄 PDF</button>
+            <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
           </td>
         `;
         list.appendChild(tr);
