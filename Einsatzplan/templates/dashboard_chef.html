@@ -170,7 +170,7 @@
 </style>
 
 <style>
-/* === Voll gefüllte Status-Kreisee === */
+/* === Voll gefüllte Status-Kreise === */
 .fc-daygrid-event-dot {
     width: 12px;
     height: 12px;
@@ -829,6 +829,53 @@ body.modal-open{ touch-action: auto !important; }
 </style>
 
 <style>
+/* ✅ Kompakte Checkbox-Grids (Add-Form + Modals) */
+.check-grid, .modal-check-grid{
+  display:grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:4px 12px;
+  padding:8px 10px;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:12px;
+  background:rgba(0,0,0,.02);
+  margin:8px 0 10px 0;
+}
+.check-grid label, .modal-check-grid label{
+  margin:0;
+  font-size:13px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:6px;
+  min-width:0;
+}
+.check-grid input[type="checkbox"], .modal-check-grid input[type="checkbox"]{
+  margin:0;
+}
+.check-grid label span, .modal-check-grid label span{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+/* Sprachen: noch etwas kompakter */
+.check-grid.lang-grid, .modal-check-grid.lang-grid{
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap:3px 10px;
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .check-grid, .modal-check-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
+}
+@media (max-width: 520px){
+  .check-grid, .modal-check-grid{ grid-template-columns: 1fr; }
+}
+</style>
+
+
+
+<style>
 /* Einheitliche Buttons (Farben bleiben aus style.css) */
 
 /* Basis für ALLE Buttons (außer FullCalendar) */
@@ -938,6 +985,18 @@ button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198
   #add-user-form{ grid-template-columns:1fr; }
   .user-table{ min-width:900px; }
 }
+
+
+/* ✅ Buttons immer sichtbar (Textfarbe + Kontrast) */
+button:not(.fc-button){
+  color:#111 !important;
+}
+button.confirm, button.reject, button.delete, button.inline{
+  color:#111 !important;
+  opacity:1 !important;
+  visibility:visible !important;
+}
+
 </style>
 
 </head>
@@ -1282,7 +1341,7 @@ button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198
       <div class="form-row">
         <div style="flex:1;">
           <label>Fremdsprachen</label>
-          <div class="check-grid lang-grid">
+          <div class="check-grid lang-grid" id="lang-grid">
             <label><input type="checkbox" name="sprachen_cb" value="Deutsch"> Deutsch</label>
             <label><input type="checkbox" name="sprachen_cb" value="Englisch"> Englisch</label>
             <label><input type="checkbox" name="sprachen_cb" value="Französisch"> Französisch</label>
@@ -1691,7 +1750,7 @@ button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198
       </div>
 
       <label>Fremdsprachen</label>
-      <div class="modal-check-grid lang-grid">
+      <div class="modal-check-grid lang-grid" id="edit-lang-grid">
         <label><input type="checkbox" name="edit_sprachen_cb" value="Deutsch"> Deutsch</label>
         <label><input type="checkbox" name="edit_sprachen_cb" value="Englisch"> Englisch</label>
         <label><input type="checkbox" name="edit_sprachen_cb" value="Französisch"> Französisch</label>
@@ -2813,7 +2872,33 @@ document.getElementById("planning").style.display="block";
       listEl.appendChild(chip);
     }
 
-    function initLanguageManagers(){
+    
+    function _ensureLangOption(gridEl, checkboxName, value, checked=true){
+      if(!gridEl) return;
+      const v = _normLang(value);
+      if(!v) return;
+
+      // schon vorhanden?
+      const existing = Array.from(gridEl.querySelectorAll('input[type="checkbox"]'))
+        .find(cb => cb.name === checkboxName && (cb.value || "").toLowerCase() === v.toLowerCase());
+      if(existing){
+        existing.checked = checked;
+        return;
+      }
+
+      const label = document.createElement("label");
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.name = checkboxName;
+      cb.value = v;
+      cb.checked = checked;
+
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(" " + v));
+      gridEl.appendChild(label);
+    }
+
+function initLanguageManagers(){
       // Add-Form
       const addInp = document.getElementById("lang-new");
       const addBtn = document.getElementById("lang-add-btn");
@@ -2824,6 +2909,7 @@ document.getElementById("planning").style.display="block";
           const v = _normLang(addInp.value);
           if(!v) return;
           _addCustomLangChip(addList, "sprachen_cb", v, true);
+          _ensureLangOption(document.getElementById("lang-grid"), "sprachen_cb", v, true);
           addInp.value = "";
           addInp.focus();
         });
@@ -2842,6 +2928,7 @@ document.getElementById("planning").style.display="block";
           const v = _normLang(eInp.value);
           if(!v) return;
           _addCustomLangChip(eList, "edit_sprachen_cb", v, true);
+          _ensureLangOption(document.getElementById("edit-lang-grid"), "edit_sprachen_cb", v, true);
           eInp.value = "";
           eInp.focus();
         });
@@ -4755,4 +4842,3 @@ async function sendEventMailFromCalendar(){
   alert("E-Mail wurde an alle Mitarbeiter versendet.");
 }
 </script>
-
