@@ -35,7 +35,7 @@
     .form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
     .form-row > *{flex:1;min-width:160px;}
     /* ✅ Checkbox + Text sollen eng beieinander stehen (keine 100%-Breite aus globalem CSS übernehmen) */
-    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:10px 0;flex-wrap:nowrap;width:auto;}
+    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:4px;margin:6px 0;flex-wrap:nowrap;width:auto;}
     .checkbox-row input[type="checkbox"]{margin:0;width:auto !important;flex:0 0 auto;display:inline-block;}
     .checkbox-row label{margin:0;white-space:nowrap;width:auto !important;flex:0 1 auto;display:inline-block;}
     .muted{color:#666;font-size:12px;}
@@ -777,14 +777,14 @@ body.modal-open{ touch-action: auto !important; }
 #user-management .check-grid{
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap:10px 14px;
+  gap:6px 10px;
   padding:10px 12px;
   border:1px solid rgba(0,0,0,.08);
   border-radius:12px;
   background:rgba(0,0,0,.02);
   margin-bottom:12px;
 }
-#user-management .check-grid label{margin:0;font-size:13px;display:flex;gap:8px;align-items:center;}
+#user-management .check-grid label{margin:0;font-size:13px;display:flex;gap:4px;align-items:center;}
 #user-management .photo-box{
   border:1px dashed rgba(0,0,0,.18);
   border-radius:12px;
@@ -811,42 +811,45 @@ body.modal-open{ touch-action: auto !important; }
 </style>
 
 <style>
-
-
 /* ✅ Checkbox-Grids in Modals (Bearbeiten) */
 .modal-check-grid{
   display:grid;
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap:10px 14px;
+  gap:6px 10px;
   padding:10px 12px;
   border:1px solid rgba(0,0,0,.08);
   border-radius:12px;
   background:rgba(0,0,0,.02);
   margin:10px 0 12px 0;
 }
-.modal-check-grid label{margin:0;font-size:13px;display:flex;gap:8px;align-items:center;}
+.modal-check-grid label{margin:0;font-size:13px;display:flex;gap:4px;align-items:center;}
 /* Sprach-Checkboxen: etwas kompakter */
-.lang-grid{margin-top:6px;}
+.lang-grid{margin-top:6px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:4px 8px; padding:8px 10px;}
+.lang-grid label{gap:4px;}
 </style>
 
+<style>
 /* Einheitliche Buttons (Farben bleiben aus style.css) */
 
 /* Basis für ALLE Buttons (außer FullCalendar) */
 button:not(.fc-button){
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:4px;
   border-radius:10px;
   padding:8px 12px;
   font-size:14px;
   line-height:1;
   white-space:nowrap;
   cursor:pointer;
+
+  border:1px solid rgba(0,0,0,.16);
+  background:rgba(0,0,0,.04);
 }
 button.confirm, button.reject, button.inline, .user-table button.confirm, .user-table button.reject{
   display:inline-flex;
   align-items:center;
-  gap:6px;
+  gap:4px;
   border-radius:10px;
   padding:8px 12px;
   font-size:14px;
@@ -854,6 +857,47 @@ button.confirm, button.reject, button.inline, .user-table button.confirm, .user-
   white-space:nowrap;
   cursor:pointer;
 }
+
+/* ✅ Sprach-Manager (Custom-Sprachen hinzufügen/löschen) */
+.lang-manager{
+  display:flex;
+  gap:8px;
+  margin-top:10px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+.lang-manager input[type="text"]{
+  flex:1;
+  min-width:220px;
+}
+.custom-lang-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border:1px solid rgba(0,0,0,.12);
+  border-radius:999px;
+  background:rgba(0,0,0,.03);
+  font-size:13px;
+  margin:4px 6px 0 0;
+}
+.custom-lang-chip button{
+  padding:4px 8px;
+  border-radius:999px;
+  border:1px solid rgba(0,0,0,.18);
+  background:rgba(0,0,0,.06);
+}
+.custom-lang-list{ margin-top:6px; }
+
+/* ✅ Buttons sichtbar (insb. PDF) – ohne FullCalendar zu beeinflussen */
+button.confirm, button.reject, button.inline{
+  border:1px solid rgba(0,0,0,.16);
+  background:rgba(0,0,0,.04);
+}
+button.confirm{ background:rgba(46,125,50,.12); border-color:rgba(46,125,50,.35); }
+button.reject{ background:rgba(198,40,40,.12); border-color:rgba(198,40,40,.35); }
+button.delete{ background:rgba(198,40,40,.12); border-color:rgba(198,40,40,.35); }
+button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198,40,40,.12); }
 .user-table td:last-child{
   min-width:320px;
   white-space:nowrap;
@@ -879,7 +923,7 @@ button.confirm, button.reject, button.inline, .user-table button.confirm, .user-
 #add-user-form{
   display:grid;
   grid-template-columns: 1fr 1fr;
-  gap:10px 14px;
+  gap:6px 10px;
   align-items:end;
 }
 #add-user-form label{ font-weight:600; }
@@ -1216,13 +1260,13 @@ button.confirm, button.reject, button.inline, .user-table button.confirm, .user-
       </div>
 
       <div class="check-grid">
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="gssk"> GSSK</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="fachkraft"> Fachkraft S&S</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
-        <label style="display:flex;align-items:center;gap:6px;"><input type="checkbox" id="behoerdlich"> Behördlich/Studium</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="gssk"> GSSK</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="fachkraft"> Fachkraft S&S</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="behoerdlich"> Behördlich/Studium</label>
       </div>
 
       <div class="form-row">
@@ -1251,6 +1295,12 @@ button.confirm, button.reject, button.inline, .user-table button.confirm, .user-
           </div>
         </div>
       </div>
+          <div class="lang-manager">
+            <input type="text" id="lang-new" placeholder="Weitere Sprache hinzufügen (z.B. Ukrainisch)">
+            <button type="button" class="confirm" id="lang-add-btn">➕ Sprache hinzufügen</button>
+          </div>
+          <div id="lang-custom-list" class="custom-lang-list"></div>
+
 
 
       <button type="submit" class="confirm">➕ Hinzufügen</button>
@@ -1652,6 +1702,12 @@ button.confirm, button.reject, button.inline, .user-table button.confirm, .user-
         <label><input type="checkbox" name="edit_sprachen_cb" value="Russisch"> Russisch</label>
         <label><input type="checkbox" name="edit_sprachen_cb" value="Polnisch"> Polnisch</label>
       </div>
+
+      <div class="lang-manager">
+        <input type="text" id="edit-lang-new" placeholder="Weitere Sprache hinzufügen (z.B. Ukrainisch)">
+        <button type="button" class="confirm" id="edit-lang-add-btn">➕ Sprache hinzufügen</button>
+      </div>
+      <div id="edit-lang-custom-list" class="custom-lang-list"></div>
 
 
       <div class="modal-actions">
@@ -2704,6 +2760,112 @@ document.getElementById("planning").style.display="block";
       }
 
 
+      
+    // ===== Sprach-Manager (Checkboxen + Custom-Sprachen) =====
+    function _normLang(v){ return String(v||"").trim(); }
+
+    function _langExists(nameAttr, lang){
+      const v = _normLang(lang);
+      if(!v) return true;
+      return Array.from(document.querySelectorAll(`input[name="${nameAttr}"]`)).some(cb => _normLang(cb.value).toLowerCase() === v.toLowerCase());
+    }
+
+    function _addCustomLangChip(listEl, nameAttr, lang, checked=true){
+      const v = _normLang(lang);
+      if(!v) return;
+      if(_langExists(nameAttr, v)) {
+        // wenn schon existiert -> einfach anhaken
+        const cb = Array.from(document.querySelectorAll(`input[name="${nameAttr}"]`)).find(x => _normLang(x.value).toLowerCase() === v.toLowerCase());
+        if(cb) cb.checked = checked;
+        return;
+      }
+
+      const chip = document.createElement("div");
+      chip.className = "custom-lang-chip";
+
+      const label = document.createElement("label");
+      label.style.display = "inline-flex";
+      label.style.alignItems = "center";
+      label.style.gap = "8px";
+      label.style.margin = "0";
+
+      const cb = document.createElement("input");
+      cb.type = "checkbox";
+      cb.name = nameAttr;
+      cb.value = v;
+      cb.checked = checked;
+
+      const span = document.createElement("span");
+      span.textContent = v;
+
+      label.appendChild(cb);
+      label.appendChild(span);
+
+      const del = document.createElement("button");
+      del.type = "button";
+      del.className = "inline";
+      del.textContent = "✖";
+      del.title = "Sprache entfernen";
+      del.onclick = () => chip.remove();
+
+      chip.appendChild(label);
+      chip.appendChild(del);
+      listEl.appendChild(chip);
+    }
+
+    function initLanguageManagers(){
+      // Add-Form
+      const addInp = document.getElementById("lang-new");
+      const addBtn = document.getElementById("lang-add-btn");
+      const addList = document.getElementById("lang-custom-list");
+
+      if(addInp && addBtn && addList){
+        addBtn.addEventListener("click", ()=>{
+          const v = _normLang(addInp.value);
+          if(!v) return;
+          _addCustomLangChip(addList, "sprachen_cb", v, true);
+          addInp.value = "";
+          addInp.focus();
+        });
+        addInp.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter"){ e.preventDefault(); addBtn.click(); }
+        });
+      }
+
+      // Edit-Modal
+      const eInp = document.getElementById("edit-lang-new");
+      const eBtn = document.getElementById("edit-lang-add-btn");
+      const eList = document.getElementById("edit-lang-custom-list");
+
+      if(eInp && eBtn && eList){
+        eBtn.addEventListener("click", ()=>{
+          const v = _normLang(eInp.value);
+          if(!v) return;
+          _addCustomLangChip(eList, "edit_sprachen_cb", v, true);
+          eInp.value = "";
+          eInp.focus();
+        });
+        eInp.addEventListener("keydown", (e)=>{
+          if(e.key === "Enter"){ e.preventDefault(); eBtn.click(); }
+        });
+      }
+    }
+
+    function ensureCustomLanguages(langs, listId, nameAttr){
+      const listEl = document.getElementById(listId);
+      if(!listEl) return;
+      // löscht alte Chips (damit beim Öffnen nicht dupliziert)
+      listEl.innerHTML = "";
+      (langs||[]).forEach(l => {
+        const v = _normLang(l);
+        if(!v) return;
+        if(!_langExists(nameAttr, v)){
+          _addCustomLangChip(listEl, nameAttr, v, true);
+        }
+      });
+    }
+
+
       // User hinzufügen
       if(!IS_PLANNER){
       document.getElementById("add-user-form").onsubmit=async e=>{
@@ -2759,6 +2921,7 @@ document.getElementById("planning").style.display="block";
 
         loadUsers();
         e.target.reset();
+        const cl=document.getElementById('lang-custom-list'); if(cl) cl.innerHTML='';
         const pv=document.getElementById("new-photo-preview");
         if(pv){ pv.style.display="none"; pv.src=""; }
 
@@ -3549,6 +3712,9 @@ document.getElementById("confirmed-counter").textContent =
         cb.checked = langs.includes(cb.value);
       });
 
+
+      // ✅ Custom-Sprachen (falls nicht in Liste vorhanden)
+      ensureCustomLanguages(langs, "edit-lang-custom-list", "edit_sprachen_cb");
 // Foto Vorschau
       const pv = document.getElementById("edit-photo-preview");
       if(pv){
@@ -4356,7 +4522,9 @@ function setCategoryBadge(cat){
 
 <script>
 document.addEventListener("DOMContentLoaded", function(){
-  // ✅ Defaults: Report & Zähler starten mit CV
+  
+      initLanguageManagers();
+// ✅ Defaults: Report & Zähler starten mit CV
   const rt = document.getElementById("report-type");
   if(rt && (!rt.value)) rt.value = "CV";
   const ct = document.getElementById("counter-type");
