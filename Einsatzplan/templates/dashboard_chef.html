@@ -997,6 +997,29 @@ button.confirm, button.reject, button.delete, button.inline{
   visibility:visible !important;
 }
 
+
+/* ✅ Checkbox-Abstände überall kompakt (überschreibt style.css) */
+.check-grid, .modal-check-grid{
+  gap:3px 8px !important;
+}
+.check-grid.lang-grid, .modal-check-grid.lang-grid{
+  gap:2px 8px !important;
+}
+.check-grid label, .modal-check-grid label{
+  gap:3px !important;
+  justify-content:flex-start !important;
+}
+.check-grid input[type="checkbox"], .modal-check-grid input[type="checkbox"]{
+  margin:0 !important;
+}
+
+/* ✅ Personaltabelle: keine Ellipsen in Aktionen, Buttons vollständig sichtbar */
+#user-management .user-table{ display:table !important; overflow:visible !important; table-layout:auto !important; }
+#user-management .user-table thead{ display:table-header-group !important; width:auto !important; table-layout:auto !important; }
+#user-management .user-table tbody{ display:table-row-group !important; width:auto !important; table-layout:auto !important; }
+#user-management .user-table th, #user-management .user-table td{ overflow:visible !important; text-overflow:clip !important; }
+#user-management .user-table th:last-child, #user-management .user-table td:last-child{ white-space:nowrap !important; }
+
 </style>
 
 </head>
@@ -1342,27 +1365,40 @@ button.confirm, button.reject, button.delete, button.inline{
         <div style="flex:1;">
           <label>Fremdsprachen</label>
           <div class="check-grid lang-grid" id="lang-grid">
-            <label><input type="checkbox" name="sprachen_cb" value="Deutsch"> Deutsch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Englisch"> Englisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Französisch"> Französisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Italienisch"> Italienisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Spanisch"> Spanisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Türkisch"> Türkisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Arabisch"> Arabisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Russisch"> Russisch</label>
-            <label><input type="checkbox" name="sprachen_cb" value="Polnisch"> Polnisch</label>
+            <label><input type="checkbox" name="sprachen_cb" value="Deutsch"> <span>Deutsch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Englisch"> <span>Englisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Französisch"> <span>Französisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Italienisch"> <span>Italienisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Spanisch"> <span>Spanisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Türkisch"> <span>Türkisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Arabisch"> <span>Arabisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Russisch"> <span>Russisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Polnisch"> <span>Polnisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Niederländisch"> <span>Niederländisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Griechisch"> <span>Griechisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Serbisch"> <span>Serbisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Kroatisch"> <span>Kroatisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Bosnisch"> <span>Bosnisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Albanisch"> <span>Albanisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Dänisch"> <span>Dänisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Japanisch"> <span>Japanisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Koreanisch"> <span>Koreanisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Hindi"> <span>Hindi</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Persisch"> <span>Persisch</span></label>
+            <label><input type="checkbox" name="sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></label>
           </div>
         </div>
       </div>
-          <div class="lang-manager">
-            <input type="text" id="lang-new" placeholder="Weitere Sprache hinzufügen (z.B. Ukrainisch)">
-            <button type="button" class="confirm" id="lang-add-btn">➕ Sprache hinzufügen</button>
-          </div>
-          <div id="lang-custom-list" class="custom-lang-list"></div>
-
-
-
-      <button type="submit" class="confirm">➕ Hinzufügen</button>
+<button type="submit" class="confirm">➕ Hinzufügen</button>
     </form>
 
     <h4>Personalliste</h4>
@@ -1751,25 +1787,38 @@ button.confirm, button.reject, button.delete, button.inline{
 
       <label>Fremdsprachen</label>
       <div class="modal-check-grid lang-grid" id="edit-lang-grid">
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Deutsch"> Deutsch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Englisch"> Englisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Französisch"> Französisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Italienisch"> Italienisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Spanisch"> Spanisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Türkisch"> Türkisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Arabisch"> Arabisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Russisch"> Russisch</label>
-        <label><input type="checkbox" name="edit_sprachen_cb" value="Polnisch"> Polnisch</label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Deutsch"> <span>Deutsch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Englisch"> <span>Englisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Französisch"> <span>Französisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Italienisch"> <span>Italienisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Spanisch"> <span>Spanisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Türkisch"> <span>Türkisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Arabisch"> <span>Arabisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Russisch"> <span>Russisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Polnisch"> <span>Polnisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Niederländisch"> <span>Niederländisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Griechisch"> <span>Griechisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Serbisch"> <span>Serbisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Kroatisch"> <span>Kroatisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Bosnisch"> <span>Bosnisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Albanisch"> <span>Albanisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Dänisch"> <span>Dänisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Japanisch"> <span>Japanisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Koreanisch"> <span>Koreanisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Hindi"> <span>Hindi</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Persisch"> <span>Persisch</span></label>
+            <label><input type="checkbox" name="edit_sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></label>
       </div>
-
-      <div class="lang-manager">
-        <input type="text" id="edit-lang-new" placeholder="Weitere Sprache hinzufügen (z.B. Ukrainisch)">
-        <button type="button" class="confirm" id="edit-lang-add-btn">➕ Sprache hinzufügen</button>
-      </div>
-      <div id="edit-lang-custom-list" class="custom-lang-list"></div>
-
-
-      <div class="modal-actions">
+<div class="modal-actions">
         <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
       </div>
     </div>
@@ -2818,142 +2867,9 @@ document.getElementById("planning").style.display="block";
         }, 20000);
       }
 
+    // (Sprach-Manager entfernt – feste Fremdsprachenliste)
 
-      
-    // ===== Sprach-Manager (Checkboxen + Custom-Sprachen) =====
-    function _normLang(v){ return String(v||"").trim(); }
-
-    function _langExists(nameAttr, lang){
-      const v = _normLang(lang);
-      if(!v) return true;
-      return Array.from(document.querySelectorAll(`input[name="${nameAttr}"]`)).some(cb => _normLang(cb.value).toLowerCase() === v.toLowerCase());
-    }
-
-    function _addCustomLangChip(listEl, nameAttr, lang, checked=true){
-      const v = _normLang(lang);
-      if(!v) return;
-      if(_langExists(nameAttr, v)) {
-        // wenn schon existiert -> einfach anhaken
-        const cb = Array.from(document.querySelectorAll(`input[name="${nameAttr}"]`)).find(x => _normLang(x.value).toLowerCase() === v.toLowerCase());
-        if(cb) cb.checked = checked;
-        return;
-      }
-
-      const chip = document.createElement("div");
-      chip.className = "custom-lang-chip";
-
-      const label = document.createElement("label");
-      label.style.display = "inline-flex";
-      label.style.alignItems = "center";
-      label.style.gap = "8px";
-      label.style.margin = "0";
-
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.name = nameAttr;
-      cb.value = v;
-      cb.checked = checked;
-
-      const span = document.createElement("span");
-      span.textContent = v;
-
-      label.appendChild(cb);
-      label.appendChild(span);
-
-      const del = document.createElement("button");
-      del.type = "button";
-      del.className = "inline";
-      del.textContent = "✖";
-      del.title = "Sprache entfernen";
-      del.onclick = () => chip.remove();
-
-      chip.appendChild(label);
-      chip.appendChild(del);
-      listEl.appendChild(chip);
-    }
-
-    
-    function _ensureLangOption(gridEl, checkboxName, value, checked=true){
-      if(!gridEl) return;
-      const v = _normLang(value);
-      if(!v) return;
-
-      // schon vorhanden?
-      const existing = Array.from(gridEl.querySelectorAll('input[type="checkbox"]'))
-        .find(cb => cb.name === checkboxName && (cb.value || "").toLowerCase() === v.toLowerCase());
-      if(existing){
-        existing.checked = checked;
-        return;
-      }
-
-      const label = document.createElement("label");
-      const cb = document.createElement("input");
-      cb.type = "checkbox";
-      cb.name = checkboxName;
-      cb.value = v;
-      cb.checked = checked;
-
-      label.appendChild(cb);
-      label.appendChild(document.createTextNode(" " + v));
-      gridEl.appendChild(label);
-    }
-
-function initLanguageManagers(){
-      // Add-Form
-      const addInp = document.getElementById("lang-new");
-      const addBtn = document.getElementById("lang-add-btn");
-      const addList = document.getElementById("lang-custom-list");
-
-      if(addInp && addBtn && addList){
-        addBtn.addEventListener("click", ()=>{
-          const v = _normLang(addInp.value);
-          if(!v) return;
-          _addCustomLangChip(addList, "sprachen_cb", v, true);
-          _ensureLangOption(document.getElementById("lang-grid"), "sprachen_cb", v, true);
-          addInp.value = "";
-          addInp.focus();
-        });
-        addInp.addEventListener("keydown", (e)=>{
-          if(e.key === "Enter"){ e.preventDefault(); addBtn.click(); }
-        });
-      }
-
-      // Edit-Modal
-      const eInp = document.getElementById("edit-lang-new");
-      const eBtn = document.getElementById("edit-lang-add-btn");
-      const eList = document.getElementById("edit-lang-custom-list");
-
-      if(eInp && eBtn && eList){
-        eBtn.addEventListener("click", ()=>{
-          const v = _normLang(eInp.value);
-          if(!v) return;
-          _addCustomLangChip(eList, "edit_sprachen_cb", v, true);
-          _ensureLangOption(document.getElementById("edit-lang-grid"), "edit_sprachen_cb", v, true);
-          eInp.value = "";
-          eInp.focus();
-        });
-        eInp.addEventListener("keydown", (e)=>{
-          if(e.key === "Enter"){ e.preventDefault(); eBtn.click(); }
-        });
-      }
-    }
-
-    function ensureCustomLanguages(langs, listId, nameAttr){
-      const listEl = document.getElementById(listId);
-      if(!listEl) return;
-      // löscht alte Chips (damit beim Öffnen nicht dupliziert)
-      listEl.innerHTML = "";
-      (langs||[]).forEach(l => {
-        const v = _normLang(l);
-        if(!v) return;
-        if(!_langExists(nameAttr, v)){
-          _addCustomLangChip(listEl, nameAttr, v, true);
-        }
-      });
-    }
-
-
-      // User hinzufügen
+    // User hinzufügen
       if(!IS_PLANNER){
       document.getElementById("add-user-form").onsubmit=async e=>{
         e.preventDefault();
@@ -3654,25 +3570,108 @@ document.getElementById("confirmed-counter").textContent =
       let list=document.getElementById("user-list");
       list.innerHTML="";
       users.forEach(u=>{
-        let tr=document.createElement("tr");
-        tr.innerHTML=`
-          <td>${u.photo_url ? `<img src="${u.photo_url}" style="height:34px;width:28px;object-fit:cover;border-radius:6px;border:1px solid #ddd;">` : `<span class="muted">-</span>`}</td>
-          <td><b>${u.username}</b></td>
-          <td>${u.vorname} ${u.nachname}</td>
-          <td>${u.email || "-"}</td>
-          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}</td>
-          <td>${u.bewach_id || "-"}</td>
-          <td>${u.steuernummer || "-"}</td>
-          <td>${capYesNo(u.bsw || "nein")}</td>
-          <td>${capYesNo(u.sanitaeter || "nein")}</td>
-          <td>${capYesNo(u.pschein || "nein")}</td>
-          <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
-          <td>
-            <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
-            <button class="confirm" onclick="downloadClientPdf('${u.username}')">📄 PDF</button>
-            <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
-          </td>
-        `;
+        const tr=document.createElement("tr");
+
+        // Foto
+        const tdPhoto=document.createElement("td");
+        if(u.photo_url){
+          const img=document.createElement("img");
+          img.src=u.photo_url;
+          img.style.height="34px";
+          img.style.width="28px";
+          img.style.objectFit="cover";
+          img.style.borderRadius="6px";
+          img.style.border="1px solid #ddd";
+          tdPhoto.appendChild(img);
+        } else {
+          const sp=document.createElement("span");
+          sp.className="muted";
+          sp.textContent="-";
+          tdPhoto.appendChild(sp);
+        }
+        tr.appendChild(tdPhoto);
+
+        // Username
+        const tdUser=document.createElement("td");
+        const b=document.createElement("b");
+        b.textContent=u.username || "";
+        tdUser.appendChild(b);
+        tr.appendChild(tdUser);
+
+        // Name
+        const tdName=document.createElement("td");
+        tdName.textContent=`${u.vorname||""} ${u.nachname||""}`.trim();
+        tr.appendChild(tdName);
+
+        // Email
+        const tdEmail=document.createElement("td");
+        tdEmail.textContent=u.email || "-";
+        tr.appendChild(tdEmail);
+
+        // 34a
+        const td34a=document.createElement("td");
+        const s34 = capYesNo(u.s34a);
+        td34a.textContent = s34 + ((String(u.s34a||'').toLowerCase()==="ja" && u.s34a_art) ? ` (${u.s34a_art})` : "");
+        tr.appendChild(td34a);
+
+        // Bewach-ID
+        const tdBew=document.createElement("td");
+        tdBew.textContent=u.bewach_id || "-";
+        tr.appendChild(tdBew);
+
+        // Steuernummer
+        const tdSteu=document.createElement("td");
+        tdSteu.textContent=u.steuernummer || "-";
+        tr.appendChild(tdSteu);
+
+        // BSW
+        const tdBsw=document.createElement("td");
+        tdBsw.textContent=capYesNo(u.bsw || "nein");
+        tr.appendChild(tdBsw);
+
+        // Sanitäter
+        const tdSan=document.createElement("td");
+        tdSan.textContent=capYesNo(u.sanitaeter || "nein");
+        tr.appendChild(tdSan);
+
+        // P-Schein
+        const tdPs=document.createElement("td");
+        tdPs.textContent=capYesNo(u.pschein || "nein");
+        tr.appendChild(tdPs);
+
+        // Stundensatz
+        const tdRate=document.createElement("td");
+        tdRate.textContent = (u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined)
+          ? (fmtNumDE(Number(u.stundensatz),2) + " €/h")
+          : "-";
+        tr.appendChild(tdRate);
+
+        // Aktionen
+        const tdAct=document.createElement("td");
+
+        const btnEdit=document.createElement("button");
+        btnEdit.className="confirm";
+        btnEdit.type="button";
+        btnEdit.textContent="✏️ Bearbeiten";
+        btnEdit.addEventListener("click", ()=>openEditModal(u));
+
+        const btnPdf=document.createElement("button");
+        btnPdf.className="confirm";
+        btnPdf.type="button";
+        btnPdf.textContent="📄 PDF-Auszug";
+        btnPdf.addEventListener("click", ()=>downloadClientPdf(u.username));
+
+        const btnDel=document.createElement("button");
+        btnDel.className="reject";
+        btnDel.type="button";
+        btnDel.textContent="🗑️ Löschen";
+        btnDel.addEventListener("click", ()=>deleteUser(u.username));
+
+        tdAct.appendChild(btnEdit);
+        tdAct.appendChild(btnPdf);
+        tdAct.appendChild(btnDel);
+        tr.appendChild(tdAct);
+
         list.appendChild(tr);
       });
 
@@ -3798,10 +3797,6 @@ document.getElementById("confirmed-counter").textContent =
       document.querySelectorAll('input[name="edit_sprachen_cb"]').forEach(cb=>{
         cb.checked = langs.includes(cb.value);
       });
-
-
-      // ✅ Custom-Sprachen (falls nicht in Liste vorhanden)
-      ensureCustomLanguages(langs, "edit-lang-custom-list", "edit_sprachen_cb");
 // Foto Vorschau
       const pv = document.getElementById("edit-photo-preview");
       if(pv){
