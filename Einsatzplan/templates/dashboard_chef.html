@@ -962,6 +962,15 @@ button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198
   border-collapse:collapse;
 }
 .user-table th, .user-table td{ vertical-align:middle; }
+/* Personal-Liste: Ausrichtung wie in Screenshot */
+.ta-left{ text-align:left !important; }
+.ta-center{ text-align:center !important; }
+.user-table-personal th, .user-table-personal td{ white-space:nowrap; }
+.user-table-personal td.ta-left{ white-space:normal; } /* Name/Bemerkung dürfen umbrechen */
+.user-table-personal td.actions-cell{ white-space:nowrap; }
+.user-table-personal td.actions-cell button{ margin:2px 6px 2px 0; }
+.user-table-personal input[type="checkbox"]{ transform:scale(1.05); }
+
 .user-table .photo-thumb{
   width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid rgba(0,0,0,.12);
 }
@@ -1324,7 +1333,7 @@ button.confirm, button.reject, button.delete, button.inline{
           <option value="ja">P-Schein: Ja</option>
         </select>
 
-        <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
+        <input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€/h) optional">
       </div>
       <!-- Personalbogen (zusätzliche Angaben) -->
       <h4 style="margin:6px 0;">Personalbogen</h4>
@@ -1435,26 +1444,30 @@ button.confirm, button.reject, button.delete, button.inline{
           </div>
         </div>
       </div>
-<button type="submit" class="confirm">➕ Hinzufügen</button>
+      <div class="lang-manager full">
+        <input type="text" id="lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
+        <button type="button" class="inline" id="lang-custom-add">➕ Sprache hinzufügen</button>
+      </div>
+      <div class="custom-lang-list full" id="lang-custom-list"></div>
+
+<button type="submit"  class="confirm">➕ Hinzufügen</button>
     </form>
 
     <h4>Personalliste</h4>
     <div class="table-scroll">
-    <table class="user-table">
+    <table class="user-table user-table-personal">
       <thead>
         <tr>
-          <th>Foto</th>
-          <th>Benutzername</th>
-          <th>Name</th>
-          <th>E-Mail</th>
-          <th>34a</th>
-          <th>Bewach-ID</th>
-          <th>Steuernummer</th>
-          <th>BSW</th>
-          <th>Sanitäter</th>
-          <th>P-Schein</th>
-          <th>Stundensatz</th>
-          <th>Aktionen</th>
+          <th class="ta-left">Name</th>
+          <th class="ta-left">Bemerkung</th>
+          <th class="ta-center">§ 34a GewO</th>
+          <th class="ta-center">Bewacher&nbsp;ID</th>
+          <th class="ta-center">BSW</th>
+          <th class="ta-center">Sani</th>
+          <th class="ta-center">P‑Schein</th>
+          <th class="ta-center">SVS</th>
+          <th class="ta-center">Erklärung</th>
+          <th class="ta-center">Aktionen</th>
         </tr>
       </thead>
       <tbody id="user-list"></tbody>
@@ -1735,7 +1748,7 @@ button.confirm, button.reject, button.delete, button.inline{
         <option value="ja">Ja</option>
       </select>
 
-      <label>Stundensatz (€/h)</label>
+      <label>SVS (€/h)</label>
       <input type="number" id="edit-stundensatz" step="0.01" min="0">
 
       <h4 style="margin:12px 0 6px 0;">Personalbogen</h4>
@@ -1855,6 +1868,12 @@ button.confirm, button.reject, button.delete, button.inline{
             <label><input type="checkbox" name="edit_sprachen_cb" value="Persisch"> <span>Persisch</span></label>
             <label><input type="checkbox" name="edit_sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></label>
       </div>
+      <div class="lang-manager" style="margin:10px 0 4px 0;">
+        <input type="text" id="edit-lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
+        <button type="button" class="inline" id="edit-lang-custom-add">➕ Sprache hinzufügen</button>
+      </div>
+      <div class="custom-lang-list" id="edit-lang-custom-list"></div>
+
 <div class="modal-actions">
         <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
       </div>
@@ -3609,82 +3628,77 @@ document.getElementById("confirmed-counter").textContent =
       users.forEach(u=>{
         const tr=document.createElement("tr");
 
-        // Foto
-        const tdPhoto=document.createElement("td");
-        if(u.photo_url){
-          const img=document.createElement("img");
-          img.src=u.photo_url;
-          img.style.height="34px";
-          img.style.width="28px";
-          img.style.objectFit="cover";
-          img.style.borderRadius="6px";
-          img.style.border="1px solid #ddd";
-          tdPhoto.appendChild(img);
-        } else {
-          const sp=document.createElement("span");
-          sp.className="muted";
-          sp.textContent="-";
-          tdPhoto.appendChild(sp);
-        }
-        tr.appendChild(tdPhoto);
-
-        // Username
-        const tdUser=document.createElement("td");
-        const b=document.createElement("b");
-        b.textContent=u.username || "";
-        tdUser.appendChild(b);
-        tr.appendChild(tdUser);
-
         // Name
         const tdName=document.createElement("td");
-        tdName.textContent=`${u.vorname||""} ${u.nachname||""}`.trim();
+        tdName.className="ta-left";
+        tdName.textContent=`${u.vorname||""} ${u.nachname||""}`.trim() || "-";
         tr.appendChild(tdName);
 
-        // Email
-        const tdEmail=document.createElement("td");
-        tdEmail.textContent=u.email || "-";
-        tr.appendChild(tdEmail);
+        // Bemerkung (freier Text)
+        const tdBem=document.createElement("td");
+        tdBem.className="ta-left";
+        tdBem.textContent=(u.sonstige || "").trim() || "-";
+        tr.appendChild(tdBem);
 
-        // 34a
+        // §34a GewO
         const td34a=document.createElement("td");
+        td34a.className="ta-center";
         const s34 = capYesNo(u.s34a);
         td34a.textContent = s34 + ((String(u.s34a||'').toLowerCase()==="ja" && u.s34a_art) ? ` (${u.s34a_art})` : "");
         tr.appendChild(td34a);
 
-        // Bewach-ID
+        // Bewacher ID
         const tdBew=document.createElement("td");
+        tdBew.className="ta-center";
         tdBew.textContent=u.bewach_id || "-";
         tr.appendChild(tdBew);
 
-        // Steuernummer
-        const tdSteu=document.createElement("td");
-        tdSteu.textContent=u.steuernummer || "-";
-        tr.appendChild(tdSteu);
-
         // BSW
         const tdBsw=document.createElement("td");
+        tdBsw.className="ta-center";
         tdBsw.textContent=capYesNo(u.bsw || "nein");
         tr.appendChild(tdBsw);
 
-        // Sanitäter
+        // Sani
         const tdSan=document.createElement("td");
+        tdSan.className="ta-center";
         tdSan.textContent=capYesNo(u.sanitaeter || "nein");
         tr.appendChild(tdSan);
 
         // P-Schein
         const tdPs=document.createElement("td");
+        tdPs.className="ta-center";
         tdPs.textContent=capYesNo(u.pschein || "nein");
         tr.appendChild(tdPs);
 
-        // Stundensatz
+        // SVS (ehem. Stundensatz)
         const tdRate=document.createElement("td");
+        tdRate.className="ta-center";
         tdRate.textContent = (u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined)
           ? (fmtNumDE(Number(u.stundensatz),2) + " €/h")
           : "-";
         tr.appendChild(tdRate);
 
+        // Erklärung (Datenschutz-Zustimmung)
+        const tdCons=document.createElement("td");
+        tdCons.className="ta-center";
+        const cb=document.createElement("input");
+        cb.type="checkbox";
+        cb.disabled=true;
+        cb.checked=!!u.consent_given;
+        cb.title = cb.checked ? "Zugestimmt" : "Nicht zugestimmt";
+        tdCons.appendChild(cb);
+        tr.appendChild(tdCons);
+
         // Aktionen
         const tdAct=document.createElement("td");
+        tdAct.className="ta-center actions-cell";
+
+        const btnPdf=document.createElement("button");
+        btnPdf.className="confirm";
+        btnPdf.type="button";
+        btnPdf.textContent="📄 PDF erzeugen";
+        btnPdf.addEventListener("click", ()=>downloadClientPdf(u.username));
 
         const btnEdit=document.createElement("button");
         btnEdit.className="confirm";
@@ -3692,20 +3706,14 @@ document.getElementById("confirmed-counter").textContent =
         btnEdit.textContent="✏️ Bearbeiten";
         btnEdit.addEventListener("click", ()=>openEditModal(u));
 
-        const btnPdf=document.createElement("button");
-        btnPdf.className="confirm";
-        btnPdf.type="button";
-        btnPdf.textContent="📄 PDF-Auszug";
-        btnPdf.addEventListener("click", ()=>downloadClientPdf(u.username));
-
         const btnDel=document.createElement("button");
         btnDel.className="reject";
         btnDel.type="button";
         btnDel.textContent="🗑️ Löschen";
         btnDel.addEventListener("click", ()=>deleteUser(u.username));
 
-        tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnPdf);
+        tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
         tr.appendChild(tdAct);
 
@@ -4640,6 +4648,160 @@ function setCategoryBadge(cat){
 
 
 <script>
+
+<script>
+/* ✅ Sprach-Manager: Chef kann eigene Sprachen hinzufügen und beim Mitarbeiter auswählen.
+   - Speichert Custom-Sprachen in localStorage (Key: custom_langs_v1)
+   - Fügt Checkboxen sowohl im Add-Formular als auch im Edit-Modal hinzu
+*/
+function initLanguageManagers(){
+  const LS_KEY = "custom_langs_v1";
+
+  const addGrid  = document.getElementById("lang-grid");
+  const editGrid = document.getElementById("edit-lang-grid");
+
+  const addInput = document.getElementById("lang-custom-input");
+  const addBtn   = document.getElementById("lang-custom-add");
+  const addList  = document.getElementById("lang-custom-list");
+
+  const editInput = document.getElementById("edit-lang-custom-input");
+  const editBtn   = document.getElementById("edit-lang-custom-add");
+  const editList  = document.getElementById("edit-lang-custom-list");
+
+  if(!addGrid || !editGrid) return;
+
+  const norm = (s)=> String(s||"").trim().replace(/\s{2,}/g," ");
+  const load = ()=>{
+    try{
+      const raw = localStorage.getItem(LS_KEY);
+      const arr = raw ? JSON.parse(raw) : [];
+      return Array.isArray(arr) ? arr.map(norm).filter(Boolean) : [];
+    }catch(_){ return []; }
+  };
+  const save = (arr)=>{
+    try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }catch(_){}
+  };
+
+  const hasCheckbox = (grid, name, value)=>{
+    return !!grid.querySelector(`input[name="${name}"][value="${CSS.escape(value)}"]`);
+  };
+
+  const addCheckbox = (grid, name, value)=>{
+    const v = norm(value);
+    if(!v) return;
+    if(hasCheckbox(grid, name, v)) return;
+
+    const label = document.createElement("label");
+    const cb = document.createElement("input");
+    cb.type="checkbox";
+    cb.name=name;
+    cb.value=v;
+
+    const span = document.createElement("span");
+    span.textContent=v;
+
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(" "));
+    label.appendChild(span);
+
+    grid.appendChild(label);
+  };
+
+  const renderChips = (targetEl, langs, onRemove)=>{
+    if(!targetEl) return;
+    targetEl.innerHTML = "";
+    if(!langs.length) return;
+
+    langs.forEach(l=>{
+      const chip = document.createElement("span");
+      chip.className="custom-lang-chip";
+      chip.textContent = l;
+
+      const btn = document.createElement("button");
+      btn.type="button";
+      btn.textContent="✕";
+      btn.title="Entfernen";
+      btn.addEventListener("click", ()=>onRemove(l));
+
+      chip.appendChild(btn);
+      targetEl.appendChild(chip);
+    });
+  };
+
+  const applyToGrids = (langs)=>{
+    langs.forEach(l=>{
+      addCheckbox(addGrid, "sprachen_cb", l);
+      addCheckbox(editGrid, "edit_sprachen_cb", l);
+    });
+  };
+
+  const refresh = ()=>{
+    const langs = load();
+    applyToGrids(langs);
+    renderChips(addList, langs, (l)=>{
+      const next = load().filter(x=>x!==l);
+      save(next);
+      // Checkboxen entfernen
+      [addGrid, editGrid].forEach(grid=>{
+        grid.querySelectorAll(`input[value="${CSS.escape(l)}"]`).forEach(inp=>{
+          const lab = inp.closest("label");
+          if(lab) lab.remove();
+        });
+      });
+      refresh();
+    });
+    renderChips(editList, langs, (l)=>{
+      const next = load().filter(x=>x!==l);
+      save(next);
+      [addGrid, editGrid].forEach(grid=>{
+        grid.querySelectorAll(`input[value="${CSS.escape(l)}"]`).forEach(inp=>{
+          const lab = inp.closest("label");
+          if(lab) lab.remove();
+        });
+      });
+      refresh();
+    });
+  };
+
+  const tryAdd = (raw)=>{
+    const v = norm(raw);
+    if(!v) return;
+    // schon in Standardliste?
+    const existsStd = hasCheckbox(addGrid, "sprachen_cb", v) || hasCheckbox(editGrid, "edit_sprachen_cb", v);
+    // wir erlauben trotzdem speichern, aber doppelt vermeiden
+    let langs = load();
+    if(!langs.includes(v) && !existsStd) langs.push(v);
+    // falls v bereits als Standard existiert: nicht speichern, aber nichts kaputt machen
+    save(langs);
+    refresh();
+  };
+
+  if(addBtn && addInput){
+    addBtn.addEventListener("click", ()=>{
+      tryAdd(addInput.value);
+      addInput.value = "";
+      addInput.focus();
+    });
+    addInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); addBtn.click(); }
+    });
+  }
+
+  if(editBtn && editInput){
+    editBtn.addEventListener("click", ()=>{
+      tryAdd(editInput.value);
+      editInput.value = "";
+      editInput.focus();
+    });
+    editInput.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter"){ e.preventDefault(); editBtn.click(); }
+    });
+  }
+
+  refresh();
+}
+</script>
+
 document.addEventListener("DOMContentLoaded", function(){
   
       initLanguageManagers();
