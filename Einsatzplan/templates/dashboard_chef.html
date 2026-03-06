@@ -3723,7 +3723,7 @@ document.getElementById("confirmed-counter").textContent =
       const replacementSelect = document.getElementById("replacement-user");
       replacementSelect.innerHTML = "";
 
-      const candidates = usersList;
+      const candidates = sortUsersByLastFirst(usersList);
 
       candidates.forEach(u=>{
         const opt=document.createElement("option");
@@ -3757,7 +3757,19 @@ document.getElementById("confirmed-counter").textContent =
         timeSel.appendChild(opt);
         cancelTimeEdit();
       } else {
-        confirmedUsers.forEach(u=>{
+        const confirmedUsersSorted = [...confirmedUsers].sort((a,b)=>{
+          const ua = usersList.find(x => String(x.username) === String(a)) || { username:a, vorname:"", nachname:"" };
+          const ub = usersList.find(x => String(x.username) === String(b)) || { username:b, vorname:"", nachname:"" };
+          const aa = fullNameForSort(ua);
+          const bb = fullNameForSort(ub);
+          const byLast = aa.nachname.localeCompare(bb.nachname, "de", {sensitivity:"base"});
+          if(byLast !== 0) return byLast;
+          const byFirst = aa.vorname.localeCompare(bb.vorname, "de", {sensitivity:"base"});
+          if(byFirst !== 0) return byFirst;
+          return aa.username.localeCompare(bb.username, "de", {sensitivity:"base"});
+        });
+
+        confirmedUsersSorted.forEach(u=>{
           const opt=document.createElement("option");
           opt.value=u;
           opt.textContent=usersCache[u] || u;
@@ -3767,12 +3779,35 @@ document.getElementById("confirmed-counter").textContent =
     }
 
     // User Management
+    function fullNameForSort(u){
+      const nachname = String(u?.nachname || "").trim();
+      const vorname = String(u?.vorname || "").trim();
+      const username = String(u?.username || "").trim();
+      return {
+        nachname: nachname || username,
+        vorname: vorname || "",
+        username
+      };
+    }
+
+    function sortUsersByLastFirst(users){
+      return [...(users || [])].sort((a,b)=>{
+        const aa = fullNameForSort(a);
+        const bb = fullNameForSort(b);
+        const byLast = aa.nachname.localeCompare(bb.nachname, "de", {sensitivity:"base"});
+        if(byLast !== 0) return byLast;
+        const byFirst = aa.vorname.localeCompare(bb.vorname, "de", {sensitivity:"base"});
+        if(byFirst !== 0) return byFirst;
+        return aa.username.localeCompare(bb.username, "de", {sensitivity:"base"});
+      });
+    }
+
     async function loadUsers(){
       let res=await fetch("/users");
       let users=await res.json();
 
-      // ✅ Alphabetisch nach Benutzername (A–Z)
-      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
+      // ✅ Alphabetisch nach Nachname, Vorname
+      users = sortUsersByLastFirst(users);
 
       usersList = users;
       usersCache = {};
