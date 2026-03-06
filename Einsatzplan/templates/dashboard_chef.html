@@ -5177,6 +5177,28 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+
+<script>
+document.addEventListener("DOMContentLoaded", function(){
+  const form = document.getElementById("add-user-form");
+  if(!form) return;
+
+  form.addEventListener("submit", function(){
+    setTimeout(()=>{
+      form.reset();
+
+      document.querySelectorAll(".lang-grid input[type='checkbox']").forEach(c=>c.checked=false);
+
+      const preview = document.getElementById("new-photo-preview") || document.getElementById("photo-preview");
+      if(preview){
+        preview.src="";
+        preview.style.display="none";
+      }
+    },500);
+  });
+});
+</script>
+
 </body>
 </html>
 
