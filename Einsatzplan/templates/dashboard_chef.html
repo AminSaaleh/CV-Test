@@ -1181,31 +1181,31 @@ button.confirm, button.reject, button.delete, button.inline{
 </style>
 
 
-<style id="personal-layout-sections-only">
-#user-management .section-title{
-  margin:16px 0 10px 0;
-  padding-bottom:6px;
+<style id="personal-layout-sections-fix">
+#add-user-form .section-block{
+  grid-column:1 / -1;
+  margin:8px 0 2px 0;
+}
+#add-user-form .section-title,
+#add-user-form .subsection-title{
+  grid-column:1 / -1;
+  margin:0;
+  padding-bottom:8px;
   border-bottom:1px solid rgba(0,0,0,.10);
-  font-size:16px;
   font-weight:700;
+  color:#163252;
 }
-#user-management .subsection-title{
-  margin:14px 0 8px 0;
-  font-size:14px;
-  font-weight:600;
-  color:#2f3b52;
+#add-user-form .section-title{font-size:18px;}
+#add-user-form .subsection-title{
+  font-size:15px;
+  border-bottom:none;
+  padding-bottom:0;
+  margin-top:6px;
 }
-#user-management .section-block{
-  margin-top:10px;
-  margin-bottom:14px;
-}
-#user-management .section-block + .section-block{
-  margin-top:18px;
-}
-#user-management .section-note{
-  margin:2px 0 10px 0;
-  font-size:12px;
-  color:#667085;
+#add-user-form .section-block.compact{margin-top:2px; margin-bottom:0;}
+#add-user-form .form-row.section-row,
+#add-user-form .full.section-row{
+  grid-column:1 / -1;
 }
 </style>
 
@@ -1478,13 +1478,7 @@ button.confirm, button.reject, button.delete, button.inline{
 
         <input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€/h) optional">
       </div>
-      <br> </br>
-      <!-- Personalbogen (zusätzliche Angaben) -->
-      <div class="section-block">
-        <h4 class="section-title">Zusätzliche Angaben</h4>
-      </div>
-
-      <div class="form-row">
+      <div class="form-row section-row">
         <div class="photo-box">
           <label>Mitarbeiter-Bild (optional)</label>
           <input type="file" id="new-photo" accept="image/*">
@@ -1492,13 +1486,17 @@ button.confirm, button.reject, button.delete, button.inline{
             <img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
           </div>
         </div>
-        <div style="flex:1;">
+        <div>
           <label>Geburtsdatum</label>
           <input type="date" id="geburtsdatum">
         </div>
       </div>
 
-      <div class="form-row">
+      <div class="section-block">
+        <h4 class="section-title">Zusätzliche Angaben</h4>
+      </div>
+
+      <div class="form-row section-row">
         <input type="text" id="staatsangehoerigkeit" placeholder="Staatsangehörigkeit">
         <select id="amtliches_dokument">
           <option value="">Amtliches Dokument (optional)</option>
@@ -1527,11 +1525,11 @@ button.confirm, button.reject, button.delete, button.inline{
         </div>
       </div>
 
-      <div class="section-block">
+      <div class="section-block compact">
         <h4 class="section-title">Zusätzliche Qualifikationen</h4>
       </div>
 
-      <div class="check-grid">
+      <div class="check-grid full section-row">
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="gssk"> GSSK</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
@@ -1551,10 +1549,12 @@ button.confirm, button.reject, button.delete, button.inline{
         <input type="text" id="sonstige" placeholder="Sonstige (optional)">
       </div>
 
-      <div class="form-row">
-        <div style="flex:1;">
-          <h5 class="subsection-title">Fremdsprachen</h5>
-          <div class="check-grid lang-grid" id="lang-grid">
+      <div class="section-block compact">
+        <h5 class="subsection-title">Fremdsprachen</h5>
+      </div>
+
+      <div class="full section-row">
+        <div class="check-grid lang-grid" id="lang-grid">
             
             <label><input type="checkbox" name="sprachen_cb" value="Deutsch"> <span>Deutsch</span></label>
             <label><input type="checkbox" name="sprachen_cb" value="Englisch"> <span>Englisch</span></label>
@@ -1592,7 +1592,6 @@ button.confirm, button.reject, button.delete, button.inline{
             <label><input type="checkbox" name="sprachen_cb" value="Finnisch"> <span>Finnisch</span></label>
           
           </div>
-        </div>
       </div>
       <div class="lang-manager full">
         <input type="text" id="lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
