@@ -650,6 +650,7 @@ def add_user():
                 (d.get("sprachen") or "").strip(),
             ),
         )
+        _sync_custom_languages(db, d.get("sprachen") or "")
         db.commit()
     except Exception as e:
         db.rollback()
@@ -829,7 +830,7 @@ def delete_user(username):
 
 @app.route("/custom_languages", methods=["GET"])
 def get_custom_languages():
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     rows = get_db().execute("SELECT name FROM custom_language ORDER BY LOWER(name), name").fetchall()
     return jsonify([str(r.get("name") or "").strip() for r in rows if str(r.get("name") or "").strip()])
@@ -837,7 +838,7 @@ def get_custom_languages():
 
 @app.route("/custom_languages", methods=["POST"])
 def add_custom_language():
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     d = request.json or {}
     name = _normalize_language_label(d.get("name") or "")
@@ -851,7 +852,7 @@ def add_custom_language():
 
 @app.route("/custom_languages/<path:name>", methods=["DELETE"])
 def delete_custom_language(name):
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     lang = _normalize_language_label(name)
     db = get_db()
