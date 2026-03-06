@@ -650,6 +650,7 @@ def add_user():
                 (d.get("fuehrerschein_klasse") or "").strip(),
                 (d.get("sonstige") or "").strip(),
                 (d.get("sprachen") or "").strip(),
+                bool(d.get("acc_locked") or False),
             ),
         )
         _sync_custom_languages(db, d.get("sprachen") or "")
@@ -1506,26 +1507,6 @@ def update_event():
         stundensatz = None
 
     db = get_db()
-
-    existing_event = db.execute("SELECT id, frist FROM event WHERE id=%s", (event_id,)).fetchone()
-    if not existing_event:
-        return jsonify({"error": "Event nicht gefunden"}), 404
-
-    old_frist_raw = (existing_event.get("frist") or "").strip()
-
-    def _parse_dt(value):
-        value = (value or "").strip()
-        if not value:
-            return None
-        try:
-            return datetime.fromisoformat(value)
-        except Exception:
-            return None
-
-    old_frist_dt = _parse_dt(old_frist_raw)
-    new_frist_dt = _parse_dt(frist)
-    frist_extended = bool(old_frist_dt and new_frist_dt and new_frist_dt > old_frist_dt)
-
     cur = db.execute(
         """UPDATE event SET
            title=%s, ort=%s, dienstkleidung=%s, auftraggeber=%s,
@@ -1539,15 +1520,11 @@ def update_event():
             event_id
         )
     )
-
-    if frist_extended:
-        db.execute(
-            "UPDATE response SET status=NULL, remark=NULL WHERE event_id=%s AND status='abgelehnt'",
-            (event_id,)
-        )
+    if cur.rowcount == 0:
+        return jsonify({"error": "Event nicht gefunden"}), 404
 
     db.commit()
-    return jsonify({"status": "ok", "frist_extended": frist_extended})
+    return jsonify({"status": "ok"})
 
 
 @app.route("/events/respond", methods=["POST"])
