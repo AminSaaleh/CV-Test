@@ -14,6 +14,8 @@ from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
+from reportlab.lib import colors
+from PIL import Image
 
 
 
@@ -338,6 +340,15 @@ def init_db():
         '''
     )
 
+    db.execute(
+        '''
+        CREATE TABLE IF NOT EXISTS custom_language (
+            id SERIAL PRIMARY KEY,
+            name TEXT UNIQUE NOT NULL
+        );
+        '''
+    )
+
     # Indizes
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_event ON response(event_id);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_user  ON response(username);")
@@ -372,6 +383,7 @@ def init_db():
         ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
         ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
         ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
+        ("acc_locked", "ALTER TABLE users ADD COLUMN acc_locked BOOLEAN DEFAULT FALSE"),
         ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
         ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
         ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
@@ -549,6 +561,7 @@ def get_users():
     for u in users:
         if u.get("stundensatz") is None:
             u["stundensatz"] = ""
+        u["acc_locked"] = bool(u.get("acc_locked") or False)
     return jsonify(users)
 
 
@@ -592,8 +605,8 @@ def add_user():
     try:
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen,acc_locked)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 d.get("password") or "",
@@ -664,8 +677,8 @@ def rename_user():
         # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen,acc_locked)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -698,7 +711,8 @@ def rename_user():
                 old.get("waffensachkunde") or "nein",
                 (old.get("fuehrerschein_klasse") or "").strip(),
                 (old.get("sonstige") or "").strip(),
-                (old.get("sprachen") or "").strip()
+                (old.get("sprachen") or "").strip(),
+                bool(old.get("acc_locked") or False)
             )
         )
 
@@ -735,7 +749,7 @@ def edit_user(username):
               "photo_url", "geburtsdatum", "staatsangehoerigkeit", "amtliches_dokument", "dokumentennr",
               "ausstellende_behoerde", "ausstellungsdatum",
               "sanitaeter_art", "brandschutzhelfer", "deeskalation", "gssk", "fachkraft", "personenschutz",
-              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen"]:
+              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen", "acc_locked"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -760,7 +774,7 @@ def edit_user(username):
            photo_url=%s, geburtsdatum=%s, staatsangehoerigkeit=%s, amtliches_dokument=%s, dokumentennr=%s,
            ausstellende_behoerde=%s, ausstellungsdatum=%s,
            sanitaeter_art=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft=%s, personenschutz=%s,
-           behoerdlich=%s, waffensachkunde=%s, fuehrerschein_klasse=%s, sonstige=%s, sprachen=%s
+           behoerdlich=%s, waffensachkunde=%s, fuehrerschein_klasse=%s, sonstige=%s, sprachen=%s, acc_locked=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
@@ -784,10 +798,12 @@ def edit_user(username):
             updates.get("waffensachkunde") or "nein",
             updates.get("fuehrerschein_klasse") or "",
             updates.get("sonstige") or "",
-            updates.get("sprachen") or "",
+            ", ".join(_parse_languages(updates.get("sprachen") or "")),
+            bool(updates.get("acc_locked") or False),
             username
         )
     )
+    _sync_custom_languages(db, updates.get("sprachen") or "")
     db.commit()
     return jsonify({"status": "ok"})
 
@@ -802,6 +818,53 @@ def delete_user(username):
     db.commit()
     return jsonify({"status": "ok"})
 
+
+@app.route("/custom_languages", methods=["GET"])
+def get_custom_languages():
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+    rows = get_db().execute("SELECT name FROM custom_language ORDER BY LOWER(name), name").fetchall()
+    return jsonify([str(r.get("name") or "").strip() for r in rows if str(r.get("name") or "").strip()])
+
+
+@app.route("/custom_languages", methods=["POST"])
+def add_custom_language():
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+    d = request.json or {}
+    name = _normalize_language_label(d.get("name") or "")
+    if not name:
+        return jsonify({"error": "Bitte eine Sprache eingeben."}), 400
+    db = get_db()
+    db.execute("INSERT INTO custom_language (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,))
+    db.commit()
+    return jsonify({"status": "ok", "name": name})
+
+
+@app.route("/custom_languages/<path:name>", methods=["DELETE"])
+def delete_custom_language(name):
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+    lang = _normalize_language_label(name)
+    db = get_db()
+    db.execute("DELETE FROM custom_language WHERE name=%s", (lang,))
+    db.commit()
+    return jsonify({"status": "ok"})
+
+
+@app.route("/users/<username>/lock", methods=["POST"])
+def lock_user(username):
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+    d = request.json or {}
+    locked = bool(d.get("locked") or False)
+    db = get_db()
+    u = db.execute("SELECT username FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+    db.execute("UPDATE users SET acc_locked=%s WHERE username=%s", (locked, username))
+    db.commit()
+    return jsonify({"status": "ok", "acc_locked": locked})
 
 
 # ---------------- Mitarbeiter: Foto Upload & PDF-Auszug ----------------
@@ -849,6 +912,88 @@ def _yesno_label(v: str) -> str:
     return "Ja" if str(v or "").strip().lower() == "ja" else "Nein"
 
 
+def _normalize_language_label(value: str) -> str:
+    return re.sub(r"\s{2,}", " ", str(value or "").strip())
+
+
+def _parse_languages(raw: str):
+    items = []
+    seen = set()
+    for part in str(raw or "").split(","):
+        label = _normalize_language_label(part)
+        key = label.casefold()
+        if label and key not in seen:
+            seen.add(key)
+            items.append(label)
+    return items
+
+
+def _sync_custom_languages(db, raw_languages) -> None:
+    for lang in _parse_languages(raw_languages):
+        db.execute("INSERT INTO custom_language (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (lang,))
+
+
+def _safe_photo_reader(photo_url: str):
+    photo_url = str(photo_url or "").strip()
+    if not photo_url.startswith("/static/"):
+        return None
+    abs_photo = os.path.join(app.root_path, photo_url.lstrip("/"))
+    if not os.path.isfile(abs_photo):
+        return None
+    try:
+        with Image.open(abs_photo) as pil_img:
+            if pil_img.mode not in ("RGB", "L"):
+                pil_img = pil_img.convert("RGB")
+            else:
+                pil_img = pil_img.copy()
+            return ImageReader(pil_img)
+    except Exception:
+        try:
+            return ImageReader(abs_photo)
+        except Exception:
+            return None
+
+
+def _format_date_de(value: str, fallback: str = "-") -> str:
+    s = str(value or "").strip()
+    if not s:
+        return fallback
+    for parser in (
+        lambda v: datetime.fromisoformat(v.replace("Z", "")),
+        lambda v: datetime.strptime(v, "%Y-%m-%d"),
+    ):
+        try:
+            return parser(s).strftime("%d.%m.%Y")
+        except Exception:
+            pass
+    return s
+
+
+def _draw_wrapped_text(c, text: str, x: float, y: float, max_width: float, font_name: str = "Helvetica", font_size: int = 10, leading: float = None):
+    text = str(text or "").strip() or "-"
+    leading = leading or (font_size * 1.35)
+    c.setFont(font_name, font_size)
+    words = text.split()
+    lines = []
+    current = ""
+    for word in words:
+        trial = f"{current} {word}".strip()
+        if c.stringWidth(trial, font_name, font_size) <= max_width:
+            current = trial
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    if not lines:
+        lines = ["-"]
+    for line in lines:
+        c.drawString(x, y, line)
+        y -= leading
+    return y
+
+
 @app.route("/users/<username>/client_pdf", methods=["GET"])
 def user_client_pdf(username):
     # ✅ Chef/Vorgesetzter dürfen exportieren
@@ -860,107 +1005,124 @@ def user_client_pdf(username):
     if not u:
         abort(404)
 
-    # --- PDF bauen (Auftraggeber-Auszug) ---
     buf = io.BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     w, h = A4
 
-    margin = 18 * mm
-    x = margin
-    y = h - margin
+    margin = 16 * mm
+    content_w = w - (2 * margin)
+    header_h = 22 * mm
 
-    # Titel
+    c.setFillColor(colors.HexColor("#1f2937"))
+    c.roundRect(margin, h - margin - header_h, content_w, header_h, 5 * mm, stroke=0, fill=1)
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(margin + 8 * mm, h - margin - 8 * mm, "Mitarbeiterprofil")
+    c.setFont("Helvetica", 9)
+    c.drawString(margin + 8 * mm, h - margin - 14 * mm, f"Export am {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+
     full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
+    card_top = h - margin - header_h - 8 * mm
+    card_h = 55 * mm
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.HexColor("#d1d5db"))
+    c.roundRect(margin, card_top - card_h, content_w, card_h, 4 * mm, stroke=1, fill=1)
+
+    text_x = margin + 8 * mm
+    text_y = card_top - 10 * mm
+    photo_reader = _safe_photo_reader(u.get("photo_url") or "")
+    photo_w = 34 * mm
+    photo_h = 42 * mm
+    photo_x = w - margin - 8 * mm - photo_w
+    photo_y = card_top - 8 * mm - photo_h
+
+    c.setFillColor(colors.HexColor("#f3f4f6"))
+    c.roundRect(photo_x - 2 * mm, photo_y - 2 * mm, photo_w + 4 * mm, photo_h + 4 * mm, 3 * mm, stroke=0, fill=1)
+    if photo_reader:
+        c.drawImage(photo_reader, photo_x, photo_y, photo_w, photo_h, preserveAspectRatio=True, mask='auto', anchor='c')
+    else:
+        c.setFillColor(colors.HexColor("#6b7280"))
+        c.setFont("Helvetica-Bold", 10)
+        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2), "Kein Bild")
+
+    c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 16)
-    c.drawString(x, y, "Mitarbeiterprofil (Auszug)")
-    y -= 10 * mm
+    c.drawString(text_x, text_y, full_name)
+    c.setFont("Helvetica", 10)
+    c.drawString(text_x, text_y - 7 * mm, f"Benutzername: {username}")
+    c.drawString(text_x, text_y - 13 * mm, f"E-Mail: {(u.get('email') or '-').strip() or '-'}")
+    c.drawString(text_x, text_y - 19 * mm, f"Geburtsdatum: {_format_date_de(u.get('geburtsdatum') or '', '-')}")
+    c.drawString(text_x, text_y - 25 * mm, f"Staatsangehörigkeit: {(u.get('staatsangehoerigkeit') or '-').strip() or '-'}")
 
-    # Foto (optional)
-    photo_url = (u.get("photo_url") or "").strip()
-    if photo_url.startswith("/static/"):
-        abs_photo = os.path.join(app.root_path, photo_url.lstrip("/"))
-        try:
-            img = ImageReader(abs_photo)
-            img_w = 30 * mm
-            img_h = 40 * mm
-            c.drawImage(img, w - margin - img_w, h - margin - img_h, img_w, img_h, preserveAspectRatio=True, mask='auto')
-        except Exception:
-            pass
+    section_top = card_top - card_h - 8 * mm
+    col_gap = 8 * mm
+    col_w = (content_w - col_gap) / 2
 
-    # Basisdaten
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(x, y, "Basisdaten")
-    y -= 6 * mm
-    c.setFont("Helvetica", 11)
-    c.drawString(x, y, f"Name: {full_name}")
-    y -= 6 * mm
+    def draw_section(x, top_y, title, rows):
+        title_h = 8 * mm
+        row_h = 8 * mm
+        total_h = title_h + (len(rows) * row_h)
+        c.setFillColor(colors.white)
+        c.setStrokeColor(colors.HexColor("#d1d5db"))
+        c.roundRect(x, top_y - total_h, col_w, total_h, 4 * mm, stroke=1, fill=1)
+        c.setFillColor(colors.HexColor("#eef2ff"))
+        c.roundRect(x + 1.5 * mm, top_y - title_h + 1.5 * mm, col_w - 3 * mm, title_h - 3 * mm, 3 * mm, stroke=0, fill=1)
+        c.setFillColor(colors.HexColor("#111827"))
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(x + 4 * mm, top_y - 5.5 * mm, title)
+        y = top_y - title_h - 5.5 * mm
+        for label, value in rows:
+            c.setFillColor(colors.HexColor("#6b7280"))
+            c.setFont("Helvetica-Bold", 9)
+            c.drawString(x + 4 * mm, y, f"{label}:")
+            c.setFillColor(colors.black)
+            c.setFont("Helvetica", 9)
+            c.drawString(x + 30 * mm, y, str(value or "-"))
+            y -= row_h
+        return top_y - total_h
 
-    # 34a + Bewacher-ID
     s34a = str(u.get("s34a") or "").strip().lower()
     s34a_txt = "Ja" if s34a == "ja" else "Nein"
     s34a_art = (u.get("s34a_art") or "").strip()
     if s34a == "ja" and s34a_art:
         s34a_txt += f" ({s34a_art})"
 
-    c.drawString(x, y, f"§34a Qualifikation: {s34a_txt}")
-    y -= 6 * mm
-    c.drawString(x, y, f"Bewacher-ID: {(u.get('bewach_id') or '-').strip() or '-'}")
-    y -= 10 * mm
+    left_bottom = draw_section(margin, section_top, "Basisdaten", [("§ 34a GewO", s34a_txt), ("Bewacher-ID", (u.get("bewach_id") or "-").strip() or "-"), ("P-Schein", _yesno_label(u.get("pschein"))), ("BSW", _yesno_label(u.get("bsw"))), ("SVS", (f"{float(u.get('stundensatz')):.2f} €/h".replace('.', ',')) if u.get("stundensatz") not in (None, "") else "-")])
 
-    # Qualifikationen
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(x, y, "Qualifikationen / Fähigkeiten")
-    y -= 6 * mm
-    c.setFont("Helvetica", 11)
-
-    lines = []
-
-    # Sanitäter
+    san_txt = "Nein"
     if str(u.get("sanitaeter") or "").strip().lower() == "ja":
         art = (u.get("sanitaeter_art") or "").strip()
-        lines.append(f"Sanitätsdienstausbildung: Ja{(' ('+art+')') if art else ''}")
-    else:
-        lines.append("Sanitätsdienstausbildung: Nein")
+        san_txt = f"Ja{(' (' + art + ')') if art else ''}"
 
-    lines += [
-        f"Brandschutzhelfer/in: {_yesno_label(u.get('brandschutzhelfer'))}",
-        f"Deeskalationstraining: {_yesno_label(u.get('deeskalation'))}",
-        f"GSSK: {_yesno_label(u.get('gssk'))}",
-        f"Fachkraft für Schutz & Sicherheit: {_yesno_label(u.get('fachkraft'))}",
-        f"Personenschutzausbildung: {_yesno_label(u.get('personenschutz'))}",
-        f"Behördliche Ausbildung/Studium: {_yesno_label(u.get('behoerdlich'))}",
-        f"Waffensachkunde: {_yesno_label(u.get('waffensachkunde'))}",
-    ]
+    right_bottom = draw_section(margin + col_w + col_gap, section_top, "Qualifikationen", [("Sanitätsdienst", san_txt), ("Brandschutzhelfer/in", _yesno_label(u.get("brandschutzhelfer"))), ("Deeskalation", _yesno_label(u.get("deeskalation"))), ("GSSK", _yesno_label(u.get("gssk"))), ("Fachkraft S&S", _yesno_label(u.get("fachkraft"))), ("Personenschutz", _yesno_label(u.get("personenschutz"))), ("Waffensachkunde", _yesno_label(u.get("waffensachkunde"))), ("Behördlich/Studium", _yesno_label(u.get("behoerdlich"))), ("Führerschein", (u.get("fuehrerschein_klasse") or "-").strip() or "-")])
 
-    fs = (u.get("fuehrerschein_klasse") or "").strip()
-    lines.append(f"Führerschein: {fs if fs else '-'}")
+    box_top = min(left_bottom, right_bottom) - 8 * mm
+    box_h = 34 * mm
+    c.setFillColor(colors.white)
+    c.setStrokeColor(colors.HexColor("#d1d5db"))
+    c.roundRect(margin, box_top - box_h, content_w, box_h, 4 * mm, stroke=1, fill=1)
+    c.setFillColor(colors.HexColor("#ecfdf5"))
+    c.roundRect(margin + 1.5 * mm, box_top - 8 * mm + 1.5 * mm, content_w - 3 * mm, 8 * mm - 3 * mm, 3 * mm, stroke=0, fill=1)
+    c.setFillColor(colors.HexColor("#111827"))
+    c.setFont("Helvetica-Bold", 11)
+    c.drawString(margin + 4 * mm, box_top - 5.5 * mm, "Fremdsprachen & Hinweise")
 
-    other = (u.get("sonstige") or "").strip()
-    if other:
-        lines.append(f"Sonstige: {other}")
+    languages = ", ".join(_parse_languages(u.get("sprachen") or "")) or "-"
+    y = box_top - 12 * mm
+    c.setFillColor(colors.HexColor("#6b7280"))
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(margin + 4 * mm, y, "Sprachen:")
+    c.setFillColor(colors.black)
+    y = _draw_wrapped_text(c, languages, margin + 28 * mm, y, content_w - 34 * mm, "Helvetica", 9, 4.5 * mm)
+    c.setFillColor(colors.HexColor("#6b7280"))
+    c.setFont("Helvetica-Bold", 9)
+    c.drawString(margin + 4 * mm, y - 1 * mm, "Sonstige:")
+    c.setFillColor(colors.black)
+    _draw_wrapped_text(c, (u.get("sonstige") or "-").strip() or "-", margin + 28 * mm, y - 1 * mm, content_w - 34 * mm, "Helvetica", 9, 4.5 * mm)
 
-    for ln in lines:
-        c.drawString(x, y, ln)
-        y -= 6 * mm
-        if y < 30 * mm:
-            c.showPage()
-            y = h - margin
-            c.setFont("Helvetica", 11)
-
-    y -= 4 * mm
-
-    # Sprachen
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(x, y, "Fremdsprachen")
-    y -= 6 * mm
-    c.setFont("Helvetica", 11)
-    langs = (u.get("sprachen") or "").strip()
-    c.drawString(x, y, langs if langs else "-")
-    y -= 10 * mm
-
-    # Footer
-    c.setFont("Helvetica", 9)
-    c.drawString(x, 12 * mm, f"Export am {datetime.now().strftime('%d.%m.%Y %H:%M')}")
+    c.setFillColor(colors.HexColor("#6b7280"))
+    c.setFont("Helvetica", 8)
+    c.drawRightString(w - margin, 9 * mm, "Casutt Planungsportal – Mitarbeiterprofil-Auszug")
 
     c.showPage()
     c.save()
