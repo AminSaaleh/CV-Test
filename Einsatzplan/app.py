@@ -16,6 +16,8 @@ from reportlab.lib.units import mm
 from reportlab.lib.utils import ImageReader
 from reportlab.lib import colors
 from PIL import Image
+from urllib.parse import urljoin
+from urllib.request import urlopen
 
 
 
@@ -907,9 +909,18 @@ def upload_user_photo(username):
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
     ext = _safe_photo_ext(f.filename)
-    fn = f"{username}_{uuid.uuid4().hex}{ext}"
+    # Upload immer einmal über Pillow normalisieren, damit das PDF die Datei zuverlässig lesen kann.
+    fn = f"{username}_{uuid.uuid4().hex}{ext if ext != ".webp" else ".png"}"
     abs_path = os.path.join(UPLOAD_DIR, fn)
-    f.save(abs_path)
+
+    try:
+        with Image.open(f.stream) as img:
+            fmt = "PNG" if ext == ".png" or ext == ".webp" else "JPEG"
+            save_img = img.convert("RGBA") if fmt == "PNG" else img.convert("RGB")
+            save_img.save(abs_path, format=fmt)
+    except Exception:
+        f.stream.seek(0)
+        f.save(abs_path)
 
     rel_url = f"/static/uploads/users/{fn}"
     db.execute("UPDATE users SET photo_url=%s WHERE username=%s", (rel_url, username))
@@ -942,12 +953,8 @@ def _sync_custom_languages(db, raw_languages) -> None:
         db.execute("INSERT INTO custom_language (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (lang,))
 
 
-def _safe_photo_reader(photo_url: str):
-    photo_url = str(photo_url or "").strip()
-    if not photo_url.startswith("/static/"):
-        return None
-    abs_photo = os.path.join(app.root_path, photo_url.lstrip("/"))
-    if not os.path.isfile(abs_photo):
+def _image_reader_from_path(abs_photo: str):
+    if not abs_photo or not os.path.isfile(abs_photo):
         return None
     try:
         with Image.open(abs_photo) as pil_img:
@@ -961,6 +968,78 @@ def _safe_photo_reader(photo_url: str):
             return ImageReader(abs_photo)
         except Exception:
             return None
+
+
+def _image_reader_from_bytes(raw: bytes):
+    if not raw:
+        return None
+    try:
+        with Image.open(io.BytesIO(raw)) as pil_img:
+            if pil_img.mode not in ("RGB", "L"):
+                pil_img = pil_img.convert("RGB")
+            else:
+                pil_img = pil_img.copy()
+            return ImageReader(pil_img)
+    except Exception:
+        try:
+            return ImageReader(io.BytesIO(raw))
+        except Exception:
+            return None
+
+
+def _safe_photo_reader(photo_url: str, host_url: str = ""):
+    photo_url = str(photo_url or "").strip()
+    if not photo_url:
+        return None, "Kein Bild hinterlegt"
+
+    # 1) Lokale /static-Pfade bevorzugen
+    normalized = photo_url
+    if normalized.startswith("http://") or normalized.startswith("https://"):
+        absolute_url = normalized
+    else:
+        if not normalized.startswith("/"):
+            normalized = "/" + normalized
+        absolute_url = urljoin(host_url or "", normalized)
+
+        candidate_paths = []
+        if normalized.startswith("/static/"):
+            rel_path = normalized.lstrip("/")
+            candidate_paths.extend([
+                os.path.join(app.root_path, rel_path),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), rel_path),
+                os.path.join(os.getcwd(), rel_path),
+            ])
+        else:
+            candidate_paths.extend([
+                normalized,
+                os.path.join(app.root_path, normalized.lstrip("/")),
+                os.path.join(os.path.dirname(os.path.abspath(__file__)), normalized.lstrip("/")),
+            ])
+
+        seen = set()
+        for candidate in candidate_paths:
+            candidate = os.path.abspath(candidate)
+            if candidate in seen:
+                continue
+            seen.add(candidate)
+            reader = _image_reader_from_path(candidate)
+            if reader:
+                return reader, None
+
+    # 2) Fallback: per HTTP laden (hilft auf Hosting-Plattformen mit anderem Dateisystem)
+    try:
+        if absolute_url:
+            with urlopen(absolute_url, timeout=10) as resp:
+                if getattr(resp, "status", 200) >= 400:
+                    return None, "Bild konnte nicht geladen werden"
+                raw = resp.read()
+            reader = _image_reader_from_bytes(raw)
+            if reader:
+                return reader, None
+    except Exception:
+        pass
+
+    return None, "Bilddatei nicht gefunden"
 
 
 def _format_date_de(value: str, fallback: str = "-") -> str:
@@ -1039,7 +1118,7 @@ def user_client_pdf(username):
 
     text_x = margin + 8 * mm
     text_y = card_top - 10 * mm
-    photo_reader = _safe_photo_reader(u.get("photo_url") or "")
+    photo_reader, photo_error = _safe_photo_reader(u.get("photo_url") or "", request.host_url)
     photo_w = 34 * mm
     photo_h = 42 * mm
     photo_x = w - margin - 8 * mm - photo_w
@@ -1051,8 +1130,10 @@ def user_client_pdf(username):
         c.drawImage(photo_reader, photo_x, photo_y, photo_w, photo_h, preserveAspectRatio=True, mask='auto', anchor='c')
     else:
         c.setFillColor(colors.HexColor("#6b7280"))
-        c.setFont("Helvetica-Bold", 10)
-        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2), "Kein Bild")
+        c.setFont("Helvetica-Bold", 9)
+        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2) + 2 * mm, "Kein Bild")
+        c.setFont("Helvetica", 7)
+        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2) - 2 * mm, photo_error or "Nicht verfügbar")
 
     c.setFillColor(colors.black)
     c.setFont("Helvetica-Bold", 16)
