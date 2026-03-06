@@ -64,6 +64,27 @@ def send_mail(to_addr: str, subject: str, body: str) -> None:
         s.login(SMTP_USER, SMTP_PASS)
         s.send_message(msg)
 
+def build_welcome_mail(employee_name: str, username: str, password: str, portal_url: str) -> str:
+    display_name = (employee_name or "").strip() or username
+    lines = [
+        f"Hallo {display_name},",
+        "",
+        "herzlich willkommen beim Casutt Veranstaltungsservice!",
+        "",
+        "Deine Zugangsdaten:",
+        f"Benutzername: {username}",
+        f"Passwort: {password}",
+        "",
+        "Hier geht es zur CV-Planung:",
+        portal_url,
+        "",
+        "Wir freuen uns auf die Zusammenarbeit!",
+        "",
+        "Viele Grüße",
+        "Casutt Veranstaltungsservice",
+    ]
+    return "\n".join(lines)
+
 def build_change_mail(employee_name: str,
                       event_title: str,
                       event_start_dt: str,
@@ -612,6 +633,12 @@ def add_user():
     stundensatz = d.get("stundensatz")
     stundensatz = None if stundensatz in (None, "") else float(stundensatz)
 
+    email = (d.get("email") or "").strip()
+    password_plain = d.get("password") or ""
+    first_name = (d.get("vorname") or "").strip()
+    last_name = (d.get("nachname") or "").strip()
+    employee_name = f"{first_name} {last_name}".strip() or username
+
     try:
         db.execute(
             """INSERT INTO users
@@ -619,11 +646,11 @@ def add_user():
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
-                d.get("password") or "",
+                password_plain,
                 d.get("role") or "mitarbeiter",
-                d.get("vorname") or "",
-                d.get("nachname") or "",
-                (d.get("email") or "").strip(),
+                first_name,
+                last_name,
+                email,
                 d.get("s34a") or "nein",
                 normalize_s34a_art(d.get("s34a_art") or ""),
                 d.get("pschein") or "nein",
@@ -659,7 +686,19 @@ def add_user():
         db.rollback()
         return jsonify({"error": str(e)}), 500
 
-    return jsonify({"status": "ok"})
+    mail_sent = False
+    mail_error = ""
+    if email:
+        try:
+            portal_url = request.host_url.rstrip("/")
+            subject = "Willkommen bei Casutt Veranstaltungsservice – deine Zugangsdaten"
+            body = build_welcome_mail(employee_name, username, password_plain, portal_url)
+            send_mail(email, subject, body)
+            mail_sent = True
+        except Exception as e:
+            mail_error = str(e)
+
+    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
 @app.route("/users/rename", methods=["POST"])
 def rename_user():
     # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
