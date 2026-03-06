@@ -1062,6 +1062,24 @@ button.confirm, button.reject, button.delete, button.inline{
 
 </style>
 
+
+<style id="personal-view-enhancements">
+#user-management .lang-grid{display:grid !important;grid-template-columns:repeat(auto-fit,minmax(190px,1fr)) !important;gap:10px 16px !important;align-items:start;}
+#user-management .lang-grid label{display:flex !important;align-items:flex-start !important;gap:8px !important;line-height:1.35;padding:4px 2px;white-space:normal !important;}
+#user-management .lang-grid label span{white-space:normal !important;overflow:visible !important;text-overflow:unset !important;}
+#user-management .lang-grid input[type="checkbox"]{margin-top:2px !important;flex:0 0 auto;}
+#user-management .lang-manager{margin-top:12px;}
+#user-management .custom-lang-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
+#user-management .user-table-personal tr.acc-locked td{background:#fdecec !important;}
+#user-management .user-table-personal tr.acc-locked:hover td{background:#f9dfdf !important;}
+#user-management .user-table-personal td.actions-cell{min-width:460px;}
+#user-management .user-table-personal td.actions-cell .lock-btn{background:rgba(185,28,28,.10) !important;border-color:rgba(185,28,28,.28) !important;}
+#user-management .user-table-personal td.actions-cell .lock-btn.is-locked{background:rgba(185,28,28,.18) !important;border-color:rgba(185,28,28,.42) !important;font-weight:800;}
+#user-management .user-table-personal .lock-state-badge{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:3px 9px;border-radius:999px;border:1px solid rgba(185,28,28,.22);background:rgba(185,28,28,.08);color:#991b1b;font-size:12px;font-weight:700;}
+@media (max-width:900px){#user-management .lang-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)) !important;}}
+@media (max-width:560px){#user-management .lang-grid{grid-template-columns:1fr !important;}}
+</style>
+
 </head>
 <body>
   <nav>
@@ -1275,10 +1293,6 @@ button.confirm, button.reject, button.delete, button.inline{
 
       <div class="form-row">
         <input type="email" id="email" placeholder="E-Mail (optional)">
-      </div>
-
-      <div class="form-row">
-        <input type="tel" id="telefon" placeholder="Telefon (optional)" inputmode="tel">
       </div>
 
       <div class="form-row">
@@ -2978,9 +2992,9 @@ document.getElementById("planning").style.display="block";
           await fetch("/users/" + encodeURIComponent(data.username) + "/photo", { method:"POST", body: fd });
         }
 
-        loadUsers();
+        await loadUsers();
         e.target.reset();
-        const cl=document.getElementById('lang-custom-list'); if(cl) cl.innerHTML='';
+        document.querySelectorAll('#lang-grid input[type="checkbox"]').forEach(cb=>{ cb.checked = false; });
         const pv=document.getElementById("new-photo-preview");
         if(pv){ pv.style.display="none"; pv.src=""; }
 
@@ -3627,11 +3641,18 @@ document.getElementById("confirmed-counter").textContent =
       list.innerHTML="";
       users.forEach(u=>{
         const tr=document.createElement("tr");
+        if(!!u.acc_locked) tr.classList.add("acc-locked");
 
         // Name
         const tdName=document.createElement("td");
         tdName.className="ta-left";
         tdName.textContent=`${u.vorname||""} ${u.nachname||""}`.trim() || "-";
+        if(!!u.acc_locked){
+          const badge=document.createElement("span");
+          badge.className="lock-state-badge";
+          badge.textContent="ACC gesperrt";
+          tdName.appendChild(badge);
+        }
         tr.appendChild(tdName);
 
         // Bemerkung (freier Text)
@@ -3712,9 +3733,16 @@ document.getElementById("confirmed-counter").textContent =
         btnDel.textContent="🗑️ Löschen";
         btnDel.addEventListener("click", ()=>deleteUser(u.username));
 
+        const btnLock=document.createElement("button");
+        btnLock.className="inline lock-btn" + (u.acc_locked ? " is-locked" : "");
+        btnLock.type="button";
+        btnLock.textContent=u.acc_locked ? "🔓 Entsperren" : "🔒 Sperren";
+        btnLock.addEventListener("click", ()=>toggleUserLock(u));
+
         tdAct.appendChild(btnPdf);
         tdAct.appendChild(btnEdit);
         tdAct.appendChild(btnDel);
+        tdAct.appendChild(btnLock);
         tr.appendChild(tdAct);
 
         list.appendChild(tr);
@@ -3773,6 +3801,17 @@ document.getElementById("confirmed-counter").textContent =
 
       await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
+    }
+
+    async function toggleUserLock(user){
+      if(!user || !user.username) return;
+      const targetLocked = !Boolean(user.acc_locked);
+      const label = targetLocked ? "sperren" : "entsperren";
+      if(!confirm(`ACC von "${user.username}" wirklich ${label}?`)) return;
+      const res = await fetch("/users/" + encodeURIComponent(user.username) + "/lock", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ locked: targetLocked }) });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok || data.error){ alert(data.error || "Sperrstatus konnte nicht gespeichert werden."); return; }
+      await loadUsers();
     }
 
     function downloadClientPdf(username){
@@ -3839,6 +3878,22 @@ document.getElementById("confirmed-counter").textContent =
       // Sprachen (CSV -> Checkboxen)
       const langCsv = String(user.sprachen || "");
       const langs = langCsv.split(",").map(s=>s.trim()).filter(Boolean);
+      const editLangGrid = document.getElementById("edit-lang-grid");
+      langs.forEach(lang=>{
+        const selector = `input[name="edit_sprachen_cb"][value="${(window.CSS && CSS.escape) ? CSS.escape(lang) : lang}"]`;
+        if(editLangGrid && !editLangGrid.querySelector(selector)){
+          const label = document.createElement("label");
+          const cb = document.createElement("input");
+          cb.type = "checkbox";
+          cb.name = "edit_sprachen_cb";
+          cb.value = lang;
+          const span = document.createElement("span");
+          span.textContent = lang;
+          label.appendChild(cb);
+          label.appendChild(span);
+          editLangGrid.appendChild(label);
+        }
+      });
       document.querySelectorAll('input[name="edit_sprachen_cb"]').forEach(cb=>{
         cb.checked = langs.includes(cb.value);
       });
@@ -4648,157 +4703,98 @@ function setCategoryBadge(cat){
 
 
 <script>
-
-<script>
-/* ✅ Sprach-Manager: Chef kann eigene Sprachen hinzufügen und beim Mitarbeiter auswählen.
-   - Speichert Custom-Sprachen in localStorage (Key: custom_langs_v1)
-   - Fügt Checkboxen sowohl im Add-Formular als auch im Edit-Modal hinzu
-*/
+/* ✅ Sprach-Manager: Chef kann eigene Sprachen serverseitig speichern und in der Personalansicht verwenden. */
 function initLanguageManagers(){
-  const LS_KEY = "custom_langs_v1";
-
   const addGrid  = document.getElementById("lang-grid");
   const editGrid = document.getElementById("edit-lang-grid");
-
   const addInput = document.getElementById("lang-custom-input");
   const addBtn   = document.getElementById("lang-custom-add");
   const addList  = document.getElementById("lang-custom-list");
-
   const editInput = document.getElementById("edit-lang-custom-input");
   const editBtn   = document.getElementById("edit-lang-custom-add");
   const editList  = document.getElementById("edit-lang-custom-list");
-
   if(!addGrid || !editGrid) return;
 
-  const norm = (s)=> String(s||"").trim().replace(/\s{2,}/g," ");
-  const load = ()=>{
-    try{
-      const raw = localStorage.getItem(LS_KEY);
-      const arr = raw ? JSON.parse(raw) : [];
-      return Array.isArray(arr) ? arr.map(norm).filter(Boolean) : [];
-    }catch(_){ return []; }
-  };
-  const save = (arr)=>{
-    try{ localStorage.setItem(LS_KEY, JSON.stringify(arr)); }catch(_){}
-  };
-
-  const hasCheckbox = (grid, name, value)=>{
-    return !!grid.querySelector(`input[name="${name}"][value="${CSS.escape(value)}"]`);
-  };
-
-  const addCheckbox = (grid, name, value)=>{
+  const norm = (s)=> String(s||"").trim().replace(/\s{2,}/g, " ");
+  const esc = (value)=> window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/([ #;?%&,.+*~\':"!^$\[\]()=>|\/@])/g,'\\$1');
+  const hasCheckbox = (grid, name, value)=> !!grid.querySelector(`input[name="${name}"][value="${esc(value)}"]`);
+  const appendCheckbox = (grid, name, value)=>{
     const v = norm(value);
-    if(!v) return;
-    if(hasCheckbox(grid, name, v)) return;
-
+    if(!v || hasCheckbox(grid, name, v)) return;
     const label = document.createElement("label");
     const cb = document.createElement("input");
-    cb.type="checkbox";
-    cb.name=name;
-    cb.value=v;
-
+    cb.type = "checkbox";
+    cb.name = name;
+    cb.value = v;
     const span = document.createElement("span");
-    span.textContent=v;
-
+    span.textContent = v;
     label.appendChild(cb);
-    label.appendChild(document.createTextNode(" "));
     label.appendChild(span);
-
     grid.appendChild(label);
   };
-
-  const renderChips = (targetEl, langs, onRemove)=>{
-    if(!targetEl) return;
-    targetEl.innerHTML = "";
-    if(!langs.length) return;
-
-    langs.forEach(l=>{
+  const ensureInGrids = (langs)=> langs.forEach(lang=>{ appendCheckbox(addGrid, "sprachen_cb", lang); appendCheckbox(editGrid, "edit_sprachen_cb", lang); });
+  const renderChips = (target, langs, onRemove)=>{
+    if(!target) return;
+    target.innerHTML = "";
+    langs.forEach(lang=>{
       const chip = document.createElement("span");
-      chip.className="custom-lang-chip";
-      chip.textContent = l;
-
+      chip.className = "custom-lang-chip";
+      const txt = document.createElement("span");
+      txt.textContent = lang;
       const btn = document.createElement("button");
-      btn.type="button";
-      btn.textContent="✕";
-      btn.title="Entfernen";
-      btn.addEventListener("click", ()=>onRemove(l));
-
+      btn.type = "button";
+      btn.textContent = "✕";
+      btn.title = `${lang} entfernen`;
+      btn.addEventListener("click", ()=>onRemove(lang));
+      chip.appendChild(txt);
       chip.appendChild(btn);
-      targetEl.appendChild(chip);
+      target.appendChild(chip);
     });
   };
 
-  const applyToGrids = (langs)=>{
-    langs.forEach(l=>{
-      addCheckbox(addGrid, "sprachen_cb", l);
-      addCheckbox(editGrid, "edit_sprachen_cb", l);
-    });
+  const refresh = async ()=>{
+    const res = await fetch("/custom_languages");
+    const data = await res.json().catch(()=>[]);
+    if(!res.ok) throw new Error((data && data.error) || "Custom-Sprachen konnten nicht geladen werden.");
+    const langs = Array.isArray(data) ? data.map(norm).filter(Boolean) : [];
+    ensureInGrids(langs);
+    renderChips(addList, langs, removeLanguage);
+    renderChips(editList, langs, removeLanguage);
   };
 
-  const refresh = ()=>{
-    const langs = load();
-    applyToGrids(langs);
-    renderChips(addList, langs, (l)=>{
-      const next = load().filter(x=>x!==l);
-      save(next);
-      // Checkboxen entfernen
-      [addGrid, editGrid].forEach(grid=>{
-        grid.querySelectorAll(`input[value="${CSS.escape(l)}"]`).forEach(inp=>{
-          const lab = inp.closest("label");
-          if(lab) lab.remove();
-        });
+  const addLanguage = async (raw)=>{
+    const value = norm(raw);
+    if(!value){ alert("Bitte eine Sprache eingeben."); return false; }
+    const res = await fetch("/custom_languages", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ name: value }) });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || data.error){ alert(data.error || "Sprache konnte nicht hinzugefügt werden."); return false; }
+    ensureInGrids([data.name || value]);
+    await refresh();
+    return true;
+  };
+
+  async function removeLanguage(lang){
+    const res = await fetch("/custom_languages/" + encodeURIComponent(lang), { method:"DELETE" });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok || data.error){ alert(data.error || "Sprache konnte nicht entfernt werden."); return; }
+    [addGrid, editGrid].forEach(grid=>{
+      grid.querySelectorAll(`input[value="${esc(lang)}"]`).forEach(input=>{
+        const label = input.closest("label");
+        if(label) label.remove();
       });
-      refresh();
     });
-    renderChips(editList, langs, (l)=>{
-      const next = load().filter(x=>x!==l);
-      save(next);
-      [addGrid, editGrid].forEach(grid=>{
-        grid.querySelectorAll(`input[value="${CSS.escape(l)}"]`).forEach(inp=>{
-          const lab = inp.closest("label");
-          if(lab) lab.remove();
-        });
-      });
-      refresh();
-    });
-  };
-
-  const tryAdd = (raw)=>{
-    const v = norm(raw);
-    if(!v) return;
-    // schon in Standardliste?
-    const existsStd = hasCheckbox(addGrid, "sprachen_cb", v) || hasCheckbox(editGrid, "edit_sprachen_cb", v);
-    // wir erlauben trotzdem speichern, aber doppelt vermeiden
-    let langs = load();
-    if(!langs.includes(v) && !existsStd) langs.push(v);
-    // falls v bereits als Standard existiert: nicht speichern, aber nichts kaputt machen
-    save(langs);
-    refresh();
-  };
-
-  if(addBtn && addInput){
-    addBtn.addEventListener("click", ()=>{
-      tryAdd(addInput.value);
-      addInput.value = "";
-      addInput.focus();
-    });
-    addInput.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter"){ e.preventDefault(); addBtn.click(); }
-    });
+    await refresh();
   }
 
-  if(editBtn && editInput){
-    editBtn.addEventListener("click", ()=>{
-      tryAdd(editInput.value);
-      editInput.value = "";
-      editInput.focus();
-    });
-    editInput.addEventListener("keydown", (e)=>{
-      if(e.key === "Enter"){ e.preventDefault(); editBtn.click(); }
-    });
-  }
+  const bind = (btn, input)=>{
+    if(!btn || !input) return;
+    btn.addEventListener("click", async ()=>{ const ok = await addLanguage(input.value); if(ok){ input.value = ""; input.focus(); } });
+    input.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); btn.click(); } });
+  };
 
-  refresh();
+  bind(addBtn, addInput);
+  bind(editBtn, editInput);
+  refresh().catch(err=>{ console.error(err); alert(err.message || "Sprachen konnten nicht initialisiert werden."); });
 }
 </script>
 
