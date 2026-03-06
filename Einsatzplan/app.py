@@ -477,6 +477,9 @@ def login():
         u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
 
         if u and u.get("password") == password:
+            if bool(u.get("acc_locked") or False):
+                session.clear()
+                return render_template("login.html", error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
             session["username"] = username
             session["role"] = u.get("role") or "mitarbeiter"
             return redirect(url_for("dashboard"))
@@ -491,6 +494,11 @@ def dashboard():
         return redirect(url_for("login"))
 
     role = normalize_role(session.get("role") or "mitarbeiter")
+
+    me = get_db().execute("SELECT username, acc_locked FROM users WHERE username=%s", (session.get("username"),)).fetchone()
+    if me and bool(me.get("acc_locked") or False):
+        session.clear()
+        return redirect(url_for("login"))
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
@@ -1856,8 +1864,6 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
-
-
 
 
 
