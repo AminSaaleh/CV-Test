@@ -13,7 +13,7 @@
       margin-right:6px;
       border:0 !important;
     }
-    /* Chef: abgelehnt oder entfernt bleibt rott */
+    /* Chef: abgelehnt oder entfernt bleibt rot */
 #response-list.requests-grid > li.abgelehnt_chef,
 #response-list.requests-grid > li.entfernt_chef {
   background: #fdecea;
@@ -1078,6 +1078,102 @@ button.confirm, button.reject, button.delete, button.inline{
 #user-management .user-table-personal .lock-state-badge{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:3px 9px;border-radius:999px;border:1px solid rgba(185,28,28,.22);background:rgba(185,28,28,.08);color:#991b1b;font-size:12px;font-weight:700;}
 @media (max-width:900px){#user-management .lang-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)) !important;}}
 @media (max-width:560px){#user-management .lang-grid{grid-template-columns:1fr !important;}}
+</style>
+
+
+<style id="personal-view-cleanup-v2">
+/* Personalansicht: Checkboxen sauber ausrichten, ohne Rahmen */
+#user-management .check-grid,
+#user-management .lang-grid,
+#editUserModal .modal-check-grid,
+#editUserModal .lang-grid{
+  border:none !important;
+  background:transparent !important;
+  border-radius:0 !important;
+  padding:0 !important;
+  margin:8px 0 12px 0 !important;
+  box-shadow:none !important;
+}
+#user-management .check-grid,
+#editUserModal .modal-check-grid{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) !important;
+  gap:10px 18px !important;
+  align-items:start !important;
+}
+#user-management .lang-grid,
+#editUserModal .lang-grid{
+  display:grid !important;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr)) !important;
+  gap:8px 18px !important;
+  align-items:start !important;
+}
+#user-management .check-grid label,
+#user-management .lang-grid label,
+#editUserModal .modal-check-grid label,
+#editUserModal .lang-grid label{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:10px !important;
+  margin:0 !important;
+  padding:2px 0 !important;
+  line-height:1.35 !important;
+  min-width:0 !important;
+  width:auto !important;
+}
+#user-management .check-grid input[type="checkbox"],
+#user-management .lang-grid input[type="checkbox"],
+#editUserModal .modal-check-grid input[type="checkbox"],
+#editUserModal .lang-grid input[type="checkbox"]{
+  width:auto !important;
+  min-width:auto !important;
+  max-width:none !important;
+  flex:0 0 auto !important;
+  margin:2px 0 0 0 !important;
+}
+#user-management .check-grid label span,
+#user-management .lang-grid label span,
+#editUserModal .modal-check-grid label span,
+#editUserModal .lang-grid label span{
+  display:block !important;
+  flex:1 1 auto !important;
+  white-space:normal !important;
+  overflow:visible !important;
+  text-overflow:unset !important;
+}
+#user-management .lang-manager,
+#editUserModal .lang-manager{
+  display:flex !important;
+  gap:10px !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  margin:10px 0 6px 0 !important;
+}
+#user-management .lang-manager input[type="text"],
+#editUserModal .lang-manager input[type="text"]{
+  flex:1 1 320px !important;
+  min-width:240px !important;
+}
+#user-management .custom-lang-list,
+#editUserModal .custom-lang-list{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  gap:8px !important;
+  margin:8px 0 10px 0 !important;
+}
+@media (max-width:900px){
+  #user-management .check-grid,
+  #user-management .lang-grid,
+  #editUserModal .modal-check-grid,
+  #editUserModal .lang-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+}
+@media (max-width:560px){
+  #user-management .check-grid,
+  #user-management .lang-grid,
+  #editUserModal .modal-check-grid,
+  #editUserModal .lang-grid{grid-template-columns:1fr !important;}
+}
 </style>
 
 </head>
@@ -2510,6 +2606,9 @@ document.getElementById("user-management").style.display="block";
         document.getElementById("report").style.display="none";
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-users");
+        if(typeof refreshCustomLanguages === "function"){
+          refreshCustomLanguages().catch(err=>console.error("Sprachen-Refresh fehlgeschlagen", err));
+        }
         loadUsers();
           };
         }
@@ -2992,6 +3091,9 @@ document.getElementById("planning").style.display="block";
           await fetch("/users/" + encodeURIComponent(data.username) + "/photo", { method:"POST", body: fd });
         }
 
+        if(typeof refreshCustomLanguages === "function"){
+          await refreshCustomLanguages().catch(err=>console.error("Sprachen-Refresh fehlgeschlagen", err));
+        }
         await loadUsers();
         e.target.reset();
         document.querySelectorAll('#lang-grid input[type="checkbox"]').forEach(cb=>{ cb.checked = false; });
@@ -4794,6 +4896,8 @@ function initLanguageManagers(){
 
   bind(addBtn, addInput);
   bind(editBtn, editInput);
+  window.refreshCustomLanguages = refresh;
+  window.addCustomLanguage = addLanguage;
   refresh().catch(err=>{ console.error(err); alert(err.message || "Sprachen konnten nicht initialisiert werden."); });
 }
 </script>
@@ -5033,4 +5137,3 @@ async function sendEventMailFromCalendar(){
   alert("E-Mail wurde an alle Mitarbeiter versendet.");
 }
 </script>
-
