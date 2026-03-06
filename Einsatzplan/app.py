@@ -1,7 +1,7 @@
 # app.py
 # Flask App – PostgreSQL/Supabase Version (Aufbau wie APP 9), Logik unverändert übernommen aus der SQLite-Version.
 #
-# Start::
+# Start:
 #   export DATABASE_URL="postgresql://user:pass@host:5432/dbname?sslmode=require"
 #   export SECRET_KEY="."
 #   python app.py
@@ -1856,6 +1856,7 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+
 
 
 
