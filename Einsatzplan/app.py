@@ -7,7 +7,7 @@
 #   python app.py
 #
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file, abort
-import os, uuid, re
+import os, uuid, re, json
 from datetime import datetime
 import io
 from reportlab.lib.pagesizes import A4
@@ -593,6 +593,8 @@ def get_users():
         if u.get("stundensatz") is None:
             u["stundensatz"] = ""
         u["acc_locked"] = bool(u.get("acc_locked") or False)
+        u["sprachen_levels"] = _parse_language_entries(u.get("sprachen") or "")
+        u["fuehrerschein_klassen"] = _parse_multi_values(u.get("fuehrerschein_klasse") or "")
     return jsonify(users)
 
 
@@ -674,9 +676,9 @@ def add_user():
                 d.get("personenschutz") or "nein",
                 d.get("behoerdlich") or "nein",
                 d.get("waffensachkunde") or "nein",
-                (d.get("fuehrerschein_klasse") or "").strip(),
+                (_normalize_multi_text(d.get("fuehrerschein_klasse") or "")).strip(),
                 (d.get("sonstige") or "").strip(),
-                (d.get("sprachen") or "").strip(),
+                _serialize_language_entries(d.get("sprachen_levels")) or (d.get("sprachen") or "").strip(),
                 bool(d.get("acc_locked") or False),
             ),
         )
@@ -800,7 +802,7 @@ def edit_user(username):
               "photo_url", "geburtsdatum", "staatsangehoerigkeit", "amtliches_dokument", "dokumentennr",
               "ausstellende_behoerde", "ausstellungsdatum",
               "sanitaeter_art", "brandschutzhelfer", "deeskalation", "gssk", "fachkraft", "personenschutz",
-              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen", "acc_locked"]:
+              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen", "sprachen_levels", "acc_locked"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -847,9 +849,9 @@ def edit_user(username):
             updates.get("personenschutz") or "nein",
             updates.get("behoerdlich") or "nein",
             updates.get("waffensachkunde") or "nein",
-            updates.get("fuehrerschein_klasse") or "",
+            _normalize_multi_text(updates.get("fuehrerschein_klasse") or ""),
             updates.get("sonstige") or "",
-            ", ".join(_parse_languages(updates.get("sprachen") or "")),
+            _serialize_language_entries(updates.get("sprachen_levels")) or ", ".join(_parse_languages(updates.get("sprachen") or "")),
             bool(updates.get("acc_locked") or False),
             username
         )
@@ -972,20 +974,125 @@ def _yesno_label(v: str) -> str:
     return "Ja" if str(v or "").strip().lower() == "ja" else "Nein"
 
 
+LANGUAGE_LEVEL_OPTIONS = [
+    "Grundkenntnisse",
+    "Fortgeschritten",
+    "Verhandlungssicher in Wort und Schrift",
+    "Muttersprache",
+]
+
+
 def _normalize_language_label(value: str) -> str:
     return re.sub(r"\s{2,}", " ", str(value or "").strip())
 
 
-def _parse_languages(raw: str):
+def _normalize_multi_text(raw_value):
+    if raw_value is None:
+        return ""
+    if isinstance(raw_value, list):
+        parts = raw_value
+    else:
+        s = str(raw_value or "").strip()
+        if not s:
+            return ""
+        try:
+            parsed = json.loads(s)
+            if isinstance(parsed, list):
+                parts = parsed
+            else:
+                parts = re.split(r"[,;\n]+", s)
+        except Exception:
+            parts = re.split(r"[,;\n]+", s)
+
     items = []
     seen = set()
-    for part in str(raw or "").split(","):
-        label = _normalize_language_label(part)
+    for part in parts:
+        label = re.sub(r"\s{2,}", " ", str(part or "").strip())
         key = label.casefold()
         if label and key not in seen:
             seen.add(key)
             items.append(label)
-    return items
+    return ", ".join(items)
+
+
+def _parse_multi_values(raw_value):
+    return [v for v in _normalize_multi_text(raw_value).split(", ") if v]
+
+
+def _parse_language_entries(raw):
+    entries = []
+    seen = set()
+
+    if raw is None:
+        return entries
+
+    if isinstance(raw, (list, tuple)):
+        payload = raw
+    else:
+        text = str(raw or "").strip()
+        if not text:
+            return entries
+        payload = None
+        if text.startswith("[") or text.startswith("{"):
+            try:
+                payload = json.loads(text)
+            except Exception:
+                payload = None
+        if payload is None:
+            payload = [part.strip() for part in text.split(",") if part.strip()]
+
+    if isinstance(payload, dict):
+        if isinstance(payload.get("items"), list):
+            payload = payload.get("items")
+        else:
+            payload = [{"name": k, "level": v} for k, v in payload.items()]
+
+    for item in payload if isinstance(payload, list) else []:
+        if isinstance(item, dict):
+            name = _normalize_language_label(item.get("name") or item.get("language") or item.get("label") or "")
+            level = str(item.get("level") or "").strip()
+        else:
+            name = _normalize_language_label(item)
+            level = ""
+        key = name.casefold()
+        if name and key not in seen:
+            seen.add(key)
+            entries.append({"name": name, "level": level if level in LANGUAGE_LEVEL_OPTIONS else ""})
+    return entries
+
+
+def _serialize_language_entries(entries):
+    normalized = []
+    seen = set()
+    for item in entries or []:
+        if isinstance(item, dict):
+            name = _normalize_language_label(item.get("name") or item.get("language") or item.get("label") or "")
+            level = str(item.get("level") or "").strip()
+        else:
+            name = _normalize_language_label(item)
+            level = ""
+        key = name.casefold()
+        if name and key not in seen:
+            seen.add(key)
+            normalized.append({"name": name, "level": level if level in LANGUAGE_LEVEL_OPTIONS else ""})
+    if not normalized:
+        return ""
+    return json.dumps(normalized, ensure_ascii=False)
+
+
+def _parse_languages(raw: str):
+    return [item["name"] for item in _parse_language_entries(raw)]
+
+
+def _format_languages(raw: str):
+    entries = _parse_language_entries(raw)
+    parts = []
+    for item in entries:
+        if item.get("level"):
+            parts.append(f'{item["name"]} ({item["level"]})')
+        else:
+            parts.append(item["name"])
+    return ", ".join(parts)
 
 
 def _sync_custom_languages(db, raw_languages) -> None:
@@ -1224,7 +1331,7 @@ def user_client_pdf(username):
         art = (u.get("sanitaeter_art") or "").strip()
         san_txt = f"Ja{(' (' + art + ')') if art else ''}"
 
-    right_bottom = draw_section(margin + col_w + col_gap, section_top, "Qualifikationen", [("Sanitätsdienst", san_txt), ("Brandschutzhelfer/in", _yesno_label(u.get("brandschutzhelfer"))), ("Deeskalation", _yesno_label(u.get("deeskalation"))), ("GSSK", _yesno_label(u.get("gssk"))), ("Fachkraft S&S", _yesno_label(u.get("fachkraft"))), ("Personenschutz", _yesno_label(u.get("personenschutz"))), ("Waffensachkunde", _yesno_label(u.get("waffensachkunde"))), ("Behördlich/Studium", _yesno_label(u.get("behoerdlich"))), ("Führerschein", (u.get("fuehrerschein_klasse") or "-").strip() or "-")])
+    right_bottom = draw_section(margin + col_w + col_gap, section_top, "Qualifikationen", [("Sanitätsdienst", san_txt), ("Brandschutzhelfer/in", _yesno_label(u.get("brandschutzhelfer"))), ("Deeskalation", _yesno_label(u.get("deeskalation"))), ("GSSK", _yesno_label(u.get("gssk"))), ("Fachkraft S&S", _yesno_label(u.get("fachkraft"))), ("Personenschutz", _yesno_label(u.get("personenschutz"))), ("Waffensachkunde", _yesno_label(u.get("waffensachkunde"))), ("Behördlich/Studium", _yesno_label(u.get("behoerdlich"))), ("Führerschein", ", ".join(_parse_multi_values(u.get("fuehrerschein_klasse") or "")) or "-")])
 
     box_top = min(left_bottom, right_bottom) - 8 * mm
     box_h = 34 * mm
@@ -1237,7 +1344,7 @@ def user_client_pdf(username):
     c.setFont("Helvetica-Bold", 11)
     c.drawString(margin + 4 * mm, box_top - 5.5 * mm, "Fremdsprachen & Hinweise")
 
-    languages = ", ".join(_parse_languages(u.get("sprachen") or "")) or "-"
+    languages = _format_languages(u.get("sprachen") or "") or "-"
     y = box_top - 12 * mm
     c.setFillColor(colors.HexColor("#6b7280"))
     c.setFont("Helvetica-Bold", 9)
