@@ -1217,9 +1217,9 @@ button.confirm, button.reject, button.delete, button.inline{
 #add-user-form .grid-row-1{grid-column:1 / -1;}
 #add-user-form .grid-span-2{grid-column:span 2;}
 #add-user-form .grid-span-4{grid-column:1 / -1;}
-#add-user-form .field-card{background:#dbeafe;border:2px solid rgba(31,41,55,.28);border-radius:16px;padding:10px 12px;}
+#add-user-form .field-card{background:#ffffff;border:2px solid rgba(31,41,55,.18);border-radius:16px;padding:10px 12px;box-shadow:0 1px 2px rgba(15,23,42,.04);} 
 #add-user-form .field-card label{font-weight:700;font-size:13px;margin:0 0 6px 0;color:#111827;}
-#add-user-form .field-card input,#add-user-form .field-card select{background:transparent;border:none;box-shadow:none;padding:6px 2px;font-size:16px;}
+#add-user-form .field-card input,#add-user-form .field-card select{background:#ffffff;border:none;box-shadow:none;padding:6px 2px;font-size:16px;}
 #add-user-form .field-card input:focus,#add-user-form .field-card select:focus{outline:none;}
 #add-user-form .field-card input::placeholder{color:#1f2937;opacity:.9;}
 #add-user-form .upload-card{display:flex;flex-direction:column;justify-content:center;min-height:86px;}
@@ -1245,6 +1245,21 @@ button.confirm, button.reject, button.delete, button.inline{
   #add-user-form .license-grid, #editUserModal .license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
   .lang-item{flex-direction:column;}
   .lang-item .lang-level-select{min-width:100%;}
+}
+
+/* --- Fix: Personalfelder wieder weiß statt blau --- */
+#user-management .field-card,
+#user-management .upload-card,
+#editUserModal .field-card,
+#editUserModal .upload-card{
+  background:#fff !important;
+  border-color:rgba(31,41,55,.18) !important;
+}
+#user-management .field-card input,
+#user-management .field-card select,
+#editUserModal .field-card input,
+#editUserModal .field-card select{
+  background:#fff !important;
 }
 </style>
 
@@ -1477,7 +1492,7 @@ button.confirm, button.reject, button.delete, button.inline{
         <div class="field-card"><label for="stundensatz">SVS (€ / h)</label><input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€ / h)"></div>
       </div>
 
-      <div class="field-card upload-card grid-span-4"><label for="new-photo">Bild hochladen</label><input type="file" id="new-photo" accept="image/*"><div style="margin-top:6px;"><img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;"></div></div>
+      <div class="field-card upload-card grid-span-2"><label for="new-photo">Bild hochladen</label><input type="file" id="new-photo" accept="image/*"><div style="margin-top:6px;"><img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;"></div></div>
 
       <div class="section-block"><h4 class="section-title">Zusätzliche Angaben</h4></div>
 
@@ -5297,40 +5312,8 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 
-<script id="personal-tab-reliability-fix">
-document.addEventListener("DOMContentLoaded", ()=>{
-  const tabUsers = document.getElementById("tab-users");
-  const calendar = document.getElementById("calendar");
-  const termine = document.getElementById("termine");
-  const planning = document.getElementById("planning");
-  const userMgmt = document.getElementById("user-management");
-  const report = document.getElementById("report");
-  const counter = document.getElementById("counter");
 
-  function openPersonalView(){
-    if(calendar) calendar.style.display = "none";
-    if(termine) termine.style.display = "none";
-    if(planning) planning.style.display = "none";
-    if(report) report.style.display = "none";
-    if(counter) counter.style.display = "none";
-    if(userMgmt) userMgmt.style.display = "block";
-    if(typeof setActiveTab === "function") setActiveTab("tab-users");
-    if(typeof refreshCustomLanguages === "function") { try { refreshCustomLanguages(); } catch(e) {} }
-    if(typeof loadUsers === "function") { try { loadUsers(); } catch(e) {} }
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }
 
-  if(tabUsers){
-    tabUsers.addEventListener("click", ()=>{
-      setTimeout(openPersonalView, 0);
-    }, true);
-  }
-
-  if(window.location.hash === "#personal"){
-    setTimeout(openPersonalView, 50);
-  }
-});
-</script>
 </body>
 </html>
 
@@ -5366,5 +5349,78 @@ async function sendEventMailFromCalendar(){
 }
 </script>
 
+<script>
+/* --- Fix: robuste Tab-Umschaltung für Dashboard --- */
+document.addEventListener("DOMContentLoaded", function(){
+  const ROLE_FIX = String("{{ role|default('chef') }}").trim().toLowerCase().replace(/\s+/g, "_");
+  const IS_PLANNER_FIX = ["planer","planner_bbs"].includes(ROLE_FIX);
 
+  const sections = {
+    "tab-calendar": "calendar",
+    "tab-termine": "termine",
+    "tab-planning": "planning",
+    "tab-users": "user-management",
+    "tab-report": "report",
+    "tab-counter": "counter"
+  };
 
+  const allSectionIds = Object.values(sections);
+  const allTabIds = Object.keys(sections);
+
+  function hideAllSections(){
+    allSectionIds.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = "none";
+    });
+  }
+
+  function setActive(tabId){
+    allTabIds.forEach(id => {
+      const tab = document.getElementById(id);
+      if(tab) tab.classList.toggle("active", id === tabId);
+    });
+  }
+
+  function openTab(tabId){
+    const sectionId = sections[tabId];
+    const section = sectionId ? document.getElementById(sectionId) : null;
+    hideAllSections();
+    if(section) section.style.display = "block";
+    setActive(tabId);
+
+    if(tabId === "tab-users" && typeof loadUsers === "function") loadUsers();
+    if(tabId === "tab-termine" && typeof loadMyTermine === "function") loadMyTermine();
+    if(tabId === "tab-report" && typeof loadReport === "function") loadReport();
+    if(tabId === "tab-counter" && typeof loadCounter === "function") loadCounter();
+    if(tabId === "tab-planning") {
+      try{
+        if(typeof initPlanningCalendar === "function" && !window.planningCalendar){ initPlanningCalendar(); }
+        if(window.planningCalendar){
+          window.planningCalendar.render();
+          window.planningCalendar.refetchEvents();
+        }
+        window.dispatchEvent(new Event("resize"));
+      }catch(err){ console.error("Planung konnte nicht geöffnet werden", err); }
+    }
+    if(tabId === "tab-calendar") {
+      try{ if(window.calendar){ window.calendar.render(); } window.dispatchEvent(new Event("resize")); }catch(err){}
+    }
+  }
+
+  allTabIds.forEach(tabId => {
+    const tab = document.getElementById(tabId);
+    if(!tab) return;
+    tab.onclick = function(e){
+      e.preventDefault();
+      openTab(tabId);
+      return false;
+    };
+  });
+
+  if(IS_PLANNER_FIX){
+    openTab("tab-planning");
+  } else {
+    openTab("tab-calendar");
+  }
+});
+</script>
