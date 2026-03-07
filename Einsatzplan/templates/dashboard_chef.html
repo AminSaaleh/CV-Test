@@ -1234,8 +1234,18 @@ button.confirm, button.reject, button.delete, button.inline{
 #edit-lang-grid .lang-item .lang-level-select{min-width:180px;}
 #add-user-form .submit-wide{grid-column:1 / -1;width:100% !important;justify-content:center;font-weight:800;padding:14px 16px;}
 #add-user-form .section-title{border-bottom:none !important;padding-bottom:0 !important;margin-bottom:6px !important;}
-@media (max-width:1200px){#add-user-form,#add-user-form .grid-row-4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}#add-user-form .language-board .lang-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}#add-user-form .license-grid,#editUserModal .license-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
-@media (max-width:720px){#add-user-form,#add-user-form .grid-row-4,#add-user-form .grid-row-3{grid-template-columns:1fr !important;}#add-user-form .language-board .lang-grid{grid-template-columns:1fr !important;}#add-user-form .license-grid,#editUserModal .license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.lang-item{flex-direction:column;}.lang-item .lang-level-select{min-width:100%;}}
+@media (max-width:1200px){
+  #add-user-form, #add-user-form .grid-row-4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
+  #add-user-form .language-board .lang-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
+  #add-user-form .license-grid, #editUserModal .license-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+}
+@media (max-width:720px){
+  #add-user-form, #add-user-form .grid-row-4, #add-user-form .grid-row-3{grid-template-columns:1fr !important;}
+  #add-user-form .language-board .lang-grid{grid-template-columns:1fr !important;}
+  #add-user-form .license-grid, #editUserModal .license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .lang-item{flex-direction:column;}
+  .lang-item .lang-level-select{min-width:100%;}
+}
 </style>
 
 </head>
