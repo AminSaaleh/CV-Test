@@ -5314,6 +5314,134 @@ document.addEventListener("DOMContentLoaded", function(){
 
 
 
+
+<script>
+/* --- FINAL HOTFIX: Tabs vollständig entkoppeln und robust neu binden --- */
+document.addEventListener("DOMContentLoaded", function(){
+  const role = String("{{ role|default('chef') }}").trim().toLowerCase().replace(/\s+/g, "_");
+  const isPlanner = ["planer", "planner_bbs"].includes(role);
+
+  const sections = {
+    "tab-calendar": "calendar",
+    "tab-termine": "termine",
+    "tab-planning": "planning",
+    "tab-users": "user-management",
+    "tab-report": "report",
+    "tab-counter": "counter"
+  };
+
+  const existingTabs = Object.keys(sections).filter(id => document.getElementById(id));
+  const existingSections = [...new Set(Object.values(sections))].filter(id => document.getElementById(id));
+
+  function hideAllSections(){
+    existingSections.forEach(id => {
+      const el = document.getElementById(id);
+      if(el) el.style.display = "none";
+    });
+  }
+
+  function setActive(tabId){
+    existingTabs.forEach(id => {
+      const tab = document.getElementById(id);
+      if(tab) tab.classList.toggle("active", id === tabId);
+    });
+  }
+
+  function safeCall(fnName){
+    try {
+      if(typeof window[fnName] === 'function') return window[fnName]();
+    } catch(err) { console.error(fnName + ' fehlgeschlagen', err); }
+  }
+
+  function getPlanningCalendar(){
+    try {
+      if(window.planningCalendar) return window.planningCalendar;
+      if(typeof planningCalendar !== 'undefined') return planningCalendar;
+    } catch(err) {}
+    return null;
+  }
+
+  function getMainCalendar(){
+    try {
+      if(window.calendar) return window.calendar;
+      if(typeof calendar !== 'undefined') return calendar;
+    } catch(err) {}
+    return null;
+  }
+
+  function openTab(tabId){
+    const sectionId = sections[tabId];
+    const section = sectionId ? document.getElementById(sectionId) : null;
+
+    hideAllSections();
+    if(section) section.style.display = 'block';
+    setActive(tabId);
+
+    if(tabId === 'tab-users') {
+      safeCall('refreshCustomLanguages');
+      safeCall('loadUsers');
+    }
+    if(tabId === 'tab-termine') safeCall('loadMyTermine');
+    if(tabId === 'tab-report') safeCall('loadReport');
+    if(tabId === 'tab-counter') safeCall('loadCounter');
+
+    if(tabId === 'tab-planning'){
+      try {
+        if(typeof window.initPlanningCalendar === 'function' && !getPlanningCalendar()) {
+          window.initPlanningCalendar();
+        } else if(typeof initPlanningCalendar === 'function' && !getPlanningCalendar()) {
+          initPlanningCalendar();
+        }
+        const pc = getPlanningCalendar();
+        if(pc){
+          if(typeof pc.render === 'function') pc.render();
+          if(typeof pc.refetchEvents === 'function') pc.refetchEvents();
+        }
+      } catch(err) {
+        console.error('Planung konnte nicht geöffnet werden', err);
+      }
+    }
+
+    if(tabId === 'tab-calendar'){
+      try {
+        const cal = getMainCalendar();
+        if(cal && typeof cal.render === 'function') cal.render();
+      } catch(err) {
+        console.error('Kalender konnte nicht geöffnet werden', err);
+      }
+    }
+
+    try { window.dispatchEvent(new Event('resize')); } catch(err) {}
+  }
+
+  // Alte Event-Handler vollständig entfernen, indem Tabs geklont werden.
+  existingTabs.forEach(tabId => {
+    const oldTab = document.getElementById(tabId);
+    if(!oldTab || !oldTab.parentNode) return;
+    const newTab = oldTab.cloneNode(true);
+    oldTab.parentNode.replaceChild(newTab, oldTab);
+  });
+
+  existingTabs.forEach(tabId => {
+    const tab = document.getElementById(tabId);
+    if(!tab) return;
+    tab.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+      openTab(tabId);
+      return false;
+    }, true);
+  });
+
+  if(isPlanner && document.getElementById('tab-planning')) {
+    openTab('tab-planning');
+  } else if(document.getElementById('tab-calendar')) {
+    openTab('tab-calendar');
+  }
+});
+</script>
+
 </body>
 </html>
 
