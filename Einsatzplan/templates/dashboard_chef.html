@@ -1209,6 +1209,35 @@ button.confirm, button.reject, button.delete, button.inline{
 }
 </style>
 
+
+<style id="personal-module-adjustments">
+#add-user-form{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:14px 14px !important;}
+#add-user-form .grid-row-4{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
+#add-user-form .grid-row-3{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
+#add-user-form .grid-row-1{grid-column:1 / -1;}
+#add-user-form .grid-span-2{grid-column:span 2;}
+#add-user-form .grid-span-4{grid-column:1 / -1;}
+#add-user-form .field-card{background:#dbeafe;border:2px solid rgba(31,41,55,.28);border-radius:16px;padding:10px 12px;}
+#add-user-form .field-card label{font-weight:700;font-size:13px;margin:0 0 6px 0;color:#111827;}
+#add-user-form .field-card input,#add-user-form .field-card select{background:transparent;border:none;box-shadow:none;padding:6px 2px;font-size:16px;}
+#add-user-form .field-card input:focus,#add-user-form .field-card select:focus{outline:none;}
+#add-user-form .field-card input::placeholder{color:#1f2937;opacity:.9;}
+#add-user-form .upload-card{display:flex;flex-direction:column;justify-content:center;min-height:86px;}
+#add-user-form .language-board{grid-column:1 / -1;}
+#add-user-form .language-board .lang-grid{display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:10px 18px !important;}
+#add-user-form .license-grid, #editUserModal .license-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 12px;margin-top:8px;}
+#add-user-form .license-grid label,#editUserModal .license-grid label{display:flex;align-items:center;gap:6px;font-size:13px;}
+.lang-item{display:flex !important;align-items:flex-start !important;gap:8px !important;flex-wrap:wrap;}
+.lang-item .lang-text{display:flex;align-items:center;gap:8px;min-width:120px;flex:1 1 120px;}
+.lang-item .lang-level-select{display:none;flex:1 1 220px;min-width:220px;max-width:100%;padding:6px 10px;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:#fff;}
+.lang-item.active .lang-level-select{display:block;}
+#edit-lang-grid .lang-item .lang-level-select{min-width:180px;}
+#add-user-form .submit-wide{grid-column:1 / -1;width:100% !important;justify-content:center;font-weight:800;padding:14px 16px;}
+#add-user-form .section-title{border-bottom:none !important;padding-bottom:0 !important;margin-bottom:6px !important;}
+@media (max-width:1200px){#add-user-form,#add-user-form .grid-row-4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}#add-user-form .language-board .lang-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}#add-user-form .license-grid,#editUserModal .license-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+@media (max-width:720px){#add-user-form,#add-user-form .grid-row-4,#add-user-form .grid-row-3{grid-template-columns:1fr !important;}#add-user-form .language-board .lang-grid{grid-template-columns:1fr !important;}#add-user-form .license-grid,#editUserModal .license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.lang-item{flex-direction:column;}.lang-item .lang-level-select{min-width:100%;}}
+</style>
+
 </head>
 <body>
   <nav>
@@ -1415,183 +1444,117 @@ button.confirm, button.reject, button.delete, button.inline{
     <h3>Personal verwalten</h3>
 
     <form id="add-user-form" class="user-form">
-      <div class="form-row">
-        <input type="text" id="vorname" placeholder="Vorname" required>
-        <input type="text" id="nachname" placeholder="Nachname" required>
+      <div class="section-block"><h4 class="section-title">Persönliche Angaben</h4></div>
+
+      <div class="grid-row-4">
+        <div class="field-card"><label for="vorname">Vorname</label><input type="text" id="vorname" placeholder="Vorname" required></div>
+        <div class="field-card"><label for="nachname">Nachname</label><input type="text" id="nachname" placeholder="Nachname" required></div>
+        <div class="field-card"><label for="new-username">Benutzername</label><input type="text" id="new-username" placeholder="Benutzername" required></div>
+        <div class="field-card"><label for="new-password">Passwort</label><input type="password" id="new-password" placeholder="Passwort" required></div>
       </div>
 
-      <div class="form-row">
-        <input type="email" id="email" placeholder="E-Mail (optional)">
+      <div class="grid-row-4">
+        <div class="field-card"><label for="geburtsdatum">Geburtsdatum</label><input type="date" id="geburtsdatum"></div>
+        <div class="field-card"><label for="geburtsort">Geburtsort</label><input type="text" id="geburtsort" placeholder="Geburtsort"></div>
+        <div class="field-card"><label for="email">E-Mail-Adresse (optional)</label><input type="email" id="email" placeholder="E-Mail-Adresse (optional)"></div>
+        <div class="field-card"><label for="telefon">Telefon (optional)</label><input type="tel" id="telefon" placeholder="Telefon (optional)" inputmode="tel"></div>
       </div>
 
-      <div class="form-row">
-        <input type="tel" id="telefon" placeholder="Telefon (optional)" inputmode="tel">
+      <div class="grid-row-4">
+        <div class="field-card"><label for="staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="staatsangehoerigkeit" placeholder="Staatsangehörigkeit"></div>
+        <div class="field-card"><label for="steuernummer">Steuernummer</label><input type="text" id="steuernummer" placeholder="Steuernummer" required></div>
+        <div class="field-card"><label for="new-role">Rolle</label><select id="new-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="vorgesetzter_cp">Vorgesetzter CP</option><option value="planner_bbs">Planner BBS</option><option value="planer">Planer</option></select></div>
+        <div class="field-card"><label for="stundensatz">SVS (€ / h)</label><input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€ / h)"></div>
       </div>
 
-      <div class="form-row">
-        <input type="text" id="new-username" placeholder="Benutzername" required>
-        <input type="password" id="new-password" placeholder="Passwort" required>
+      <div class="field-card upload-card grid-span-2"><label for="new-photo">Bild hochladen</label><input type="file" id="new-photo" accept="image/*"><div style="margin-top:6px;"><img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;"></div></div>
+
+      <div class="section-block"><h4 class="section-title">Zusätzliche Angaben</h4></div>
+
+      <div class="grid-row-4">
+        <div class="field-card"><label for="amtliches_dokument">Amtliches Dokument</label><select id="amtliches_dokument"><option value="">Amtliches Dokument</option><option value="Personalausweis">Personalausweis</option><option value="Reisepass">Reisepass</option></select></div>
+        <div class="field-card"><label for="dokumentennr">Dokumentennummer</label><input type="text" id="dokumentennr" placeholder="Dokumentennummer"></div>
+        <div class="field-card"><label for="ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="ausstellungsdatum"></div>
+        <div class="field-card"><label for="ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="ausstellende_behoerde" placeholder="Ausstellende Behörde"></div>
       </div>
 
-      <div class="form-row">
-        <select id="new-role">
-          <option value="mitarbeiter">Mitarbeiter</option>
-          <option value="vorgesetzter">Vorgesetzter</option>
-            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
-            <option value="planner_bbs">Planner BBS</option>
-          <option value="planer">Planer</option>
-        
-        </select>
-
-        <select id="s34a">
-          <option value="nein">34a: Nein</option>
-          <option value="ja">34a: Ja</option>
-        </select>
-
-        <select id="s34a_art">
-          <option value="">-- Art auswählen --</option>
-          <option value="unterrichtung">Unterrichtung</option>
-          <option value="Sachkunde">Sachkunde</option>
-        </select>
+      <div class="grid-row-3">
+        <div class="field-card"><label for="s34a">§ 34a GewO Ja/Nein</label><select id="s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+        <div class="field-card"><label for="s34a_art">Art</label><select id="s34a_art"><option value="">-- Art auswählen --</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div>
+        <div class="field-card"><label for="bewach_id">Bewacher ID</label><input type="text" id="bewach_id" placeholder="Bewacher ID" required></div>
       </div>
 
-      <div class="form-row">
-        <input type="text" id="bewach_id" placeholder="Bewach-ID" required>
-        <input type="text" id="steuernummer" placeholder="Steuernummer" required>
-      </div>
+      <div class="section-block compact"><h4 class="section-title">Zusätzliche Qualifikationen</h4></div>
 
-      <div class="form-row">
-        <select id="bsw">
-          <option value="nein">BSW: Nein</option>
-          <option value="ja">BSW: Ja</option>
-        </select>
-
-        <select id="sanitaeter">
-          <option value="nein">Sanitäter: Nein</option>
-          <option value="ja">Sanitäter: Ja</option>
-        </select>
-
-        <select id="pschein">
-          <option value="nein">P-Schein: Nein</option>
-          <option value="ja">P-Schein: Ja</option>
-        </select>
-
-        <input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€/h) optional">
-      </div>
-      <div class="form-row section-row">
-        <div class="photo-box">
-          <label>Mitarbeiter-Bild (optional)</label>
-          <input type="file" id="new-photo" accept="image/*">
-          <div style="margin-top:6px;">
-            <img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
-          </div>
-        </div>
-        <div>
-          <label>Geburtsdatum</label>
-          <input type="date" id="geburtsdatum">
-        </div>
-      </div>
-
-      <div class="section-block">
-        <h4 class="section-title">Zusätzliche Angaben</h4>
-      </div>
-
-      <div class="form-row section-row">
-        <input type="text" id="staatsangehoerigkeit" placeholder="Staatsangehörigkeit">
-        <select id="amtliches_dokument">
-          <option value="">Amtliches Dokument (optional)</option>
-          <option value="Personalausweis">Personalausweis</option>
-          <option value="Reisepass">Reisepass</option>
-        </select>
-      </div>
-
-      <div class="form-row">
-        <input type="text" id="dokumentennr" placeholder="Dokumentennr. (intern)">
-        <input type="text" id="ausstellende_behoerde" placeholder="Ausstellende Behörde">
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label>Ausstellungsdatum</label>
-          <input type="date" id="ausstellungsdatum">
-        </div>
-        <div>
-          <label>Sanitäter Art (optional)</label>
-          <select id="sanitaeter_art">
-            <option value="">Sanitäter Art (optional)</option>
-            <option value="Rettungssanitäter">Rettungssanitäter</option>
-            <option value="Rettungsassistent">Rettungsassistent</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="section-block compact">
-        <h4 class="section-title">Zusätzliche Qualifikationen</h4>
+      <div class="grid-row-3">
+        <div class="field-card"><label for="bsw">BSW</label><select id="bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+        <div class="field-card"><label for="pschein">P-Schein</label><select id="pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+        <div class="field-card"><label for="sanitaeter">Sani</label><select id="sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
       </div>
 
       <div class="check-grid full section-row">
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="gssk"> GSSK</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="fachkraft"> Fachkraft S&S</label>
+        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="fachkraft"> Fachkraft S&amp;S</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
         <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="behoerdlich"> Behördlich/Studium</label>
       </div>
 
-      <div class="form-row">
-        <select id="fuehrerschein_klasse">
-          <option value="">Führerschein Klasse (optional)</option>
-          <option value="B">B</option>
-          <option value="C">C</option>
-          <option value="CE">CE</option>
-        </select>
-        <input type="text" id="sonstige" placeholder="Sonstige (optional)">
+      <div class="grid-span-4">
+        <label><b>Führerschein</b></label>
+        <div class="license-grid" id="license-grid">
+          <label><input type="checkbox" name="fuehrerschein_cb" value="AM"> AM</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="A"> A</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="A1"> A1</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="A2"> A2</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="B"> B</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="BE"> BE</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="C"> C</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="CE"> CE</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="D"> D</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="DE"> DE</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="L"> L</label>
+          <label><input type="checkbox" name="fuehrerschein_cb" value="T"> T</label>
+        </div>
       </div>
 
-      <div class="section-block compact">
-        <h5 class="subsection-title">Fremdsprachen</h5>
-      </div>
+      <div class="field-card grid-span-4"><label for="sonstige">Sonstige</label><input type="text" id="sonstige" placeholder="Sonstige (optional)"></div>
 
-      <div class="full section-row">
+      <div class="section-block compact"><h5 class="subsection-title">Fremdsprachen</h5></div>
+      <div class="language-board">
         <div class="check-grid lang-grid" id="lang-grid">
-            
-            <label><input type="checkbox" name="sprachen_cb" value="Deutsch"> <span>Deutsch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Englisch"> <span>Englisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Französisch"> <span>Französisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Italienisch"> <span>Italienisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Spanisch"> <span>Spanisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Niederländisch"> <span>Niederländisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Polnisch"> <span>Polnisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Slowakisch"> <span>Slowakisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Griechisch"> <span>Griechisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Russisch"> <span>Russisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Serbokroatisch"> <span>Serbokroatisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Türkisch"> <span>Türkisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Kurdisch"> <span>Kurdisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Arabisch"> <span>Arabisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Persisch"> <span>Persisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Hindi"> <span>Hindi</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Urdu"> <span>Urdu</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Japanisch"> <span>Japanisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Koreanisch"> <span>Koreanisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Vietnamesisch"> <span>Vietnamesisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Thai"> <span>Thai</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Indonesisch"> <span>Indonesisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Dänisch"> <span>Dänisch</span></label>
-            <label><input type="checkbox" name="sprachen_cb" value="Finnisch"> <span>Finnisch</span></label>
-          
-          </div>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Deutsch"> <span>Deutsch</span></span><select class="lang-level-select" data-language="Deutsch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Polnisch"> <span>Polnisch</span></span><select class="lang-level-select" data-language="Polnisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Russisch"> <span>Russisch</span></span><select class="lang-level-select" data-language="Russisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></span><select class="lang-level-select" data-language="Hebräisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Thai"> <span>Thai</span></span><select class="lang-level-select" data-language="Thai"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Englisch"> <span>Englisch</span></span><select class="lang-level-select" data-language="Englisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></span><select class="lang-level-select" data-language="Tschechisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></span><select class="lang-level-select" data-language="Ukrainisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Hindi"> <span>Hindi</span></span><select class="lang-level-select" data-language="Hindi"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Indonesisch"> <span>Indonesisch</span></span><select class="lang-level-select" data-language="Indonesisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Französisch"> <span>Französisch</span></span><select class="lang-level-select" data-language="Französisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Slowakisch"> <span>Slowakisch</span></span><select class="lang-level-select" data-language="Slowakisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Serbokroatisch"> <span>Serbokroatisch</span></span><select class="lang-level-select" data-language="Serbokroatisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Urdu"> <span>Urdu</span></span><select class="lang-level-select" data-language="Urdu"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></span><select class="lang-level-select" data-language="Schwedisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Italienisch"> <span>Italienisch</span></span><select class="lang-level-select" data-language="Italienisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></span><select class="lang-level-select" data-language="Ungarisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Türkisch"> <span>Türkisch</span></span><select class="lang-level-select" data-language="Türkisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></span><select class="lang-level-select" data-language="Chinesisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></span><select class="lang-level-select" data-language="Norwegisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Spanisch"> <span>Spanisch</span></span><select class="lang-level-select" data-language="Spanisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></span><select class="lang-level-select" data-language="Rumänisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Kurdisch"> <span>Kurdisch</span></span><select class="lang-level-select" data-language="Kurdisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Japanisch"> <span>Japanisch</span></span><select class="lang-level-select" data-language="Japanisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Dänisch"> <span>Dänisch</span></span><select class="lang-level-select" data-language="Dänisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></span><select class="lang-level-select" data-language="Portugiesisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></span><select class="lang-level-select" data-language="Bulgarisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Arabisch"> <span>Arabisch</span></span><select class="lang-level-select" data-language="Arabisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Finnisch"> <span>Finnisch</span></span><select class="lang-level-select" data-language="Finnisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
+        </div>
       </div>
       <div class="lang-manager full">
         <input type="text" id="lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
@@ -1599,7 +1562,7 @@ button.confirm, button.reject, button.delete, button.inline{
       </div>
       <div class="custom-lang-list full" id="lang-custom-list"></div>
 
-<button type="submit"  class="confirm">➕ Hinzufügen</button>
+      <button type="submit" class="confirm submit-wide">Person anlegen &amp; Einladungslink versenden</button>
     </form>
 
     <h4>Personalliste</h4>
@@ -1969,14 +1932,22 @@ button.confirm, button.reject, button.delete, button.inline{
       </div>
 
       <div class="form-row">
-        <div>
-          <label>Führerschein Klasse</label>
-          <select id="edit-fuehrerschein_klasse">
-            <option value="">-</option>
-            <option value="B">B</option>
-            <option value="C">C</option>
-            <option value="CE">CE</option>
-          </select>
+        <div style="flex:2;">
+          <label>Führerschein</label>
+          <div class="license-grid" id="edit-license-grid">
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="AM"> AM</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A"> A</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A1"> A1</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A2"> A2</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="B"> B</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="BE"> BE</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="C"> C</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="CE"> CE</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="D"> D</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="DE"> DE</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="L"> L</label>
+            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="T"> T</label>
+          </div>
         </div>
         <div>
           <label>Sonstige</label>
@@ -2580,15 +2551,20 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
         let resUsers = await fetch("/users");
         let users = await resUsers.json();
-        usersList = users;
+        usersList = sortUsersByLastFirst(users);
         users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
       } else {
         let resUsers = await fetch("/users_public");
         let users = await resUsers.json();
-        usersList = users;
+        usersList = sortUsersByLastFirst(users);
         users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
       }
 
+      transformLanguageGrid('lang-grid', 'sprachen_cb');
+      transformLanguageGrid('edit-lang-grid', 'edit_sprachen_cb');
+      applyLanguageSelections('sprachen_cb', 'lang-grid', []);
+      applyLicenseSelections('fuehrerschein_cb', []);
+      applyLicenseSelections('edit_fuehrerschein_cb', []);
       toggleEventRateInputs('create');
 
       // Meine Termine: Default Monat/Jahr + Filter-Listener
@@ -3075,6 +3051,116 @@ document.getElementById("planning").style.display="block";
         }, 20000);
       }
 
+
+    const LANGUAGE_LEVEL_OPTIONS = ["Grundkenntnisse", "Fortgeschritten", "Verhandlungssicher in Wort und Schrift", "Muttersprache"];
+
+    function sortUsersByLastFirst(list){
+      return [...(list || [])].sort((a,b)=>{
+        const an = String(a?.nachname || "").localeCompare(String(b?.nachname || ""), "de", {sensitivity:"base"});
+        if(an !== 0) return an;
+        const av = String(a?.vorname || "").localeCompare(String(b?.vorname || ""), "de", {sensitivity:"base"});
+        if(av !== 0) return av;
+        return String(a?.username || "").localeCompare(String(b?.username || ""), "de", {sensitivity:"base"});
+      });
+    }
+
+    function parseLanguagesPayload(raw){
+      if(Array.isArray(raw)) return raw;
+      const text = String(raw || "").trim();
+      if(!text) return [];
+      if(text.startsWith("[") || text.startsWith("{")){
+        try{
+          const parsed = JSON.parse(text);
+          if(Array.isArray(parsed)) return parsed.map(item=> typeof item === "string" ? {name:item, level:""} : {name:(item.name || item.language || item.label || ""), level:(item.level || "")}).filter(x=>x.name);
+          if(parsed && Array.isArray(parsed.items)) return parsed.items.map(item=>({name:(item.name || item.language || item.label || ""), level:(item.level || "")})).filter(x=>x.name);
+        }catch(_){ }
+      }
+      return text.split(",").map(s=>s.trim()).filter(Boolean).map(name=>({name, level:""}));
+    }
+
+    function collectLanguageSelections(groupName, gridId){
+      const grid = document.getElementById(gridId);
+      if(!grid) return [];
+      return Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).filter(cb=>cb.checked).map(cb=>{
+        const item = cb.closest('.lang-item');
+        const sel = item ? item.querySelector('.lang-level-select') : null;
+        return { name: cb.value, level: sel ? (sel.value || "") : "" };
+      });
+    }
+
+    function applyLanguageSelections(groupName, gridId, values){
+      const grid = document.getElementById(gridId);
+      if(!grid) return;
+      const entries = parseLanguagesPayload(values);
+      const map = {};
+      entries.forEach(item=>{ map[String(item.name)] = String(item.level || ""); });
+      Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).forEach(cb=>{
+        const item = cb.closest('.lang-item');
+        const sel = item ? item.querySelector('.lang-level-select') : null;
+        const has = Object.prototype.hasOwnProperty.call(map, cb.value);
+        cb.checked = has;
+        if(item) item.classList.toggle('active', has);
+        if(sel) sel.value = has ? (map[cb.value] || "") : "";
+      });
+    }
+
+    function syncLanguageDropdownVisibility(container){
+      if(!container) return;
+      container.querySelectorAll('.lang-item input[type="checkbox"]').forEach(cb=>{
+        const item = cb.closest('.lang-item');
+        if(item) item.classList.toggle('active', cb.checked);
+      });
+    }
+
+    function attachLanguageDropdownLogic(container){
+      if(!container || container.dataset.langInit === '1') return;
+      container.dataset.langInit = '1';
+      container.addEventListener('change', (ev)=>{
+        if(ev.target && ev.target.matches('.lang-item input[type="checkbox"]')){
+          const item = ev.target.closest('.lang-item');
+          if(item) item.classList.toggle('active', ev.target.checked);
+          const sel = item ? item.querySelector('.lang-level-select') : null;
+          if(sel && !ev.target.checked) sel.value = '';
+          if(sel && ev.target.checked && !sel.value) sel.value = 'Grundkenntnisse';
+        }
+      });
+      syncLanguageDropdownVisibility(container);
+    }
+
+    function transformLanguageGrid(gridId, groupName){
+      const grid = document.getElementById(gridId);
+      if(!grid) return;
+      Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).forEach(cb=>{
+        const label = cb.closest('label');
+        if(!label || label.classList.contains('lang-item')) return;
+        const textSpan = label.querySelector('span');
+        const language = cb.value || (textSpan ? textSpan.textContent.trim() : '');
+        label.classList.add('lang-item');
+        const textWrap = document.createElement('span');
+        textWrap.className = 'lang-text';
+        cb.parentNode.insertBefore(textWrap, cb);
+        textWrap.appendChild(cb);
+        if(textSpan){ textWrap.appendChild(textSpan); }
+        else { const sp=document.createElement('span'); sp.textContent = language; textWrap.appendChild(sp); }
+        const sel = document.createElement('select');
+        sel.className = 'lang-level-select';
+        sel.dataset.language = language;
+        sel.innerHTML = `<option value="">Level</option>${LANGUAGE_LEVEL_OPTIONS.map(v=>`<option value="${v}">${v}</option>`).join('')}`;
+        label.appendChild(sel);
+      });
+      attachLanguageDropdownLogic(grid);
+    }
+
+    function collectLicenseSelections(groupName){
+      return Array.from(document.querySelectorAll(`input[name="${groupName}"]:checked`)).map(i=>i.value);
+    }
+
+    function applyLicenseSelections(groupName, values){
+      const list = Array.isArray(values) ? values : String(values || '').split(',').map(s=>s.trim()).filter(Boolean);
+      document.querySelectorAll(`input[name="${groupName}"]`).forEach(cb=>{ cb.checked = list.includes(cb.value); });
+    }
+
+
     // (Sprach-Manager entfernt – feste Fremdsprachenliste)
 
     // User hinzufügen
@@ -3111,9 +3197,10 @@ document.getElementById("planning").style.display="block";
           personenschutz: document.getElementById("personenschutz").checked ? "ja" : "nein",
           behoerdlich: document.getElementById("behoerdlich").checked ? "ja" : "nein",
           waffensachkunde: document.getElementById("waffensachkunde").checked ? "ja" : "nein",
-          fuehrerschein_klasse: document.getElementById("fuehrerschein_klasse").value,
+          fuehrerschein_klasse: collectLicenseSelections('fuehrerschein_cb'),
           sonstige: document.getElementById("sonstige").value,
-          sprachen: Array.from(document.querySelectorAll('input[name="sprachen_cb"]:checked')).map(i=>i.value).join(", ")
+          sprachen_levels: collectLanguageSelections('sprachen_cb', 'lang-grid'),
+          sprachen: collectLanguageSelections('sprachen_cb', 'lang-grid').map(i=>i.name).join(", ")
 
         };
         const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
@@ -3135,7 +3222,7 @@ document.getElementById("planning").style.display="block";
         }
         await loadUsers();
         e.target.reset();
-        document.querySelectorAll('#lang-grid input[type="checkbox"]').forEach(cb=>{ cb.checked = false; });
+        applyLanguageSelections('sprachen_cb', 'lang-grid', []); applyLicenseSelections('fuehrerschein_cb', []);
         const pv=document.getElementById("new-photo-preview");
         if(pv){ pv.style.display="none"; pv.src=""; }
 
@@ -4048,14 +4135,14 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-behoerdlich").checked = String(user.behoerdlich||"nein").toLowerCase()==="ja";
       document.getElementById("edit-waffensachkunde").checked = String(user.waffensachkunde||"nein").toLowerCase()==="ja";
 
-      document.getElementById("edit-fuehrerschein_klasse").value = (user.fuehrerschein_klasse || "");
+      applyLicenseSelections('edit_fuehrerschein_cb', user.fuehrerschein_klassen || user.fuehrerschein_klasse || []);
       document.getElementById("edit-sonstige").value = (user.sonstige || "");
 
-      // Sprachen (CSV -> Checkboxen)
-      const langCsv = String(user.sprachen || "");
-      const langs = langCsv.split(",").map(s=>s.trim()).filter(Boolean);
       const editLangGrid = document.getElementById("edit-lang-grid");
-      langs.forEach(lang=>{
+      const langEntries = Array.isArray(user.sprachen_levels) && user.sprachen_levels.length ? user.sprachen_levels : parseLanguagesPayload(user.sprachen || "");
+      langEntries.forEach(item=>{
+        const lang = String(item.name || "").trim();
+        if(!lang) return;
         const selector = `input[name="edit_sprachen_cb"][value="${(window.CSS && CSS.escape) ? CSS.escape(lang) : lang}"]`;
         if(editLangGrid && !editLangGrid.querySelector(selector)){
           const label = document.createElement("label");
@@ -4070,9 +4157,8 @@ document.getElementById("confirmed-counter").textContent =
           editLangGrid.appendChild(label);
         }
       });
-      document.querySelectorAll('input[name="edit_sprachen_cb"]').forEach(cb=>{
-        cb.checked = langs.includes(cb.value);
-      });
+      transformLanguageGrid('edit-lang-grid', 'edit_sprachen_cb');
+      applyLanguageSelections('edit_sprachen_cb', 'edit-lang-grid', langEntries);
 // Foto Vorschau
       const pv = document.getElementById("edit-photo-preview");
       if(pv){
@@ -4143,9 +4229,10 @@ document.getElementById("confirmed-counter").textContent =
         personenschutz: document.getElementById("edit-personenschutz").checked ? "ja" : "nein",
         behoerdlich: document.getElementById("edit-behoerdlich").checked ? "ja" : "nein",
         waffensachkunde: document.getElementById("edit-waffensachkunde").checked ? "ja" : "nein",
-        fuehrerschein_klasse: document.getElementById("edit-fuehrerschein_klasse").value,
+        fuehrerschein_klasse: collectLicenseSelections('edit_fuehrerschein_cb'),
         sonstige: document.getElementById("edit-sonstige").value,
-        sprachen: Array.from(document.querySelectorAll('input[name="edit_sprachen_cb"]:checked')).map(i=>i.value).join(", ")
+        sprachen_levels: collectLanguageSelections('edit_sprachen_cb', 'edit-lang-grid'),
+        sprachen: collectLanguageSelections('edit_sprachen_cb', 'edit-lang-grid').map(i=>i.name).join(", ")
 
       };
 
@@ -4208,7 +4295,7 @@ document.getElementById("confirmed-counter").textContent =
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
-      usersList = await ures.json();
+      usersList = sortUsersByLastFirst(await ures.json());
       const uMap = userByUsername();
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
@@ -4421,7 +4508,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
-      usersList = await ures.json();
+      usersList = sortUsersByLastFirst(await ures.json());
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
 
@@ -5187,7 +5274,7 @@ document.addEventListener("DOMContentLoaded", function(){
     setTimeout(()=>{
       form.reset();
 
-      document.querySelectorAll(".lang-grid input[type='checkbox']").forEach(c=>c.checked=false);
+      applyLanguageSelections('sprachen_cb', 'lang-grid', []);
 
       const preview = document.getElementById("new-photo-preview") || document.getElementById("photo-preview");
       if(preview){
