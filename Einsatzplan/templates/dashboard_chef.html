@@ -2615,7 +2615,7 @@ document.getElementById("user-management").style.display="none";
         document.getElementById("report").style.display="none";
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-calendar");
-        window.location.reload();
+        try{ if(typeof calendar!=="undefined" && calendar){ calendar.render(); calendar.refetchEvents(); } }catch(_e){}
       };
 
       // 🗓️ Meine Termine (Chef)
@@ -5440,6 +5440,106 @@ document.addEventListener("DOMContentLoaded", function(){
     openTab('tab-calendar');
   }
 });
+</script>
+
+
+<script>
+(function(){
+  function safeGet(id){ return document.getElementById(id); }
+  function hideAllSections(){
+    const ids = ['calendar','termine','planning','user-management','report','counter'];
+    ids.forEach(id=>{ const el=safeGet(id); if(el) el.style.display='none'; });
+  }
+  function setActive(tabId){
+    ['tab-calendar','tab-termine','tab-planning','tab-users','tab-report','tab-counter'].forEach(id=>{
+      const el=safeGet(id); if(el) el.classList.toggle('active', id===tabId);
+    });
+  }
+  function renderCalendarSafe(){
+    try{
+      if(typeof calendar !== 'undefined' && calendar){
+        calendar.render();
+        if(typeof calendar.updateSize === 'function') calendar.updateSize();
+        if(typeof calendar.refetchEvents === 'function') calendar.refetchEvents();
+      }
+    }catch(err){ console.error('Kalender render fehlgeschlagen', err); }
+  }
+  function renderPlanningSafe(){
+    try{
+      if(typeof planningCalendar === 'undefined' || !planningCalendar){
+        if(typeof initPlanningCalendar === 'function') initPlanningCalendar();
+      }
+      if(typeof planningCalendar !== 'undefined' && planningCalendar){
+        planningCalendar.render();
+        if(typeof planningCalendar.updateSize === 'function') planningCalendar.updateSize();
+        if(typeof planningCalendar.refetchEvents === 'function') planningCalendar.refetchEvents();
+      }
+    }catch(err){ console.error('Planung render fehlgeschlagen', err); }
+  }
+  function showSection(key){
+    hideAllSections();
+    if(key==='calendar'){
+      const el=safeGet('calendar'); if(el) el.style.display='block';
+      setActive('tab-calendar');
+      renderCalendarSafe();
+      return;
+    }
+    if(key==='termine'){
+      const el=safeGet('termine'); if(el) el.style.display='block';
+      setActive('tab-termine');
+      try{ if(typeof loadMyTermine === 'function') loadMyTermine(); }catch(err){ console.error(err); }
+      return;
+    }
+    if(key==='planning'){
+      const el=safeGet('planning'); if(el) el.style.display='block';
+      setActive('tab-planning');
+      renderPlanningSafe();
+      return;
+    }
+    if(key==='users'){
+      const el=safeGet('user-management'); if(el) el.style.display='block';
+      setActive('tab-users');
+      try{ if(typeof refreshCustomLanguages === 'function') refreshCustomLanguages(); }catch(err){ console.error(err); }
+      try{ if(typeof loadUsers === 'function') loadUsers(); }catch(err){ console.error(err); }
+      return;
+    }
+    if(key==='report'){
+      const el=safeGet('report'); if(el) el.style.display='block';
+      setActive('tab-report');
+      try{ if(typeof loadReport === 'function') loadReport(); }catch(err){ console.error(err); }
+      return;
+    }
+    if(key==='counter'){
+      const el=safeGet('counter'); if(el) el.style.display='block';
+      setActive('tab-counter');
+      try{ if(typeof loadCounter === 'function') loadCounter(); }catch(err){ console.error(err); }
+      return;
+    }
+  }
+  function rebindTab(id, key){
+    const oldEl = safeGet(id);
+    if(!oldEl) return;
+    const newEl = oldEl.cloneNode(true);
+    oldEl.parentNode.replaceChild(newEl, oldEl);
+    newEl.addEventListener('click', function(e){ e.preventDefault(); showSection(key); });
+  }
+  window.__forceShowDashboardSection = showSection;
+  document.addEventListener('DOMContentLoaded', function(){
+    rebindTab('tab-calendar','calendar');
+    rebindTab('tab-termine','termine');
+    rebindTab('tab-planning','planning');
+    rebindTab('tab-users','users');
+    rebindTab('tab-report','report');
+    rebindTab('tab-counter','counter');
+
+    const isPlanner = String(window.ROLE || '').toLowerCase()==='planer' || String(window.ROLE || '').toLowerCase()==='planner_bbs';
+    if(isPlanner){
+      showSection('planning');
+    } else {
+      showSection('calendar');
+    }
+  });
+})();
 </script>
 
 </body>
