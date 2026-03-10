@@ -950,7 +950,7 @@ def upload_user_photo(username):
     if not u:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-     ext = _safe_photo_ext(f.filename)
+    ext = _safe_photo_ext(f.filename)
 
     # webp speichern wir als png, damit Pillow/PDF stabil bleiben
     final_ext = ".png" if ext == ".webp" else ext
@@ -2095,6 +2095,7 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+
 
 
 
