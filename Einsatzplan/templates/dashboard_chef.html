@@ -3170,7 +3170,7 @@ document.getElementById("planning").style.display="block";
         const sel = document.createElement('select');
         sel.className = 'lang-level-select';
         sel.dataset.language = language;
-        sel.innerHTML = `<option value="">Level</option>${LANGUAGE_LEVEL_OPTIONS.map(v=>`<option value="${v}">${v}</option>`).join('')}`;
+        sel.innerHTML = LANGUAGE_LEVEL_OPTIONS.map((v, i)=>`<option value="${v}" ${i === 0 ? "selected" : ""}>${v}</option>`).join('');
         label.appendChild(sel);
       });
       attachLanguageDropdownLogic(grid);
@@ -5652,3 +5652,4 @@ document.addEventListener("DOMContentLoaded", function(){
   }
 });
 </script>
+
