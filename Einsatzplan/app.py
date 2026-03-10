@@ -24,7 +24,7 @@ from urllib.request import urlopen
 def normalize_role(role: str) -> str:
     r = (role or "").strip().lower()
     # akzeptiere Anzeigenamen mit Leerzeichen
-    if r in ["planner bbs", "planner_bbs"]:
+    if r in ["planner bbs", "planner_bbs","planer bbs", "planer_bbs"]:
         return "planner_bbs"
     if r in ["vorgesetzter cp", "vorgesetzter_cp"]:
         return "vorgesetzter_cp"
@@ -950,14 +950,16 @@ def upload_user_photo(username):
     if not u:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    ext = _safe_photo_ext(f.filename)
-    # Upload immer einmal über Pillow normalisieren, damit das PDF die Datei zuverlässig lesen kann.
-    fn = f"{username}_{uuid.uuid4().hex}{ext if ext != ".webp" else ".png"}"
+     ext = _safe_photo_ext(f.filename)
+
+    # webp speichern wir als png, damit Pillow/PDF stabil bleiben
+    final_ext = ".png" if ext == ".webp" else ext
+    fn = f"{username}_{uuid.uuid4().hex}{final_ext}"
     abs_path = os.path.join(UPLOAD_DIR, fn)
 
     try:
         with Image.open(f.stream) as img:
-            fmt = "PNG" if ext == ".png" or ext == ".webp" else "JPEG"
+            fmt = "PNG" if final_ext == ".png" else "JPEG"
             save_img = img.convert("RGBA") if fmt == "PNG" else img.convert("RGB")
             save_img.save(abs_path, format=fmt)
     except Exception:
@@ -2093,6 +2095,7 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+
 
 
 
