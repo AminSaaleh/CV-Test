@@ -18,6 +18,7 @@ from reportlab.lib import colors
 from PIL import Image
 from urllib.parse import urljoin
 from urllib.request import urlopen
+from jinja2 import TemplateNotFound
 
 
 
@@ -138,8 +139,22 @@ import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=BASE_DIR, static_folder=os.path.join(BASE_DIR, "static"))
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
+
+
+def render_first_available_template(*template_names, **context):
+    last_exc = None
+    for template_name in template_names:
+        try:
+            return render_template(template_name, **context)
+        except TemplateNotFound as exc:
+            last_exc = exc
+            continue
+    if last_exc is not None:
+        raise last_exc
+    raise TemplateNotFound("Kein Template-Name übergeben.")
 
 # Supabase/PostgreSQL connection string
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -525,9 +540,9 @@ def dashboard():
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_template("dashboard_chef.html", user=session["username"], role=role)
+        return render_first_available_template("dashboard_chef.html", "dashboard_chef_sauber.html", user=session["username"], role=role)
 
-    return render_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
+    return render_first_available_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
 
 
 @app.route("/logout")
