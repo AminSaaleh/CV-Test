@@ -951,8 +951,6 @@ def upload_user_photo(username):
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
     ext = _safe_photo_ext(f.filename)
-
-    # webp speichern wir als png, damit Pillow/PDF stabil bleiben
     final_ext = ".png" if ext == ".webp" else ext
     fn = f"{username}_{uuid.uuid4().hex}{final_ext}"
     abs_path = os.path.join(UPLOAD_DIR, fn)
