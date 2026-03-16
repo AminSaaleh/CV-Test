@@ -6,7 +6,7 @@
 #   export SECRET_KEY="."
 #   python app.py
 #
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file, abort
+from flask import Flask, render_template, render_template_string, request, redirect, url_for, session, jsonify, g, send_file, abort
 import os, uuid, re, json
 from datetime import datetime
 import io
@@ -155,6 +155,72 @@ def render_first_available_template(*template_names, **context):
     if last_exc is not None:
         raise last_exc
     raise TemplateNotFound("Kein Template-Name übergeben.")
+
+
+FALLBACK_LOGIN_TEMPLATE = """<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f5f7fb;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center;padding:20px;}
+    .card{background:#fff;border:1px solid #d9e0ea;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:24px;max-width:420px;width:100%;}
+    h1{margin:0 0 16px;font-size:24px;}
+    label{display:block;font-weight:600;margin:12px 0 6px;}
+    input{width:100%;box-sizing:border-box;padding:10px 12px;border:1px solid #c9d2df;border-radius:10px;}
+    button{margin-top:16px;width:100%;padding:12px;border:none;border-radius:10px;background:#163252;color:#fff;font-weight:700;cursor:pointer;}
+    .error{background:#fdecea;color:#b42318;border:1px solid #f3b7b1;border-radius:10px;padding:10px;margin-bottom:12px;}
+    .muted{color:#5b6472;font-size:13px;margin-top:12px;}
+  </style>
+</head>
+<body>
+  <form class="card" method="post">
+    <h1>CV Planung Login</h1>
+    {% if error %}<div class="error">{{ error }}</div>{% endif %}
+    <label for="username">Benutzername</label>
+    <input id="username" name="username" type="text" required>
+    <label for="password">Passwort</label>
+    <input id="password" name="password" type="password" required>
+    <button type="submit">Einloggen</button>
+    <div class="muted">Falls keine eigene login.html vorhanden ist, wird diese Standardseite angezeigt.</div>
+  </form>
+</body>
+</html>
+"""
+
+FALLBACK_MITARBEITER_TEMPLATE = """<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mitarbeiter Dashboard</title>
+  <style>
+    body{font-family:Arial,sans-serif;background:#f5f7fb;margin:0;padding:24px;color:#172033;}
+    .wrap{max-width:900px;margin:0 auto;}
+    .card{background:#fff;border:1px solid #d9e0ea;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);padding:24px;}
+    a.btn{display:inline-block;padding:10px 14px;border-radius:10px;background:#163252;color:#fff;text-decoration:none;font-weight:700;}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>Willkommen {{ user }}</h1>
+      <p>Für Mitarbeiter wurde keine eigene <code>dashboard_mitarbeiter.html</code> mitgeliefert. Die Anwendung läuft trotzdem weiter und du kannst dich abmelden.</p>
+      <p>Rolle: <strong>{{ role }}</strong></p>
+      <a class="btn" href="/logout">Logout</a>
+    </div>
+  </div>
+</body>
+</html>
+"""
+
+
+def render_template_or_inline(template_names, inline_template, **context):
+    try:
+        return render_first_available_template(*template_names, **context)
+    except TemplateNotFound:
+        return render_template_string(inline_template, **context)
 
 # Supabase/PostgreSQL connection string
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -479,7 +545,25 @@ def init_db():
                 "ST-000",    # steuernummer
                 "nein",      # bsw
                 "nein",      # sanitaeter
-                0.0,
+                0.0,          # stundensatz
+                "",          # photo_url
+                "",          # geburtsdatum
+                "",          # staatsangehoerigkeit
+                "",          # amtliches_dokument
+                "",          # dokumentennr
+                "",          # ausstellende_behoerde
+                "",          # ausstellungsdatum
+                "",          # sanitaeter_art
+                "nein",      # brandschutzhelfer
+                "nein",      # deeskalation
+                "nein",      # gssk
+                "nein",      # fachkraft
+                "nein",      # personenschutz
+                "nein",      # behoerdlich
+                "nein",      # waffensachkunde
+                "",          # fuehrerschein_klasse
+                "",          # sonstige
+                ""           # sprachen
             ),
         )
         db.commit()
@@ -517,13 +601,13 @@ def login():
         if u and u.get("password") == password:
             if bool(u.get("acc_locked") or False):
                 session.clear()
-                return render_template("login.html", error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
+                return render_template_or_inline(("login.html",), FALLBACK_LOGIN_TEMPLATE, error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
             session["username"] = username
             session["role"] = u.get("role") or "mitarbeiter"
             return redirect(url_for("dashboard"))
 
-        return render_template("login.html", error="Login fehlgeschlagen")
-    return render_template("login.html")
+        return render_template_or_inline(("login.html",), FALLBACK_LOGIN_TEMPLATE, error="Login fehlgeschlagen")
+    return render_template_or_inline(("login.html",), FALLBACK_LOGIN_TEMPLATE)
 
 
 @app.route("/dashboard")
@@ -540,9 +624,9 @@ def dashboard():
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_first_available_template("dashboard_chef.html", "dashboard_chef_sauber.html", user=session["username"], role=role)
+        return render_template_or_inline(("dashboard_chef.html", "dashboard_chef (59).html", "dashboard_chef_sauber.html"), FALLBACK_MITARBEITER_TEMPLATE, user=session["username"], role=role)
 
-    return render_first_available_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
+    return render_template_or_inline(("dashboard_mitarbeiter.html",), FALLBACK_MITARBEITER_TEMPLATE, user=session["username"], role=role)
 
 
 @app.route("/logout")
