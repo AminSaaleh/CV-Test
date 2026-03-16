@@ -492,7 +492,7 @@ def safe_init_db():
         print("DB-Initialisierung erfolgreich.")
     except Exception as e:
         # Wichtig: nicht crashen, nur Fehler loggen
-        print("FEHLER bei init_db():", repr(e))
+        print("FEHLER bei init_db():", repr(e), flush=True)
 
 
 # Wird beim Import einmal ausgeführt
@@ -540,7 +540,7 @@ def dashboard():
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_first_available_template("dashboard_chef.html", "dashboard_chef_sauber.html", user=session["username"], role=role)
+        return render_first_available_template("dashboard_chef.html", "dashboard_chef.html", "dashboard_chef", user=session["username"], role=role)
 
     return render_first_available_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
 
