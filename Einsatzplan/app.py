@@ -6,7 +6,7 @@
 #   export SECRET_KEY="."
 #   python app.py
 #
-from flask import Flask, render_template, render_template_string, request, redirect, url_for, session, jsonify, g, send_file, abort
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file, abort
 import os, uuid, re, json
 from datetime import datetime
 import io
@@ -155,43 +155,6 @@ def render_first_available_template(*template_names, **context):
     if last_exc is not None:
         raise last_exc
     raise TemplateNotFound("Kein Template-Name übergeben.")
-
-
-def render_login_template(**context):
-    """Fallback, falls login.html im Deployment fehlt."""
-    try:
-        return render_template("login.html", **context)
-    except TemplateNotFound:
-        return render_template_string("""<!DOCTYPE html>
-<html lang="de">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login</title>
-  <style>
-    body{font-family:Arial,sans-serif;background:#f5f7fb;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;}
-    .card{background:#fff;padding:28px;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.08);width:min(92vw,420px);}
-    h1{font-size:24px;margin:0 0 18px 0;}
-    label{display:block;margin:12px 0 6px;font-weight:600;}
-    input{width:100%;box-sizing:border-box;padding:12px;border:1px solid #d0d7e2;border-radius:10px;}
-    button{margin-top:16px;width:100%;padding:12px;border:none;border-radius:10px;background:#163252;color:#fff;font-weight:700;cursor:pointer;}
-    .error{background:#fdecea;color:#b3261e;padding:10px 12px;border-radius:10px;margin-bottom:12px;}
-    .hint{color:#667085;font-size:13px;margin-top:12px;}
-  </style>
-</head>
-<body>
-  <form method="post" class="card">
-    <h1>Anmeldung</h1>
-    {% if error %}<div class="error">{{ error }}</div>{% endif %}
-    <label for="username">Benutzername</label>
-    <input id="username" name="username" required>
-    <label for="password">Passwort</label>
-    <input id="password" name="password" type="password" required>
-    <button type="submit">Einloggen</button>
-    <div class="hint">Fallback-Loginseite, weil login.html im Projekt fehlt.</div>
-  </form>
-</body>
-</html>""", **context)
 
 # Supabase/PostgreSQL connection string
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -554,13 +517,13 @@ def login():
         if u and u.get("password") == password:
             if bool(u.get("acc_locked") or False):
                 session.clear()
-                return render_login_template(error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
+                return render_template("login.html", error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
             session["username"] = username
             session["role"] = u.get("role") or "mitarbeiter"
             return redirect(url_for("dashboard"))
 
-        return render_login_template(error="Login fehlgeschlagen")
-    return render_login_template()
+        return render_template("login.html", error="Login fehlgeschlagen")
+    return render_template("login.html")
 
 
 @app.route("/dashboard")
@@ -577,9 +540,9 @@ def dashboard():
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_first_available_template("dashboard_chef.html", "dashboard_chef (59).html", "dashboard_chef_sauber.html", user=session["username"], role=role)
+        return render_first_available_template("dashboard_chef.html", "dashboard_chef_sauber.html", user=session["username"], role=role)
 
-    return render_first_available_template("dashboard_mitarbeiter.html", "dashboard_chef.html", "dashboard_chef (59).html", user=session["username"], role=role)
+    return render_first_available_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
 
 
 @app.route("/logout")
