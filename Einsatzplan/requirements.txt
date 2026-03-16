@@ -2,6 +2,6 @@ Flask==3.0.3
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
 reportlab==4.2.2
-Pillow==10.3.0
+Pillow
 
 
