@@ -2452,7 +2452,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       return `${hh}:${mm}`;
     }
 
-    window.loadMyTermine = async function loadMyTermine(){
+    async function loadMyTermine(){
       const me = "{{ user }}";
       const monthEl = document.getElementById("termine-month");
       const yearEl  = document.getElementById("termine-year");
@@ -2917,7 +2917,7 @@ document.getElementById("planning").style.display="block";
       }
 
 
-      window.initPlanningCalendar = function initPlanningCalendar(){
+      function initPlanningCalendar(){
         planningCalendar = new FullCalendar.Calendar(document.getElementById('planning-calendar'),{
           headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
           initialView:'dayGridWeek',
@@ -3914,7 +3914,7 @@ document.getElementById("confirmed-counter").textContent =
       });
     }
 
-    async window.loadUsers = function loadUsers(){
+    async function loadUsers(){
       let res=await fetch("/users");
       let users=await res.json();
 
@@ -4270,7 +4270,7 @@ document.getElementById("confirmed-counter").textContent =
     // REPORT laden + Endzeit-Edit Aktion
     
     // REPORT laden (Jahresübersicht: Jan–Dez)
-    window.loadReport = async function loadReport(){
+    async function loadReport(){
       // Users + Cache
       const usersUrl = (String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter')
         ? "/users"
@@ -4486,7 +4486,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
 
     
     // ZÄHLER laden (Einsätze pro Mitarbeiter: Jan–Dez)
-    window.loadCounter = async function loadCounter(){
+    async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
       usersList = sortUsersByLastFirst(await ures.json());
@@ -5607,21 +5607,217 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script>
-window.loadReport = window.loadReport || async function(){
-  console.warn("Fallback loadReport aktiv – eigentliche Funktion wurde nicht global registriert.");
-};
-window.loadCounter = window.loadCounter || async function(){
-  console.warn("Fallback loadCounter aktiv – eigentliche Funktion wurde nicht global registriert.");
-};
-window.loadUsers = window.loadUsers || function(){
-  console.warn("Fallback loadUsers aktiv – eigentliche Funktion wurde nicht global registriert.");
-};
-window.loadMyTermine = window.loadMyTermine || async function(){
-  console.warn("Fallback loadMyTermine aktiv – eigentliche Funktion wurde nicht global registriert.");
-};
-window.initPlanningCalendar = window.initPlanningCalendar || function(){
-  console.warn("Fallback initPlanningCalendar aktiv – eigentliche Funktion wurde nicht global registriert.");
-};
+/* FINAL Dashboard-Hotfix:
+   - entkoppelt doppelte Tab-Funktionen
+   - bindet Filter für Report/Zähler neu
+   - rendert Kalender/Planung zuverlässig nach Tab-Wechsel
+*/
+(function(){
+  function byId(id){ return document.getElementById(id); }
+  function qs(sel, root){ return (root || document).querySelector(sel); }
+  function qsa(sel, root){ return Array.from((root || document).querySelectorAll(sel)); }
+
+  function safeCall(name){
+    try{
+      if(typeof window[name] === "function") return window[name]();
+    }catch(err){
+      console.error("safeCall(window." + name + ") fehlgeschlagen:", err);
+    }
+    try{
+      if(name === "loadReport" && typeof loadReport === "function") return loadReport();
+      if(name === "loadCounter" && typeof loadCounter === "function") return loadCounter();
+      if(name === "loadUsers" && typeof loadUsers === "function") return loadUsers();
+      if(name === "loadMyTermine" && typeof loadMyTermine === "function") return loadMyTermine();
+      if(name === "initPlanningCalendar" && typeof initPlanningCalendar === "function") return initPlanningCalendar();
+    }catch(err){
+      console.error("safeCall(" + name + ") fehlgeschlagen:", err);
+    }
+  }
+
+  function getMainCalendar(){
+    try{ if(typeof calendar !== "undefined" && calendar) return calendar; }catch(_){}
+    try{ if(window.calendar) return window.calendar; }catch(_){}
+    return null;
+  }
+
+  function getPlanningCalendar(){
+    try{ if(typeof planningCalendar !== "undefined" && planningCalendar) return planningCalendar; }catch(_){}
+    try{ if(window.planningCalendar) return window.planningCalendar; }catch(_){}
+    return null;
+  }
+
+  function refreshMainCalendar(){
+    try{
+      const cal = getMainCalendar();
+      if(!cal) return;
+      if(typeof cal.render === "function") cal.render();
+      if(typeof cal.updateSize === "function") cal.updateSize();
+      if(typeof cal.refetchEvents === "function") cal.refetchEvents();
+    }catch(err){
+      console.error("Kalender refresh fehlgeschlagen:", err);
+    }
+  }
+
+  function refreshPlanningCalendar(){
+    try{
+      let pcal = getPlanningCalendar();
+      if(!pcal){
+        safeCall("initPlanningCalendar");
+        pcal = getPlanningCalendar();
+      }
+      if(!pcal) return;
+      if(typeof pcal.render === "function") pcal.render();
+      if(typeof pcal.updateSize === "function") pcal.updateSize();
+      if(typeof pcal.refetchEvents === "function") pcal.refetchEvents();
+    }catch(err){
+      console.error("Planungs-Kalender refresh fehlgeschlagen:", err);
+    }
+  }
+
+  function hideAllSections(){
+    ["calendar","termine","planning","user-management","report","counter"].forEach(function(id){
+      const el = byId(id);
+      if(el) el.style.display = "none";
+    });
+  }
+
+  function setActiveTab(tabId){
+    ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"].forEach(function(id){
+      const el = byId(id);
+      if(el) el.classList.toggle("active", id === tabId);
+    });
+  }
+
+  function openTab(tabId){
+    const map = {
+      "tab-calendar": "calendar",
+      "tab-termine": "termine",
+      "tab-planning": "planning",
+      "tab-users": "user-management",
+      "tab-report": "report",
+      "tab-counter": "counter"
+    };
+    hideAllSections();
+    const sectionId = map[tabId];
+    const section = sectionId ? byId(sectionId) : null;
+    if(section) section.style.display = "block";
+    setActiveTab(tabId);
+
+    if(tabId === "tab-calendar"){
+      setTimeout(refreshMainCalendar, 50);
+      setTimeout(refreshMainCalendar, 250);
+    }else if(tabId === "tab-planning"){
+      setTimeout(refreshPlanningCalendar, 50);
+      setTimeout(refreshPlanningCalendar, 250);
+    }else if(tabId === "tab-users"){
+      safeCall("loadUsers");
+    }else if(tabId === "tab-termine"){
+      safeCall("loadMyTermine");
+    }else if(tabId === "tab-report"){
+      safeCall("loadReport");
+    }else if(tabId === "tab-counter"){
+      safeCall("loadCounter");
+    }
+  }
+
+  function rebindTab(tabId){
+    const oldEl = byId(tabId);
+    if(!oldEl) return;
+    const newEl = oldEl.cloneNode(true); // alte Listener entfernen
+    oldEl.parentNode.replaceChild(newEl, oldEl);
+    newEl.addEventListener("click", function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      openTab(tabId);
+    }, true);
+  }
+
+  function rebindCategoryToggle(toggleId, selectId, loaderName){
+    const toggle = byId(toggleId);
+    const select = byId(selectId);
+    if(!toggle || !select) return;
+
+    // alte Listener entfernen
+    const newToggle = toggle.cloneNode(true);
+    toggle.parentNode.replaceChild(newToggle, toggle);
+
+    qsa("button.cat-btn", newToggle).forEach(function(btn){
+      btn.addEventListener("click", function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        const value = String(btn.dataset.value || "CV").toUpperCase();
+        select.value = value;
+
+        qsa("button.cat-btn", newToggle).forEach(function(b){
+          b.classList.toggle("active", String(b.dataset.value || "").toUpperCase() === value);
+        });
+
+        if(typeof syncCatButtons === "function"){
+          try{ syncCatButtons(toggleId, selectId); }catch(err){ console.warn(err); }
+        }
+        if(typeof applyGoldHeaders === "function"){
+          try{ applyGoldHeaders(); }catch(err){ console.warn(err); }
+        }
+        safeCall(loaderName);
+      }, true);
+    });
+
+    select.addEventListener("change", function(){
+      if(typeof syncCatButtons === "function"){
+        try{ syncCatButtons(toggleId, selectId); }catch(err){ console.warn(err); }
+      }
+      if(typeof applyGoldHeaders === "function"){
+        try{ applyGoldHeaders(); }catch(err){ console.warn(err); }
+      }
+      safeCall(loaderName);
+    }, true);
+
+    if(typeof syncCatButtons === "function"){
+      try{ syncCatButtons(toggleId, selectId); }catch(err){ console.warn(err); }
+    }
+  }
+
+  function bindInputReload(inputId, loaderName){
+    const el = byId(inputId);
+    if(!el) return;
+    const fresh = el.cloneNode(true);
+    el.parentNode.replaceChild(fresh, el);
+    fresh.addEventListener("change", function(){ safeCall(loaderName); }, true);
+    fresh.addEventListener("input", function(){ safeCall(loaderName); }, true);
+  }
+
+  function initFinalDashboardFix(){
+    ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"].forEach(rebindTab);
+
+    rebindCategoryToggle("report-cat-toggle", "report-type", "loadReport");
+    rebindCategoryToggle("counter-cat-toggle", "counter-type", "loadCounter");
+    bindInputReload("report-year", "loadReport");
+    bindInputReload("counter-year", "loadCounter");
+    bindInputReload("termine-month", "loadMyTermine");
+    bindInputReload("termine-year", "loadMyTermine");
+
+    // Initial aktive Ansicht sauber refreshen
+    if(byId("planning") && byId("planning").style.display !== "none"){
+      openTab("tab-planning");
+    }else if(byId("calendar") && byId("calendar").style.display !== "none"){
+      openTab("tab-calendar");
+    }else if(byId("report") && byId("report").style.display !== "none"){
+      openTab("tab-report");
+    }else{
+      const plannerOnly = !!byId("tab-planning") && !byId("tab-calendar");
+      openTab(plannerOnly ? "tab-planning" : "tab-calendar");
+    }
+  }
+
+  document.addEventListener("DOMContentLoaded", initFinalDashboardFix);
+  window.addEventListener("load", function(){
+    setTimeout(initFinalDashboardFix, 100);
+    setTimeout(function(){
+      if(byId("calendar") && byId("calendar").style.display !== "none") refreshMainCalendar();
+      if(byId("planning") && byId("planning").style.display !== "none") refreshPlanningCalendar();
+    }, 300);
+  });
+})();
 </script>
 
 </body>
