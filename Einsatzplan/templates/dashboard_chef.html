@@ -5607,204 +5607,135 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script>
-/* FINAL Calendar/Planning Fallback
-   - wenn bestehende Kalender-Initialisierung durch doppelte Scripts blockiert wird,
-     baut dieser Block beide Kalender robust selbst auf
+/* Main calendar hard-fix:
+   Grundproblem: id="calendar" erzeugt im Browser oft window.calendar als DOM-Element.
+   Dadurch kollidiert es mit der JS-Variable für FullCalendar. Planung ist davon nicht betroffen.
+   Dieser Fix benutzt bewusst window.__fcMainCalendar als eigene Instanz.
 */
 (function(){
-  function q(id){ return document.getElementById(id); }
+  function el(id){ return document.getElementById(id); }
 
-  async function fetchEventsSafe(){
+  async function fetchEventsForMainCalendar(){
     try{
       const res = await fetch("/events?ts=" + Date.now(), { credentials: "same-origin" });
       const data = await res.json().catch(()=>[]);
       return Array.isArray(data) ? data : [];
     }catch(err){
-      console.error("fetchEventsSafe fehlgeschlagen:", err);
+      console.error("Hauptkalender Events konnten nicht geladen werden:", err);
       return [];
     }
   }
 
-  function enrichMainEvents(events){
-    return (events || []).map(ev => {
-      const copy = Object.assign({}, ev);
-      if(copy.start){
-        const d = new Date(copy.start);
+  function mapEvents(events){
+    return (events || []).map(function(ev){
+      const out = Object.assign({}, ev);
+      if(out.start){
+        const d = new Date(out.start);
         if(!isNaN(d)){
-          const hh = String(d.getHours()).padStart(2,'0');
-          const mm = String(d.getMinutes()).padStart(2,'0');
-          const base = String(copy.title || "").trim();
-          copy.title = `${base} (${hh}:${mm})`.trim();
+          out.start = d.toISOString();
         }
       }
-      return copy;
+      if(out.planned_end_time && !out.end){
+        const e = new Date(out.planned_end_time);
+        if(!isNaN(e)) out.end = e.toISOString();
+      }
+      return out;
     });
   }
 
-  function buildPlanningHtml(ev){
-    const responses = ev.responses || {};
-    const confirmedUsers = Object.keys(responses).filter(username => {
-      const r = responses[username] || {};
-      return String(r.status || "").trim() === "bestätigt";
-    });
-
-    const confirmed = confirmedUsers.length;
-    let required = Number(ev.required_staff ?? ev.required ?? 0);
-    if(!isFinite(required) || required < 0) required = 0;
-
-    const baseTitle = String(ev.title || "(ohne Titel)").replace(/\s*\(\d{2}:\d{2}\)\s*$/, "");
-    const title = `${baseTitle} (${confirmed}/${required})`;
-
-    const wrap = document.createElement("div");
-
-    const titleEl = document.createElement("div");
-    titleEl.className = "plan-title " + ((String(ev.category || "CP").toUpperCase() === "CV") ? "title-cv" : "title-cp");
-    titleEl.textContent = title;
-    wrap.appendChild(titleEl);
-
-    const staffEl = document.createElement("div");
-    staffEl.className = "plan-staff";
-    staffEl.innerHTML = confirmedUsers.length ? confirmedUsers.map(u => `<div class="plan-staff-row">${u}</div>`).join("") : "—";
-    wrap.appendChild(staffEl);
-
-    return { domNodes: [wrap] };
-  }
-
-  function openDetails(info){
+  function eventClickHandler(info){
     try{
       if(typeof openDetailsModal === "function"){
         openDetailsModal(info.event);
         return;
       }
     }catch(err){
-      console.error("openDetailsModal fehlgeschlagen:", err);
+      console.error("openDetailsModal Fehler:", err);
     }
   }
 
-  function createMainCalendarFallback(){
-    const el = q("calendar");
-    if(!el || !window.FullCalendar) return null;
+  function ensureMainCalendar(){
+    const node = el("calendar");
+    if(!node || !window.FullCalendar) return null;
+
+    if(window.__fcMainCalendar){
+      return window.__fcMainCalendar;
+    }
 
     try{
-      const cal = new FullCalendar.Calendar(el, {
+      node.innerHTML = "";
+      const cal = new FullCalendar.Calendar(node, {
         initialView: "dayGridMonth",
         locale: "de",
         firstDay: 1,
+        buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
         height: "85vh",
         eventDisplay: "list-item",
         displayEventTime: true,
         eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
-        dayCellClassNames: (arg) => {
+        dayCellClassNames: function(arg){
           const dow = arg.date.getDay();
           return (dow === 0 || dow === 6) ? ["weekend"] : [];
         },
-        events: async (info, success) => {
-          const events = enrichMainEvents(await fetchEventsSafe());
-          success(events);
+        headerToolbar: {
+          left: "prev,next today",
+          center: "title",
+          right: "dayGridMonth,dayGridWeek"
         },
-        eventClick: openDetails
+        events: async function(info, successCallback){
+          const data = mapEvents(await fetchEventsForMainCalendar());
+          successCallback(data);
+        },
+        eventClick: eventClickHandler
       });
+
       cal.render();
-      window.calendar = cal;
-      console.warn("Fallback Hauptkalender aktiviert.");
+      window.__fcMainCalendar = cal;
+      console.warn("Main calendar hard-fix aktiv.");
       return cal;
     }catch(err){
-      console.error("Fallback Hauptkalender konnte nicht erstellt werden:", err);
+      console.error("Hauptkalender konnte nicht erstellt werden:", err);
       return null;
     }
   }
 
-  function createPlanningCalendarFallback(){
-    const el = q("planning-calendar");
-    if(!el || !window.FullCalendar) return null;
-
+  function refreshMainCalendarFixed(){
+    const wrap = el("calendar");
+    if(!wrap) return;
+    const cal = ensureMainCalendar();
+    if(!cal) return;
     try{
-      const pcal = new FullCalendar.Calendar(el, {
-        headerToolbar: { left: "prev,next today", center: "title", right: "" },
-        initialView: "dayGridWeek",
-        locale: "de",
-        firstDay: 1,
-        height: "85vh",
-        selectable: false,
-        displayEventTime: false,
-        dayCellClassNames: (arg) => {
-          const dow = arg.date.getDay();
-          return (dow === 0 || dow === 6) ? ["weekend"] : [];
-        },
-        dayHeaderContent: (arg) => {
-          const d = arg.date;
-          const dd = String(d.getDate()).padStart(2,'0');
-          const mm = String(d.getMonth()+1).padStart(2,'0');
-          const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];
-          return { html: `<b>${wd}., ${dd}.${mm}.</b>` };
-        },
-        events: async (info, success) => {
-          const events = await fetchEventsSafe();
-          success(events);
-        },
-        eventContent: (arg) => buildPlanningHtml(arg.event.extendedProps || {}),
-        eventClick: openDetails
-      });
-      pcal.render();
-      window.planningCalendar = pcal;
-      console.warn("Fallback Planungskalender aktiviert.");
-      return pcal;
+      cal.render();
+      if(typeof cal.updateSize === "function") cal.updateSize();
+      if(typeof cal.refetchEvents === "function") cal.refetchEvents();
     }catch(err){
-      console.error("Fallback Planungskalender konnte nicht erstellt werden:", err);
-      return null;
+      console.error("Hauptkalender Refresh Fehler:", err);
     }
   }
 
-  function renderVisibleCalendars(){
-    try{
-      if(q("calendar") && getComputedStyle(q("calendar")).display !== "none"){
-        if(!window.calendar) createMainCalendarFallback();
-        if(window.calendar){
-          window.calendar.render();
-          if(typeof window.calendar.updateSize === "function") window.calendar.updateSize();
-          if(typeof window.calendar.refetchEvents === "function") window.calendar.refetchEvents();
-        }
-      }
-    }catch(err){ console.error("renderVisibleCalendars main:", err); }
-
-    try{
-      const planningWrap = q("planning");
-      if(planningWrap && getComputedStyle(planningWrap).display !== "none"){
-        if(!window.planningCalendar) createPlanningCalendarFallback();
-        if(window.planningCalendar){
-          window.planningCalendar.render();
-          if(typeof window.planningCalendar.updateSize === "function") window.planningCalendar.updateSize();
-          if(typeof window.planningCalendar.refetchEvents === "function") window.planningCalendar.refetchEvents();
-        }
-      }
-    }catch(err){ console.error("renderVisibleCalendars planning:", err); }
-  }
-
-  function bindCalendarTabs(){
-    ["tab-calendar","tab-planning"].forEach(id => {
-      const el = q(id);
-      if(!el || el.dataset.fcFinalBound === "1") return;
-      el.dataset.fcFinalBound = "1";
-      el.addEventListener("click", function(){
-        setTimeout(renderVisibleCalendars, 60);
-        setTimeout(renderVisibleCalendars, 250);
-      }, true);
-    });
+  function bindMainCalendarTab(){
+    const tab = el("tab-calendar");
+    if(!tab || tab.dataset.mainCalendarFixed === "1") return;
+    tab.dataset.mainCalendarFixed = "1";
+    tab.addEventListener("click", function(){
+      setTimeout(refreshMainCalendarFixed, 50);
+      setTimeout(refreshMainCalendarFixed, 250);
+      setTimeout(refreshMainCalendarFixed, 700);
+    }, true);
   }
 
   document.addEventListener("DOMContentLoaded", function(){
-    bindCalendarTabs();
-    setTimeout(renderVisibleCalendars, 300);
-    setTimeout(renderVisibleCalendars, 900);
+    bindMainCalendarTab();
+    setTimeout(refreshMainCalendarFixed, 250);
   });
 
   window.addEventListener("load", function(){
-    bindCalendarTabs();
-    setTimeout(renderVisibleCalendars, 300);
-    setTimeout(renderVisibleCalendars, 1200);
+    bindMainCalendarTab();
+    setTimeout(refreshMainCalendarFixed, 400);
+    setTimeout(refreshMainCalendarFixed, 1200);
   });
 
-  window.__renderVisibleCalendars = renderVisibleCalendars;
+  window.refreshMainCalendarFixed = refreshMainCalendarFixed;
 })();
 </script>
 
