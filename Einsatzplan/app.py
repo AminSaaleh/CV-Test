@@ -140,7 +140,7 @@ import psycopg2.extras
 from psycopg2 import IntegrityError
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, template_folder=BASE_DIR, static_folder=os.path.join(BASE_DIR, "static"))
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"), static_folder=os.path.join(BASE_DIR, "static"))
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
 
 
@@ -465,8 +465,8 @@ def init_db():
         db.execute(
             '''
             INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ''',
             (
                 "AdminTest", "Test1234", "vorgesetzter",
@@ -489,10 +489,10 @@ def safe_init_db():
     try:
         with app.app_context():
             init_db()
-        print("DB-Initialisierung erfolgreich.")
+        print("DB-Initialisierung erfolgreich.", flush=True)
     except Exception as e:
         # Wichtig: nicht crashen, nur Fehler loggen
-        print("FEHLER bei init_db():", repr(e))
+        print("FEHLER bei init_db():", repr(e), flush=True)
 
 
 # Wird beim Import einmal ausgeführt
