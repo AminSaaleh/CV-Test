@@ -2452,7 +2452,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       return `${hh}:${mm}`;
     }
 
-    async function loadMyTermine(){
+    window.loadMyTermine = async function loadMyTermine(){
       const me = "{{ user }}";
       const monthEl = document.getElementById("termine-month");
       const yearEl  = document.getElementById("termine-year");
@@ -2917,7 +2917,7 @@ document.getElementById("planning").style.display="block";
       }
 
 
-      function initPlanningCalendar(){
+      window.initPlanningCalendar = function initPlanningCalendar(){
         planningCalendar = new FullCalendar.Calendar(document.getElementById('planning-calendar'),{
           headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
           initialView:'dayGridWeek',
@@ -3914,7 +3914,7 @@ document.getElementById("confirmed-counter").textContent =
       });
     }
 
-    async function loadUsers(){
+    async window.loadUsers = function loadUsers(){
       let res=await fetch("/users");
       let users=await res.json();
 
@@ -4270,7 +4270,7 @@ document.getElementById("confirmed-counter").textContent =
     // REPORT laden + Endzeit-Edit Aktion
     
     // REPORT laden (Jahresübersicht: Jan–Dez)
-    async function loadReport(){
+    window.loadReport = async function loadReport(){
       // Users + Cache
       const usersUrl = (String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter')
         ? "/users"
@@ -4486,7 +4486,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
 
     
     // ZÄHLER laden (Einsätze pro Mitarbeiter: Jan–Dez)
-    async function loadCounter(){
+    window.loadCounter = async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
       usersList = sortUsersByLastFirst(await ures.json());
@@ -5605,5 +5605,24 @@ document.addEventListener("DOMContentLoaded", function(){
   }
 });
 </script>
+
+<script>
+window.loadReport = window.loadReport || async function(){
+  console.warn("Fallback loadReport aktiv – eigentliche Funktion wurde nicht global registriert.");
+};
+window.loadCounter = window.loadCounter || async function(){
+  console.warn("Fallback loadCounter aktiv – eigentliche Funktion wurde nicht global registriert.");
+};
+window.loadUsers = window.loadUsers || function(){
+  console.warn("Fallback loadUsers aktiv – eigentliche Funktion wurde nicht global registriert.");
+};
+window.loadMyTermine = window.loadMyTermine || async function(){
+  console.warn("Fallback loadMyTermine aktiv – eigentliche Funktion wurde nicht global registriert.");
+};
+window.initPlanningCalendar = window.initPlanningCalendar || function(){
+  console.warn("Fallback initPlanningCalendar aktiv – eigentliche Funktion wurde nicht global registriert.");
+};
+</script>
+
 </body>
 </html>
