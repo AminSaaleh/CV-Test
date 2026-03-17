@@ -225,6 +225,205 @@ def row_to_dict(row):
     return dict(row)
 
 
+def table_exists(db, table_name: str) -> bool:
+    cur = db.execute(
+        """
+        SELECT 1
+        FROM information_schema.tables
+        WHERE table_schema = 'public' AND table_name = %s
+        """,
+        (table_name,),
+    )
+    return cur.fetchone() is not None
+
+
+def ensure_runtime_schema():
+    """
+    Defensive runtime check so /events does not crash if Render/Supabase
+    starts with a partially migrated schema.
+    """
+    db = get_db()
+
+    # core tables
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS event (
+            id TEXT PRIMARY KEY,
+            title TEXT,
+            ort TEXT,
+            dienstkleidung TEXT,
+            auftraggeber TEXT,
+            start TEXT,
+            planned_end_time TEXT,
+            frist TEXT,
+            status TEXT,
+            category TEXT DEFAULT 'CP',
+            required_staff INTEGER DEFAULT 0,
+            use_event_rate INTEGER DEFAULT 1,
+            stundensatz DOUBLE PRECISION
+        );
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS response (
+            id SERIAL PRIMARY KEY,
+            event_id TEXT NOT NULL REFERENCES event(id) ON DELETE CASCADE,
+            username TEXT,
+            status TEXT,
+            remark TEXT,
+            start_time TEXT,
+            end_time TEXT,
+            rate_override DOUBLE PRECISION
+        );
+        """
+    )
+
+    # missing event columns
+    for c, ddl in [
+        ("title", "ALTER TABLE event ADD COLUMN title TEXT"),
+        ("ort", "ALTER TABLE event ADD COLUMN ort TEXT"),
+        ("dienstkleidung", "ALTER TABLE event ADD COLUMN dienstkleidung TEXT"),
+        ("auftraggeber", "ALTER TABLE event ADD COLUMN auftraggeber TEXT"),
+        ("start", "ALTER TABLE event ADD COLUMN start TEXT"),
+        ("planned_end_time", "ALTER TABLE event ADD COLUMN planned_end_time TEXT"),
+        ("frist", "ALTER TABLE event ADD COLUMN frist TEXT"),
+        ("status", "ALTER TABLE event ADD COLUMN status TEXT"),
+        ("category", "ALTER TABLE event ADD COLUMN category TEXT DEFAULT 'CP'"),
+        ("required_staff", "ALTER TABLE event ADD COLUMN required_staff INTEGER DEFAULT 0"),
+        ("use_event_rate", "ALTER TABLE event ADD COLUMN use_event_rate INTEGER DEFAULT 1"),
+        ("stundensatz", "ALTER TABLE event ADD COLUMN stundensatz DOUBLE PRECISION"),
+    ]:
+        if not col_exists(db, "event", c):
+            db.execute(ddl)
+
+    # missing response columns
+    for c, ddl in [
+        ("username", "ALTER TABLE response ADD COLUMN username TEXT"),
+        ("status", "ALTER TABLE response ADD COLUMN status TEXT"),
+        ("remark", "ALTER TABLE response ADD COLUMN remark TEXT"),
+        ("start_time", "ALTER TABLE response ADD COLUMN start_time TEXT"),
+        ("end_time", "ALTER TABLE response ADD COLUMN end_time TEXT"),
+        ("rate_override", "ALTER TABLE response ADD COLUMN rate_override DOUBLE PRECISION"),
+    ]:
+        if not col_exists(db, "response", c):
+            db.execute(ddl)
+
+    db.commit()
+
+
+def _safe_fetch_events_payload():
+    db = get_db()
+    ensure_runtime_schema()
+
+    role = normalize_role(session.get("role") or "mitarbeiter")
+
+    try:
+        ecur = db.execute("SELECT * FROM event ORDER BY start NULLS LAST, title NULLS LAST")
+        events = [row_to_dict(e) for e in ecur.fetchall()]
+    except Exception as e:
+        print("FEHLER /events SELECT event:", repr(e), flush=True)
+        db.rollback()
+        return []
+
+    role_lc = normalize_role(role)
+    if role_lc == "planner_bbs":
+        events = [e for e in events if (e.get("category") or "CP").strip().upper() == "CV"]
+
+    my_profile_rate = 0.0
+    if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+        try:
+            me = db.execute("SELECT * FROM users WHERE username=%s", (session.get("username"),)).fetchone()
+            if me:
+                my_profile_rate = float(me.get("stundensatz") or 0.0)
+        except Exception as e:
+            print("FEHLER /events SELECT users:", repr(e), flush=True)
+            db.rollback()
+            my_profile_rate = 0.0
+
+    result = []
+    for e in events:
+        event_id = e.get("id")
+        if not event_id:
+            continue
+
+        try:
+            rcur = db.execute(
+                "SELECT username,status,remark,start_time,end_time,rate_override FROM response WHERE event_id=%s",
+                (event_id,)
+            )
+            rows = rcur.fetchall()
+        except Exception as ex:
+            print(f"FEHLER /events SELECT response fuer {event_id}:", repr(ex), flush=True)
+            db.rollback()
+            rows = []
+
+        rmap = {
+            r.get("username"): {
+                "status": r.get("status") or "",
+                "remark": r.get("remark") or "",
+                "start_time": r.get("start_time") or "",
+                "end_time": r.get("end_time") or "",
+                "rate_override": r.get("rate_override"),
+            }
+            for r in rows if r.get("username")
+        }
+        e["responses"] = rmap
+
+        cls = []
+        cat = (e.get("category") or "CP").strip().upper()
+        if cat not in ("CP", "CV"):
+            cat = "CP"
+        cls.append("cat-" + cat.lower())
+
+        ev_status_token = status_to_css_token(e.get("status", ""))
+        if ev_status_token:
+            cls.append(f"status-event-{ev_status_token}")
+
+        try:
+            req = int(e.get("required_staff") or 0)
+        except Exception:
+            req = 0
+
+        has_applications = any(
+            (rv.get("status") or "").strip() in ("zugesagt", "bestätigt")
+            for rv in (rmap or {}).values()
+        )
+        confirmed_count = sum(
+            1 for rv in (rmap or {}).values()
+            if (rv.get("status") or "").strip() == "bestätigt"
+        )
+
+        if (e.get("status") or "").strip().lower() == "offen":
+            if req > 0 and confirmed_count >= req:
+                cls.append("status-event-voll")
+            elif has_applications:
+                cls.append("status-event-bewerbung")
+
+        if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+            my = rmap.get(session.get("username"), {}) or {}
+            my_status_token = status_to_css_token(my.get("status", ""))
+            if my_status_token:
+                cls.append(f"status-{my_status_token}")
+
+        e["classNames"] = cls
+
+        raw_u = e.get("use_event_rate")
+        use_event_rate = 1 if raw_u is None else int(raw_u)
+
+        if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+            e["my_rate"] = 0
+        else:
+            if use_event_rate == 1:
+                e["my_rate"] = float(e.get("stundensatz") or 0.0)
+            else:
+                e["my_rate"] = my_profile_rate
+
+        result.append(e)
+
+    return result
+
+
 def to_int(v, default=0):
     try:
         return int(v)
@@ -1387,114 +1586,22 @@ def user_client_pdf(username):
 # ---------------- Events API ----------------
 @app.route("/events", methods=["GET"])
 def events_list():
-    # ✅ Login erforderlich (damit Planer/Mitarbeiter nicht anonym zugreifen)
     if "username" not in session:
         return jsonify({"error": "Nicht eingeloggt"}), 403
 
-    # ✅ DSGVO: Mitarbeiter ohne Einwilligung dürfen keine Einsätze laden
     if employee_requires_consent():
-        return jsonify({"error":"Bitte zuerst auf der Startseite in die Datenverarbeitung einwilligen."}), 403
+        return jsonify({"error": "Bitte zuerst auf der Startseite in die Datenverarbeitung einwilligen."}), 403
 
-    db = get_db()
-    role = normalize_role(session.get("role") or "mitarbeiter")
-
-    ecur = db.execute("SELECT * FROM event")
-    events = [row_to_dict(e) for e in ecur.fetchall()]
-
-    # ✅ Rollen-Restriktionen (serverseitig)
-    role_lc = normalize_role(role)
-    if role_lc == "planner_bbs":
-        events = [e for e in events if (e.get("category") or "CP").strip().upper() == "CV"]
-    # Mitarbeiter: Profil-Stundensatz holen (für my_rate)
-    my_profile_rate = 0.0
-    if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        me = db.execute("SELECT * FROM users WHERE username=%s", (session.get("username"),)).fetchone()
-        if me:
-            my_profile_rate = float(me.get("stundensatz") or 0.0)
-
-    result = []
-    for e in events:
-        rcur = db.execute(
-            "SELECT username,status,remark,start_time,end_time,rate_override FROM response WHERE event_id=%s",
-            (e["id"],)
-        )
-        rmap = {
-            r["username"]: {
-                "status": r["status"] or "",
-                "remark": r["remark"] or "",
-                "start_time": r["start_time"] or "",
-                "end_time": r.get("end_time") or "",
-                "rate_override": r["rate_override"]
-            } for r in rcur.fetchall()
-        }
-        e["responses"] = rmap
-
-        # ---- UI helpers: CSS Klassen für FullCalendar (Dot/Block Färbung) ----
-        # Diese Erweiterung entfernt/ändert keine bestehende Logik; sie ergänzt nur Metadaten fürs Frontend.
-        cls = []
-        # Kategorie (CP/CV)
-        cat = (e.get("category") or "CP").strip().upper()
-        if cat not in ("CP","CV"):
-            cat = "CP"
-        cls.append("cat-" + cat.lower())
-
-        # Event-Status (geplant/offen/...)
-        ev_status_token = status_to_css_token(e.get("status", ""))
-        if ev_status_token:
-            cls.append(f"status-event-{ev_status_token}")
-
-        # Zusatz-Status für Chef-Ansicht (nur bei status 'offen'):
-        # - 'voll'  => benötigte Mitarbeiter erreicht (grün)
-        # - 'bewerbung' => es gibt Bewerbungen/Zusagen, aber noch nicht voll (blau)
-        # Diese Logik ergänzt nur CSS-Klassen und ändert keine Daten in der DB.
+    try:
+        result = _safe_fetch_events_payload()
+        return jsonify(result)
+    except Exception as e:
         try:
-            req = int(e.get("required_staff") or 0)
+            get_db().rollback()
         except Exception:
-            req = 0
-
-        # Bewerbungen/Zusagen zählen (alles, was nicht leer ist und nicht explizit entfernt wurde)
-        has_applications = any(
-            (rv.get("status") or "").strip() in ("zugesagt", "bestätigt")
-            for rv in (rmap or {}).values()
-        )
-
-        confirmed_count = sum(
-            1 for rv in (rmap or {}).values()
-            if (rv.get("status") or "").strip() == "bestätigt"
-        )
-
-        if (e.get("status") or "").strip().lower() == "offen":
-            if req > 0 and confirmed_count >= req:
-                cls.append("status-event-voll")
-            elif has_applications:
-                cls.append("status-event-bewerbung")
-
-        # Für Mitarbeiter: eigener Response-Status als Klasse (zugesagt/bestätigt/abgelehnt/...)
-        if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-            my = rmap.get(session.get("username"), {}) or {}
-            my_status_token = status_to_css_token(my.get("status", ""))
-            if my_status_token:
-                cls.append(f"status-{my_status_token}")
-
-        # An FullCalendar übergeben (wird als classNames akzeptiert)
-        e["classNames"] = cls
-
-        # ✅ BUGFIX: 0 darf NICHT zu 1 werden
-        raw_u = e.get("use_event_rate")
-        use_event_rate = 1 if raw_u is None else int(raw_u)
-
-        # Chef/Vorgesetzter/Planer: keine eigenen Raten berechnen
-        if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-            e["my_rate"] = 0
-        else:
-            if use_event_rate == 1:
-                e["my_rate"] = float(e.get("stundensatz") or 0.0)
-            else:
-                e["my_rate"] = my_profile_rate
-
-        result.append(e)
-
-    return jsonify(result)
+            pass
+        print("FEHLER /events:", repr(e), flush=True)
+        return jsonify([])
 
 
 @app.route("/events", methods=["POST"])
