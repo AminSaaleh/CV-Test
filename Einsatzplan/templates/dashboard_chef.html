@@ -1263,6 +1263,40 @@ button.confirm, button.reject, button.delete, button.inline{
 }
 </style>
 
+
+<style>
+/* Final main calendar layout fix */
+#calendar{
+  min-height: 820px !important;
+}
+#calendar-fixed-host{
+  min-height: 820px !important;
+  width: 100% !important;
+}
+#calendar-fixed-host .fc-daygrid-day-frame{
+  min-height: 110px !important;
+}
+#calendar-fixed-host .fc-daygrid-day-top{
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+#calendar-fixed-host .fc-daygrid-day-number{
+  display: inline-block !important;
+  color: #0b2545 !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  padding: 6px 8px !important;
+}
+#calendar-fixed-host .fc-daygrid-day-events{
+  min-height: 2.2em !important;
+}
+#calendar-fixed-host .fc-event{
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+</style>
+
 </head>
 <body>
   <nav>
@@ -5607,28 +5641,26 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script>
-/* Deterministischer Kalender-/Planungs-Fix
-   - ignoriert alte doppelte Tab-Handler
-   - baut Hauptkalender und Planung selbst neu auf
-   - nutzt eigene globale Instanzen ohne Kollision mit id="calendar"
+/* Final main-calendar rebuild:
+   - rendert den Kalender in einem eigenen Host innerhalb von #calendar
+   - erzwingt sichtbare Tageszahlen und Event-Titel
+   - umgeht alte kollidierende Kalender-Instanzen
 */
 (function(){
-  function $(id){ return document.getElementById(id); }
-  function show(id){ const el=$(id); if(el) el.style.display="block"; }
-  function hide(id){ const el=$(id); if(el) el.style.display="none"; }
+  function id(x){ return document.getElementById(x); }
 
-  async function fetchEventsData(){
+  async function fetchMainCalendarEvents(){
     try{
       const res = await fetch("/events?ts=" + Date.now(), { credentials: "same-origin" });
       const data = await res.json().catch(()=>[]);
       return Array.isArray(data) ? data : [];
     }catch(err){
-      console.error("Events konnten nicht geladen werden:", err);
+      console.error("Kalender-Events konnten nicht geladen werden:", err);
       return [];
     }
   }
 
-  function normalizeEvent(ev){
+  function normalize(ev){
     const out = Object.assign({}, ev || {});
     if(out.start){
       const s = new Date(out.start);
@@ -5638,230 +5670,120 @@ document.addEventListener("DOMContentLoaded", function(){
       const e = new Date(out.planned_end_time);
       if(!isNaN(e)) out.end = e.toISOString();
     }
+    if(!out.title) out.title = "(ohne Titel)";
     return out;
   }
 
-  function openEventDetails(info){
+  function ensureCalendarHost(){
+    const wrap = id("calendar");
+    if(!wrap) return null;
+    let host = id("calendar-fixed-host");
+    if(!host){
+      wrap.innerHTML = "";
+      host = document.createElement("div");
+      host.id = "calendar-fixed-host";
+      wrap.appendChild(host);
+    }
+    return host;
+  }
+
+  function openDetails(info){
     try{
       if(typeof openDetailsModal === "function"){
         openDetailsModal(info.event);
       }
     }catch(err){
-      console.error("Details-Modal Fehler:", err);
+      console.error("openDetailsModal Fehler:", err);
     }
   }
 
-  function buildPlanningContent(arg){
-    const ev = arg.event.extendedProps || {};
-    const responses = ev.responses || {};
-    const confirmed = Object.keys(responses).filter(function(username){
-      const r = responses[username] || {};
-      return String(r.status || "").trim() === "bestätigt";
-    });
+  function dayCellContent(arg){
+    return { html: '<span class="fc-daynum-fixed">' + arg.date.getDate() + '</span>' };
+  }
 
-    let required = Number(ev.required_staff ?? 0);
-    if(!isFinite(required) || required < 0) required = 0;
-
+  function eventContent(arg){
     const wrap = document.createElement("div");
-
     const title = document.createElement("div");
-    title.className = "plan-title " + ((String(ev.category || "CP").toUpperCase() === "CV") ? "title-cv" : "title-cp");
-    title.textContent = String(arg.event.title || "") + " (" + confirmed.length + "/" + required + ")";
+    title.textContent = arg.event.title || "(ohne Titel)";
+    title.style.fontWeight = "700";
+    title.style.fontSize = "12px";
+    title.style.whiteSpace = "normal";
     wrap.appendChild(title);
-
-    const staff = document.createElement("div");
-    staff.className = "plan-staff";
-    staff.innerHTML = confirmed.length
-      ? confirmed.map(function(u){ return '<div class="plan-staff-row">' + u + '</div>'; }).join("")
-      : "—";
-    wrap.appendChild(staff);
-
     return { domNodes: [wrap] };
   }
 
-  function ensureMainCalendar(){
-    const node = $("calendar");
-    if(!node || !window.FullCalendar) return null;
-    if(window.__mainCalendarFixed) return window.__mainCalendarFixed;
+  function buildMainCalendar(){
+    const host = ensureCalendarHost();
+    if(!host || !window.FullCalendar) return null;
 
-    try{ node.innerHTML = ""; }catch(_){}
+    if(window.__mainCalendarRebuilt){
+      return window.__mainCalendarRebuilt;
+    }
 
-    const cal = new FullCalendar.Calendar(node, {
+    const cal = new FullCalendar.Calendar(host, {
       initialView: "dayGridMonth",
       locale: "de",
       firstDay: 1,
-      height: "85vh",
-      eventDisplay: "list-item",
+      height: "auto",
+      contentHeight: "auto",
+      fixedWeekCount: false,
+      showNonCurrentDates: true,
+      dayMaxEventRows: 4,
+      eventDisplay: "block",
       displayEventTime: true,
       eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
       headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,dayGridWeek" },
+      buttonText: { today: "today", month: "month", week: "week" },
+      dayCellContent: dayCellContent,
       dayCellClassNames: function(arg){
         const dow = arg.date.getDay();
         return (dow === 0 || dow === 6) ? ["weekend"] : [];
       },
       events: async function(info, successCallback){
-        const data = (await fetchEventsData()).map(normalizeEvent);
+        const data = (await fetchMainCalendarEvents()).map(normalize);
         successCallback(data);
       },
-      eventClick: openEventDetails
+      eventContent: eventContent,
+      eventClick: openDetails
     });
 
     cal.render();
-    window.__mainCalendarFixed = cal;
+    window.__mainCalendarRebuilt = cal;
     return cal;
   }
 
-  function ensurePlanningCalendar(){
-    const node = $("planning-calendar");
-    if(!node || !window.FullCalendar) return null;
-    if(window.__planningCalendarFixed) return window.__planningCalendarFixed;
-
-    try{ node.innerHTML = ""; }catch(_){}
-
-    const cal = new FullCalendar.Calendar(node, {
-      headerToolbar: { left: "prev,next today", center: "title", right: "" },
-      initialView: "dayGridWeek",
-      locale: "de",
-      firstDay: 1,
-      height: "85vh",
-      selectable: false,
-      displayEventTime: false,
-      dayCellClassNames: function(arg){
-        const dow = arg.date.getDay();
-        return (dow === 0 || dow === 6) ? ["weekend"] : [];
-      },
-      dayHeaderContent: function(arg){
-        const d = arg.date;
-        const dd = String(d.getDate()).padStart(2,'0');
-        const mm = String(d.getMonth()+1).padStart(2,'0');
-        const wd = ['So','Mo','Di','Mi','Do','Fr','Sa'][d.getDay()];
-        return { html: '<b>' + wd + '., ' + dd + '.' + mm + '.</b>' };
-      },
-      events: async function(info, successCallback){
-        const data = (await fetchEventsData()).map(normalizeEvent);
-        successCallback(data);
-      },
-      eventContent: buildPlanningContent,
-      eventClick: openEventDetails
-    });
-
-    cal.render();
-    window.__planningCalendarFixed = cal;
-    return cal;
-  }
-
-  function refreshMain(){
-    const cal = ensureMainCalendar();
+  function refreshMainCalendar(){
+    const cal = buildMainCalendar();
     if(!cal) return;
     try{
       cal.render();
       if(typeof cal.updateSize === "function") cal.updateSize();
       if(typeof cal.refetchEvents === "function") cal.refetchEvents();
     }catch(err){
-      console.error("Hauptkalender-Refresh Fehler:", err);
+      console.error("Main calendar refresh Fehler:", err);
     }
   }
 
-  function refreshPlanning(){
-    const cal = ensurePlanningCalendar();
-    if(!cal) return;
-    try{
-      cal.render();
-      if(typeof cal.updateSize === "function") cal.updateSize();
-      if(typeof cal.refetchEvents === "function") cal.refetchEvents();
-    }catch(err){
-      console.error("Planungs-Refresh Fehler:", err);
-    }
-  }
-
-  function setActive(tabId){
-    ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"].forEach(function(id){
-      const el = $(id);
-      if(el) el.classList.toggle("active", id === tabId);
-    });
-  }
-
-  function openSection(key){
-    hide("calendar");
-    hide("termine");
-    hide("planning");
-    hide("user-management");
-    hide("report");
-    hide("counter");
-
-    if(key === "calendar"){
-      show("calendar");
-      setActive("tab-calendar");
-      setTimeout(refreshMain, 50);
-      setTimeout(refreshMain, 250);
-      return;
-    }
-    if(key === "planning"){
-      show("planning");
-      setActive("tab-planning");
-      setTimeout(refreshPlanning, 50);
-      setTimeout(refreshPlanning, 250);
-      return;
-    }
-    if(key === "termine"){
-      show("termine");
-      setActive("tab-termine");
-      try{ if(typeof loadMyTermine === "function") loadMyTermine(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key === "users"){
-      show("user-management");
-      setActive("tab-users");
-      try{ if(typeof loadUsers === "function") loadUsers(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key === "report"){
-      show("report");
-      setActive("tab-report");
-      try{ if(typeof loadReport === "function") loadReport(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key === "counter"){
-      show("counter");
-      setActive("tab-counter");
-      try{ if(typeof loadCounter === "function") loadCounter(); }catch(err){ console.error(err); }
-      return;
-    }
-  }
-
-  function rebind(id, key){
-    const oldEl = $(id);
-    if(!oldEl) return;
-    const newEl = oldEl.cloneNode(true);
-    oldEl.parentNode.replaceChild(newEl, oldEl);
-    newEl.addEventListener("click", function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      openSection(key);
-      return false;
+  function bindTab(){
+    const tab = id("tab-calendar");
+    if(!tab || tab.dataset.mainTabBound === "1") return;
+    tab.dataset.mainTabBound = "1";
+    tab.addEventListener("click", function(){
+      setTimeout(refreshMainCalendar, 60);
+      setTimeout(refreshMainCalendar, 250);
+      setTimeout(refreshMainCalendar, 700);
     }, true);
   }
 
-  function init(){
-    rebind("tab-calendar","calendar");
-    rebind("tab-termine","termine");
-    rebind("tab-planning","planning");
-    rebind("tab-users","users");
-    rebind("tab-report","report");
-    rebind("tab-counter","counter");
+  document.addEventListener("DOMContentLoaded", function(){
+    bindTab();
+    setTimeout(refreshMainCalendar, 250);
+  });
 
-    const role = String(window.ROLE || "").toLowerCase();
-    const isPlanner = role === "planer" || role === "planner_bbs";
-    openSection(isPlanner ? "planning" : "calendar");
-  }
-
-  document.addEventListener("DOMContentLoaded", init);
   window.addEventListener("load", function(){
-    setTimeout(init, 120);
-    setTimeout(function(){
-      if($("calendar") && $("calendar").style.display !== "none") refreshMain();
-      if($("planning") && $("planning").style.display !== "none") refreshPlanning();
-    }, 500);
+    bindTab();
+    setTimeout(refreshMainCalendar, 400);
+    setTimeout(refreshMainCalendar, 1200);
   });
 })();
 </script>
