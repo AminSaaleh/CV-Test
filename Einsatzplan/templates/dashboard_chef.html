@@ -1297,6 +1297,142 @@ button.confirm, button.reject, button.delete, button.inline{
 }
 </style>
 
+
+<style id="chef-calendar-employee-look">
+/* Chef-Kalender optisch an Mitarbeiteransicht angleichen */
+.scroll-x.calendar-scroll{
+  overflow-x: visible !important;
+  -webkit-overflow-scrolling: auto !important;
+}
+.scroll-x.calendar-scroll > *{
+  min-width: 0 !important;
+}
+
+#calendar,
+#calendar-fixed-host{
+  min-height: unset !important;
+  height: auto !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  overflow: visible !important;
+}
+
+#calendar .fc,
+#calendar-fixed-host .fc{
+  background: #fff !important;
+}
+
+#calendar .fc .fc-toolbar-title,
+#calendar-fixed-host .fc .fc-toolbar-title{
+  font-size: 15px !important;
+}
+
+#calendar .fc .fc-button,
+#calendar-fixed-host .fc .fc-button{
+  padding: 6px 8px !important;
+  font-size: 12px !important;
+}
+
+#calendar .fc-daygrid-day-frame,
+#calendar-fixed-host .fc-daygrid-day-frame{
+  min-height: unset !important;
+}
+
+#calendar .fc-daygrid-day-top,
+#calendar-fixed-host .fc-daygrid-day-top{
+  display: flex !important;
+  justify-content: flex-end !important;
+}
+
+#calendar .fc-daygrid-day-number,
+#calendar-fixed-host .fc-daygrid-day-number{
+  display: inline-block !important;
+  font-weight: 800 !important;
+  color: #000 !important;
+  opacity: 1 !important;
+  padding: 2px 6px !important;
+}
+
+#calendar .fc .fc-daygrid-day.fc-day-today,
+#calendar-fixed-host .fc .fc-daygrid-day.fc-day-today,
+#planning-calendar .fc .fc-daygrid-day.fc-day-today{
+  background: #d8f5d8 !important;
+}
+
+#calendar .fc-col-header-cell.fc-day-today,
+#calendar-fixed-host .fc-col-header-cell.fc-day-today,
+#planning-calendar .fc-col-header-cell.fc-day-today{
+  background: #d8f5d8 !important;
+}
+
+#calendar .fc .fc-daygrid-day.fc-day-sat,
+#calendar .fc .fc-daygrid-day.fc-day-sun,
+#calendar-fixed-host .fc .fc-daygrid-day.fc-day-sat,
+#calendar-fixed-host .fc .fc-daygrid-day.fc-day-sun,
+#planning-calendar .fc .fc-daygrid-day.fc-day-sat,
+#planning-calendar .fc .fc-daygrid-day.fc-day-sun,
+#calendar .fc .fc-col-header-cell.fc-day-sat,
+#calendar .fc .fc-col-header-cell.fc-day-sun,
+#calendar-fixed-host .fc .fc-col-header-cell.fc-day-sat,
+#calendar-fixed-host .fc .fc-col-header-cell.fc-day-sun,
+#planning-calendar .fc .fc-col-header-cell.fc-day-sat,
+#planning-calendar .fc .fc-col-header-cell.fc-day-sun{
+  background: #f2f2f2 !important;
+}
+
+#calendar .fc .fc-daygrid-event,
+#calendar-fixed-host .fc .fc-daygrid-event,
+#planning-calendar .fc .fc-daygrid-event{
+  padding: 1px 2px !important;
+}
+
+#calendar .fc .fc-daygrid-event .fc-event-main,
+#calendar-fixed-host .fc .fc-daygrid-event .fc-event-main,
+#planning-calendar .fc .fc-daygrid-event .fc-event-main{
+  line-height: 1.1 !important;
+  color: #111 !important;
+}
+
+#calendar .fc .fc-event-time,
+#calendar-fixed-host .fc .fc-event-time,
+#planning-calendar .fc .fc-event-time{
+  font-size: 10px !important;
+}
+
+#calendar .fc-event-title,
+#calendar-fixed-host .fc-event-title,
+#planning-calendar .fc-event-title{
+  font-size: 10.5px !important;
+  font-weight: 700 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#calendar .cat-cp,
+#calendar-fixed-host .cat-cp,
+#planning-calendar .cat-cp{
+  background-color: #fff3cd !important;
+  border-color: #f1c40f !important;
+}
+
+#calendar .cat-cv,
+#calendar-fixed-host .cat-cv,
+#planning-calendar .cat-cv{
+  background-color: #dbeafe !important;
+  border-color: #60a5fa !important;
+}
+
+#calendar .cat-cp .fc-event-main,
+#calendar .cat-cv .fc-event-main,
+#calendar-fixed-host .cat-cp .fc-event-main,
+#calendar-fixed-host .cat-cv .fc-event-main,
+#planning-calendar .cat-cp .fc-event-main,
+#planning-calendar .cat-cv .fc-event-main{
+  color: #111 !important;
+}
+</style>
+
 </head>
 <body>
   <nav>
