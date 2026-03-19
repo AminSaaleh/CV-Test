@@ -7,6 +7,9 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    #calendar, #calendar-fixed-host{min-height:92vh;}
+    #planning-calendar{min-height:86vh;}
+    #planning{padding-bottom:12px;}
     .fc-daygrid-event-dot{
       height:16px;width:16px;border-radius:50%;
       background-color:currentColor !important;
@@ -2892,7 +2895,7 @@ document.getElementById("planning").style.display="block";
         locale:'de',
         firstDay: 1,
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
-        height:"85vh",
+        height:"92vh",
 
         dayCellClassNames: (arg)=>{
           const dow = arg.date.getDay();
@@ -2900,6 +2903,13 @@ document.getElementById("planning").style.display="block";
         },
 
         customButtons: {
+          addEventBtn: {
+            text: "➕ Einsatz",
+            click: () => {
+              selectedDate = todayYmd();
+              openEventModal();
+            }
+          },
           duplicateBtn: {
             text: "📄 Duplizieren",
             click: () => openDuplicateModal()
@@ -2912,7 +2922,7 @@ document.getElementById("planning").style.display="block";
           } : {})
         },
         headerToolbar: {
-          left: CAN_MAIL_ALL ? "prev,next today duplicateBtn mailAllBtn" : "prev,next today duplicateBtn",
+          left: CAN_MAIL_ALL ? "prev,next today addEventBtn duplicateBtn mailAllBtn" : "prev,next today addEventBtn duplicateBtn",
           center: "title",
           right: "dayGridMonth,dayGridWeek"
         },
@@ -3129,13 +3139,13 @@ document.getElementById("planning").style.display="block";
 
 
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
-          height:"85vh",
+          height:"92vh",
 
         dayCellClassNames: (arg)=>{
           const dow = arg.date.getDay();
           return (dow===0 || dow===6) ? ['weekend'] : [];
         },
-          selectable:false,
+          selectable:true,
           eventDisplay: "block",
           displayEventTime: false,          dayHeaderContent: (arg) => {
             const d = arg.date;
@@ -3146,6 +3156,14 @@ document.getElementById("planning").style.display="block";
           },
           dayMaxEventRows: false,
           dayMaxEvents: false,
+
+          dateClick: info => {
+            try{
+              if(info && info.jsEvent && info.jsEvent.target && info.jsEvent.target.closest && info.jsEvent.target.closest('.fc-event')){
+                return;
+              }
+            }catch(_){ }
+          },
 
           events: async (info,success)=>{
             let res=await fetch("/events");
@@ -5764,11 +5782,13 @@ document.addEventListener("DOMContentLoaded", function(){
       initialView: "dayGridMonth",
       locale: "de",
       firstDay: 1,
-      height: "auto",
-      contentHeight: "auto",
+      height: "92vh",
+      contentHeight: "90vh",
+      expandRows: true,
       fixedWeekCount: false,
       showNonCurrentDates: true,
       dayMaxEventRows: 4,
+      selectable: true,
       eventDisplay: "block",
       displayEventTime: true,
       eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
@@ -5778,6 +5798,26 @@ document.addEventListener("DOMContentLoaded", function(){
       dayCellClassNames: function(arg){
         const dow = arg.date.getDay();
         return (dow === 0 || dow === 6) ? ["weekend"] : [];
+      },
+      dateClick: function(info){
+        try{
+          if(info && info.jsEvent && info.jsEvent.target && info.jsEvent.target.closest && info.jsEvent.target.closest('.fc-event')){
+            return;
+          }
+        }catch(_){ }
+        try{
+          if(typeof selectedDate !== 'undefined'){
+            selectedDate = info.dateStr;
+          }
+          window.selectedDate = info.dateStr;
+        }catch(_){
+          window.selectedDate = info.dateStr;
+        }
+        if(typeof window.openEventModal === 'function'){
+          window.openEventModal();
+        } else if(typeof openEventModal === 'function'){
+          openEventModal();
+        }
       },
       events: async function(info, successCallback){
         const data = (await fetchMainCalendarEvents()).map(normalize);
@@ -5789,12 +5829,14 @@ document.addEventListener("DOMContentLoaded", function(){
 
     cal.render();
     window.__mainCalendarRebuilt = cal;
+    window.calendar = cal;
     return cal;
   }
 
   function refreshMainCalendar(){
     const cal = buildMainCalendar();
     if(!cal) return;
+    window.calendar = cal;
     try{
       cal.render();
       if(typeof cal.updateSize === "function") cal.updateSize();
@@ -5824,6 +5866,98 @@ document.addEventListener("DOMContentLoaded", function(){
     bindTab();
     setTimeout(refreshMainCalendar, 400);
     setTimeout(refreshMainCalendar, 1200);
+  });
+})();
+</script>
+
+
+<script>
+/* Final Stabilizer: Planung laden, Einsätze aus Planung anlegen, Kalenderhöhe korrigieren */
+(function(){
+  function canCreateEvents(){
+    const role = String(window.ROLE || '').trim().toLowerCase();
+    return ['chef','vorgesetzter','vorgesetzter_cp','planer','planner_bbs'].includes(role);
+  }
+
+  function todayYmd(){
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth()+1).padStart(2,'0');
+    const dd = String(now.getDate()).padStart(2,'0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+
+  function ensureCalendarSizes(){
+    ['calendar','calendar-fixed-host','planning-calendar'].forEach(id => {
+      const el = document.getElementById(id);
+      if(el){
+        el.style.minHeight = (id === 'planning-calendar') ? '86vh' : '92vh';
+      }
+    });
+  }
+
+  function renderPlanningReliable(){
+    try{
+      const planningWrap = document.getElementById('planning');
+      if(planningWrap) planningWrap.style.display = 'block';
+      if(typeof window.initPlanningCalendar === 'function' && !window.planningCalendar){
+        window.initPlanningCalendar();
+      } else if(typeof initPlanningCalendar === 'function' && !window.planningCalendar){
+        initPlanningCalendar();
+      }
+      const pc = window.planningCalendar || (typeof planningCalendar !== 'undefined' ? planningCalendar : null);
+      if(pc){
+        requestAnimationFrame(() => {
+          try{ pc.render(); }catch(e){ console.error(e); }
+          try{ pc.updateSize(); }catch(e){ }
+          try{ pc.refetchEvents(); }catch(e){ console.error(e); }
+        });
+        setTimeout(() => {
+          try{ pc.render(); }catch(e){ }
+          try{ pc.updateSize(); }catch(e){ }
+          try{ pc.refetchEvents(); }catch(e){ }
+        }, 120);
+      }
+    }catch(err){
+      console.error('Planung render fehlgeschlagen', err);
+    }
+  }
+
+  const oldOpenEventModal = window.openEventModal;
+  window.openEventModal = function(){
+    if(!canCreateEvents()){
+      alert('Für diese Rolle ist das Anlegen von Einsätzen nicht freigeschaltet.');
+      return;
+    }
+    if(!window.selectedDate && typeof selectedDate !== 'undefined' && !selectedDate){
+      selectedDate = todayYmd();
+    }
+    if(!window.selectedDate && typeof selectedDate === 'undefined'){
+      window.selectedDate = todayYmd();
+    }
+    try{
+      const startInput = document.getElementById('start-time');
+      if(startInput && !startInput.value) startInput.value = '08:00';
+    }catch(_){ }
+    return oldOpenEventModal ? oldOpenEventModal.apply(this, arguments) : undefined;
+  };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    ensureCalendarSizes();
+
+    const planningTab = document.getElementById('tab-planning');
+    if(planningTab){
+      planningTab.addEventListener('click', function(){
+        setTimeout(renderPlanningReliable, 0);
+      }, true);
+    }
+
+    const isPlanner = ['planer','planner_bbs'].includes(String(window.ROLE || '').trim().toLowerCase());
+    if(isPlanner){
+      setTimeout(renderPlanningReliable, 0);
+      setTimeout(renderPlanningReliable, 150);
+    }
+
   });
 })();
 </script>
