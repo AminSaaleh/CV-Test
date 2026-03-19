@@ -2359,7 +2359,11 @@ button.confirm, button.reject, button.delete, button.inline{
   </script>
   <script>
     const ROLE = "{{ role|default('chef') }}";
-    const IS_PLANNER = (String(ROLE).toLowerCase() === 'planer' || String(ROLE).toLowerCase() === 'planner_bbs');
+    window.ROLE = ROLE;
+    const NORMALIZED_ROLE = String(ROLE).trim().toLowerCase().replace(/\s+/g, '_');
+    const CAN_VIEW_FULL_USERS = ['chef','vorgesetzter'].includes(NORMALIZED_ROLE);
+    const USER_LIST_ENDPOINT = CAN_VIEW_FULL_USERS ? '/users' : '/users_public';
+    const IS_PLANNER = (NORMALIZED_ROLE === 'planer' || NORMALIZED_ROLE === 'planner_bbs');
     // ✅ Mobile helper: ensure taps open immediately (iOS/Safari sometimes delays click inside scroll containers)
     function bindImmediateTap(el, handler){
       if(!el) return;
@@ -2743,13 +2747,8 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
 
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
-      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
-        let resUsers = await fetch("/users");
-        let users = await resUsers.json();
-        usersList = sortUsersByLastFirst(users);
-        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
-      } else {
-        let resUsers = await fetch("/users_public");
+      {
+        let resUsers = await fetch(USER_LIST_ENDPOINT);
         let users = await resUsers.json();
         usersList = sortUsersByLastFirst(users);
         users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
@@ -4085,7 +4084,7 @@ document.getElementById("confirmed-counter").textContent =
     }
 
     async function loadUsers(){
-      let res=await fetch("/users");
+      let res=await fetch(USER_LIST_ENDPOINT);
       let users=await res.json();
 
       // ✅ Alphabetisch nach Nachname, Vorname
@@ -4658,7 +4657,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     // ZÄHLER laden (Einsätze pro Mitarbeiter: Jan–Dez)
     async function loadCounter(){
       // Users + Cache
-      let ures = await fetch("/users");
+      let ures = await fetch(USER_LIST_ENDPOINT);
       usersList = sortUsersByLastFirst(await ures.json());
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
@@ -5571,102 +5570,7 @@ document.addEventListener("DOMContentLoaded", function(){
 
 
 <script>
-(function(){
-  function safeGet(id){ return document.getElementById(id); }
-  function hideAllSections(){
-    const ids = ['calendar','termine','planning','user-management','report','counter'];
-    ids.forEach(id=>{ const el=safeGet(id); if(el) el.style.display='none'; });
-  }
-  function setActive(tabId){
-    ['tab-calendar','tab-termine','tab-planning','tab-users','tab-report','tab-counter'].forEach(id=>{
-      const el=safeGet(id); if(el) el.classList.toggle('active', id===tabId);
-    });
-  }
-  function renderCalendarSafe(){
-    try{
-      if(typeof calendar !== 'undefined' && calendar){
-        calendar.render();
-        if(typeof calendar.updateSize === 'function') calendar.updateSize();
-        if(typeof calendar.refetchEvents === 'function') calendar.refetchEvents();
-      }
-    }catch(err){ console.error('Kalender render fehlgeschlagen', err); }
-  }
-  function renderPlanningSafe(){
-    try{
-      if(typeof planningCalendar === 'undefined' || !planningCalendar){
-        if(typeof initPlanningCalendar === 'function') initPlanningCalendar();
-      }
-      if(typeof planningCalendar !== 'undefined' && planningCalendar){
-        planningCalendar.render();
-        if(typeof planningCalendar.updateSize === 'function') planningCalendar.updateSize();
-        if(typeof planningCalendar.refetchEvents === 'function') planningCalendar.refetchEvents();
-      }
-    }catch(err){ console.error('Planung render fehlgeschlagen', err); }
-  }
-  function showSection(key){
-    hideAllSections();
-    if(key==='calendar'){
-      const el=safeGet('calendar'); if(el) el.style.display='block';
-      setActive('tab-calendar');
-      renderCalendarSafe();
-      return;
-    }
-    if(key==='termine'){
-      const el=safeGet('termine'); if(el) el.style.display='block';
-      setActive('tab-termine');
-      try{ if(typeof loadMyTermine === 'function') loadMyTermine(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key==='planning'){
-      const el=safeGet('planning'); if(el) el.style.display='block';
-      setActive('tab-planning');
-      renderPlanningSafe();
-      return;
-    }
-    if(key==='users'){
-      const el=safeGet('user-management'); if(el) el.style.display='block';
-      setActive('tab-users');
-      try{ if(typeof refreshCustomLanguages === 'function') refreshCustomLanguages(); }catch(err){ console.error(err); }
-      try{ if(typeof loadUsers === 'function') loadUsers(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key==='report'){
-      const el=safeGet('report'); if(el) el.style.display='block';
-      setActive('tab-report');
-      try{ if(typeof loadReport === 'function') loadReport(); }catch(err){ console.error(err); }
-      return;
-    }
-    if(key==='counter'){
-      const el=safeGet('counter'); if(el) el.style.display='block';
-      setActive('tab-counter');
-      try{ if(typeof loadCounter === 'function') loadCounter(); }catch(err){ console.error(err); }
-      return;
-    }
-  }
-  function rebindTab(id, key){
-    const oldEl = safeGet(id);
-    if(!oldEl) return;
-    const newEl = oldEl.cloneNode(true);
-    oldEl.parentNode.replaceChild(newEl, oldEl);
-    newEl.addEventListener('click', function(e){ e.preventDefault(); showSection(key); });
-  }
-  window.__forceShowDashboardSection = showSection;
-  document.addEventListener('DOMContentLoaded', function(){
-    rebindTab('tab-calendar','calendar');
-    rebindTab('tab-termine','termine');
-    rebindTab('tab-planning','planning');
-    rebindTab('tab-users','users');
-    rebindTab('tab-report','report');
-    rebindTab('tab-counter','counter');
-
-    const isPlanner = String(window.ROLE || '').toLowerCase()==='planer' || String(window.ROLE || '').toLowerCase()==='planner_bbs';
-    if(isPlanner){
-      showSection('planning');
-    } else {
-      showSection('calendar');
-    }
-  });
-})();
+// Doppelter Tab-Manager entfernt. Die primäre Tab-Logik weiter oben bleibt aktiv.
 </script>
 
 <script>
