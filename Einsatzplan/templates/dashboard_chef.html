@@ -7,9 +7,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    #calendar, #calendar-fixed-host{min-height:92vh;}
-    #planning-calendar{min-height:86vh;}
-    #planning{padding-bottom:12px;}
     .fc-daygrid-event-dot{
       height:16px;width:16px;border-radius:50%;
       background-color:currentColor !important;
@@ -38,7 +35,7 @@
     .form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
     .form-row > *{flex:1;min-width:160px;}
     /* ✅ Checkbox + Text sollen eng beieinander stehen (keine 100%-Breite aus globalem CSS übernehmen) */
-    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:4px;margin:6px 0;flex-wrap:nowrap;width:auto;}
+    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:10px 0;flex-wrap:nowrap;width:auto;}
     .checkbox-row input[type="checkbox"]{margin:0;width:auto !important;flex:0 0 auto;display:inline-block;}
     .checkbox-row label{margin:0;white-space:nowrap;width:auto !important;flex:0 1 auto;display:inline-block;}
     .muted{color:#666;font-size:12px;}
@@ -408,6 +405,22 @@
   background: #dbeafe !important;
 }
 </style>
+<style>
+/* ✅ Planung: KEINE Hervorhebung für den heutigen Tag (weder Hintergrund noch Header) */
+#planning-calendar .fc-day-today{
+  background: transparent !important;
+}
+#planning-calendar .fc-col-header-cell.fc-day-today{
+  background: transparent !important;
+}
+#planning-calendar .fc-day-today .fc-daygrid-day-number{
+  font-weight: inherit !important;
+  color: inherit !important;
+}
+</style>
+
+
+
 <script>
 // ✅ CP/CV Badge neben Firma im Einsatzdetails-Modal
 function updateFirmaCategoryBadge(ev){
@@ -745,697 +758,45 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
-
-<style>
-/* ✅ Personal: einheitliches, modernes Layout */
-#user-management{max-width:none;width:100%;margin:0;}
-#user-management h3{margin-bottom:10px;}
-#user-management .user-form{
-  background:#fff;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:16px;
-  padding:16px;
-  box-shadow:0 8px 22px rgba(0,0,0,.06);
-}
-#user-management .user-form h4{margin:14px 0 8px 0;}
-#user-management .user-form hr{border:none;border-top:1px solid rgba(0,0,0,.08);margin:14px 0;}
-#user-management .user-form .form-row{
-  display:grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap:12px;
-  align-items:end;
-  margin-bottom:12px;
-}
-#user-management .user-form label{
-  font-size:12px;
-  opacity:.85;
-  display:block;
-  margin:0 0 4px 2px;
-}
-#user-management .user-form input,
-#user-management .user-form select{
-  width:100%;
-  box-sizing:border-box;
-}
-#user-management .check-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap:6px 10px;
-  padding:10px 12px;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:12px;
-  background:rgba(0,0,0,.02);
-  margin-bottom:12px;
-}
-#user-management .check-grid label{margin:0;font-size:13px;display:flex;gap:4px;align-items:center;}
-#user-management .photo-box{
-  border:1px dashed rgba(0,0,0,.18);
-  border-radius:12px;
-  padding:10px 12px;
-  background:rgba(0,0,0,.02);
-}
-#user-management .user-table{width:100%;overflow:auto;display:block;}
-#user-management .user-table thead, 
-#user-management .user-table tbody{display:table;width:100%;table-layout:fixed;}
-#user-management .user-table th, #user-management .user-table td{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+<style id="personal-view-upgrade">
+.personal-shell{display:flex;flex-direction:column;gap:18px;}
+.personal-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:18px;box-shadow:0 10px 24px rgba(15,23,42,.05);}
+.personal-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;}
+.personal-grid .col-3{grid-column:span 3;}
+.personal-grid .col-4{grid-column:span 4;}
+.personal-grid .col-6{grid-column:span 6;}
+.personal-grid .col-8{grid-column:span 8;}
+.personal-grid .col-12{grid-column:span 12;}
+.personal-card h4{margin:0 0 12px 0;font-size:18px;}
+.personal-sub{margin:0 0 14px 0;color:#6b7280;font-size:13px;}
+.personal-grid label{display:block;font-size:13px;font-weight:700;margin-bottom:4px;}
+.personal-grid input,.personal-grid select,.personal-grid textarea{width:100%;box-sizing:border-box;}
+.personal-grid textarea{min-height:84px;resize:vertical;}
+.personal-check-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;}
+.personal-check-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;}
+.personal-check-item input{width:auto !important;margin:0;}
+.personal-actions{display:flex;justify-content:flex-end;gap:12px;align-items:center;flex-wrap:wrap;}
+.personal-primary{padding:14px 22px;border:0;border-radius:14px;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;font-weight:800;cursor:pointer;}
+.personal-secondary{padding:10px 14px;border-radius:12px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-weight:700;}
+.personal-table th{background:linear-gradient(180deg,#f8fafc,#e5e7eb);}
+.personal-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;}
+.personal-status.ok{background:#e8f7ec;color:#166534;border:1px solid #86efac;}
+.personal-status.no{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
+.personal-mini-actions{display:flex;gap:8px;flex-wrap:wrap;}
+.personal-mini-actions button{padding:8px 10px;border-radius:10px;border:0;cursor:pointer;font-weight:700;}
+.personal-mini-actions .pdf{background:#dbeafe;}
+.personal-mini-actions .edit{background:#dcfce7;}
+.personal-mini-actions .delete{background:#fee2e2;}
+.personal-mini-actions .lock{background:#fef3c7;}
+.personal-avatar{display:flex;gap:12px;align-items:center;}
+.personal-avatar-preview{width:72px;height:72px;border-radius:16px;border:1px solid #d1d5db;background:#f3f4f6;object-fit:cover;display:block;}
+.personal-dynamic-list{display:flex;flex-direction:column;gap:8px;}
+.personal-dynamic-row{display:flex;gap:8px;align-items:center;}
+.personal-dynamic-row input{flex:1;}
+.personal-note{font-size:12px;color:#6b7280;}
+@media (max-width: 1100px){.personal-check-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.personal-grid .col-3,.personal-grid .col-4,.personal-grid .col-6,.personal-grid .col-8{grid-column:span 6;}}
+@media (max-width: 720px){.personal-grid .col-3,.personal-grid .col-4,.personal-grid .col-6,.personal-grid .col-8,.personal-grid .col-12{grid-column:span 12;}.personal-check-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
 </style>
-
-
-<style>
-/* ✅ Heute wieder grün markieren (Kalender + Planung) */
-#calendar .fc-daygrid-day.fc-day-today,
-#planning-calendar .fc-daygrid-day.fc-day-today{
-  background:#e9fbe9 !important;
-}
-#calendar .fc-col-header-cell.fc-day-today,
-#planning-calendar .fc-col-header-cell.fc-day-today{
-  background:#e6f6ea !important;
-}
-</style>
-
-<style>
-/* ✅ Checkbox-Grids in Modals (Bearbeiten) */
-.modal-check-grid{
-  display:grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap:6px 10px;
-  padding:10px 12px;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:12px;
-  background:rgba(0,0,0,.02);
-  margin:10px 0 12px 0;
-}
-.modal-check-grid label{margin:0;font-size:13px;display:flex;gap:4px;align-items:center;}
-/* Sprach-Checkboxen: etwas kompakter */
-.lang-grid{margin-top:6px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap:4px 8px; padding:8px 10px;}
-.lang-grid label{gap:4px;}
-</style>
-
-<style>
-/* ✅ Kompakte Checkbox-Grids (Add-Form + Modals) */
-.check-grid, .modal-check-grid{
-  display:grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap:4px 12px;
-  padding:8px 10px;
-  border:1px solid rgba(0,0,0,.08);
-  border-radius:12px;
-  background:rgba(0,0,0,.02);
-  margin:8px 0 10px 0;
-}
-.check-grid label, .modal-check-grid label{
-  margin:0;
-  font-size:13px;
-  display:flex;
-  align-items:center;
-  justify-content:flex-start;
-  gap:6px;
-  min-width:0;
-}
-.check-grid input[type="checkbox"], .modal-check-grid input[type="checkbox"]{
-  margin:0;
-}
-.check-grid label span, .modal-check-grid label span{
-  overflow:hidden;
-  text-overflow:ellipsis;
-  white-space:nowrap;
-}
-
-/* Sprachen: noch etwas kompakter */
-.check-grid.lang-grid, .modal-check-grid.lang-grid{
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap:3px 10px;
-}
-
-/* Responsive */
-@media (max-width: 900px){
-  .check-grid, .modal-check-grid{ grid-template-columns: repeat(2, minmax(0,1fr)); }
-}
-@media (max-width: 520px){
-  .check-grid, .modal-check-grid{ grid-template-columns: 1fr; }
-}
-</style>
-
-
-
-<style>
-/* Einheitliche Buttons (Farben bleiben aus style.css) */
-
-/* Basis für ALLE Buttons (außer FullCalendar) */
-button:not(.fc-button){
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  border-radius:10px;
-  padding:8px 12px;
-  font-size:14px;
-  line-height:1;
-  white-space:nowrap;
-  cursor:pointer;
-
-  border:1px solid rgba(0,0,0,.16);
-  background:rgba(0,0,0,.04);
-}
-button.confirm, button.reject, button.inline, .user-table button.confirm, .user-table button.reject{
-  display:inline-flex;
-  align-items:center;
-  gap:4px;
-  border-radius:10px;
-  padding:8px 12px;
-  font-size:14px;
-  line-height:1;
-  white-space:nowrap;
-  cursor:pointer;
-}
-
-/* ✅ Sprach-Manager (Custom-Sprachen hinzufügen/löschen) */
-.lang-manager{
-  display:flex;
-  gap:8px;
-  margin-top:10px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-.lang-manager input[type="text"]{
-  flex:1;
-  min-width:220px;
-}
-.custom-lang-chip{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding:6px 10px;
-  border:1px solid rgba(0,0,0,.12);
-  border-radius:999px;
-  background:rgba(0,0,0,.03);
-  font-size:13px;
-  margin:4px 6px 0 0;
-}
-.custom-lang-chip button{
-  padding:4px 8px;
-  border-radius:999px;
-  border:1px solid rgba(0,0,0,.18);
-  background:rgba(0,0,0,.06);
-}
-.custom-lang-list{ margin-top:6px; }
-
-/* ✅ Buttons sichtbar (insb. PDF) – ohne FullCalendar zu beeinflussen */
-button.confirm, button.reject, button.inline{
-  border:1px solid rgba(0,0,0,.16);
-  background:rgba(0,0,0,.04);
-}
-button.confirm{ background:rgba(46,125,50,.12); border-color:rgba(46,125,50,.35); }
-button.reject{ background:rgba(198,40,40,.12); border-color:rgba(198,40,40,.35); }
-button.delete{ background:rgba(198,40,40,.12); border-color:rgba(198,40,40,.35); }
-button[name="delete"]{ border:1px solid rgba(198,40,40,.35); background:rgba(198,40,40,.12); }
-.user-table td:last-child{
-  min-width:320px;
-  white-space:nowrap;
-}
-.user-table td:last-child button{ margin:2px 8px 2px 0; }
-.table-scroll{
-  width:100%;
-  overflow-x:auto;
-  -webkit-overflow-scrolling:touch;
-  border-radius:12px;
-}
-.user-table{
-  width:100%;
-  min-width:1050px; /* sorgt dafür, dass Aktionen sichtbar bleiben */
-  border-collapse:collapse;
-}
-.user-table th, .user-table td{ vertical-align:middle; }
-/* Personal-Liste: Ausrichtung wie in Screenshot */
-.ta-left{ text-align:left !important; }
-.ta-center{ text-align:center !important; }
-.user-table-personal th, .user-table-personal td{ white-space:nowrap; }
-.user-table-personal td.ta-left{ white-space:normal; } /* Name/Bemerkung dürfen umbrechen */
-.user-table-personal td.actions-cell{ white-space:nowrap; }
-.user-table-personal td.actions-cell button{ margin:2px 6px 2px 0; }
-.user-table-personal input[type="checkbox"]{ transform:scale(1.05); }
-
-.user-table .photo-thumb{
-  width:44px;height:44px;border-radius:10px;object-fit:cover;border:1px solid rgba(0,0,0,.12);
-}
-
-/* Formular: einheitliche Abstände, ohne Farbschema zu verändern */
-#add-user-form{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:6px 10px;
-  align-items:end;
-}
-#add-user-form label{ font-weight:600; }
-#add-user-form input, #add-user-form select, #add-user-form textarea{
-  width:100%;
-  box-sizing:border-box;
-}
-#add-user-form .full{ grid-column:1 / -1; }
-#add-user-form .btn-row{ grid-column:1 / -1; display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-
-@media (max-width: 900px){
-  #add-user-form{ grid-template-columns:1fr; }
-  .user-table{ min-width:900px; }
-}
-
-
-/* ✅ Buttons immer sichtbar (Textfarbe + Kontrast) */
-button:not(.fc-button){
-  color:#111 !important;
-}
-button.confirm, button.reject, button.delete, button.inline{
-  color:#111 !important;
-  opacity:1 !important;
-  visibility:visible !important;
-}
-
-
-/* ✅ Checkbox-Abstände überall kompakt (überschreibt style.css) */
-.check-grid, .modal-check-grid{
-  gap:3px 8px !important;
-}
-.check-grid.lang-grid, .modal-check-grid.lang-grid{
-  gap:2px 8px !important;
-}
-.check-grid label, .modal-check-grid label{
-  gap:3px !important;
-  justify-content:flex-start !important;
-}
-.check-grid input[type="checkbox"], .modal-check-grid input[type="checkbox"]{
-  margin:0 !important;
-}
-
-/* ✅ Personaltabelle: keine Ellipsen in Aktionen, Buttons vollständig sichtbar */
-#user-management .user-table{ display:table !important; overflow:visible !important; table-layout:auto !important; }
-#user-management .user-table thead{ display:table-header-group !important; width:auto !important; table-layout:auto !important; }
-#user-management .user-table tbody{ display:table-row-group !important; width:auto !important; table-layout:auto !important; }
-#user-management .user-table th, #user-management .user-table td{ overflow:visible !important; text-overflow:clip !important; }
-#user-management .user-table th:last-child, #user-management .user-table td:last-child{ white-space:nowrap !important; }
-
-
-/* ✅ FINAL: Aktionen-Spalte nie abschneiden (PDF/Löschen sichtbar) */
-#user-management .user-table{display:table !important; overflow:visible !important; table-layout:auto !important; min-width:1100px !important;}
-#user-management .user-table thead{display:table-header-group !important;}
-#user-management .user-table tbody{display:table-row-group !important;}
-#user-management .user-table thead, #user-management .user-table tbody{width:auto !important; table-layout:auto !important;}
-#user-management .user-table td:last-child{
-  display:flex !important;
-  gap:6px !important;
-  flex-wrap:wrap !important;
-  align-items:center !important;
-  white-space:normal !important;
-  min-width:420px !important;
-  overflow:visible !important;
-  text-overflow:clip !important;
-}
-#user-management .user-table td:last-child button{margin:2px 6px 2px 0 !important;}
-
-/* ✅ FINAL: Checkboxen kompakt (Checkbox ↔ Text Abstand klein) */
-.check-grid, .modal-check-grid{gap:2px 10px !important;}
-.check-grid label, .modal-check-grid label{
-  gap:2px !important;
-  padding:0 !important;
-  margin:0 !important;
-  justify-content:flex-start !important;
-}
-.check-grid label span, .modal-check-grid label span{
-  flex:0 1 auto !important;
-  margin:0 !important;
-}
-
-</style>
-
-
-<style id="personal-view-enhancements">
-#user-management .lang-grid{display:grid !important;grid-template-columns:repeat(auto-fit,minmax(190px,1fr)) !important;gap:10px 16px !important;align-items:start;}
-#user-management .lang-grid label{display:flex !important;align-items:flex-start !important;gap:8px !important;line-height:1.35;padding:4px 2px;white-space:normal !important;}
-#user-management .lang-grid label span{white-space:normal !important;overflow:visible !important;text-overflow:unset !important;}
-#user-management .lang-grid input[type="checkbox"]{margin-top:2px !important;flex:0 0 auto;}
-#user-management .lang-manager{margin-top:12px;}
-#user-management .custom-lang-list{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}
-#user-management .user-table-personal tr.acc-locked td{background:#fdecec !important;}
-#user-management .user-table-personal tr.acc-locked:hover td{background:#f9dfdf !important;}
-#user-management .user-table-personal td.actions-cell{min-width:460px;}
-#user-management .user-table-personal td.actions-cell .lock-btn{background:rgba(185,28,28,.10) !important;border-color:rgba(185,28,28,.28) !important;}
-#user-management .user-table-personal td.actions-cell .lock-btn.is-locked{background:rgba(185,28,28,.18) !important;border-color:rgba(185,28,28,.42) !important;font-weight:800;}
-#user-management .user-table-personal .lock-state-badge{display:inline-flex;align-items:center;gap:6px;margin-left:8px;padding:3px 9px;border-radius:999px;border:1px solid rgba(185,28,28,.22);background:rgba(185,28,28,.08);color:#991b1b;font-size:12px;font-weight:700;}
-@media (max-width:900px){
-  #user-management .lang-grid{grid-template-columns:repeat(auto-fit,minmax(160px,1fr)) !important;}
-}
-@media (max-width:560px){
-  #user-management .lang-grid{grid-template-columns:1fr !important;}
-}
-</style>
-
-
-<style id="personal-view-cleanup-v2">
-/* Personalansicht: Checkboxen sauber ausrichten, ohne Rahmen */
-#user-management .check-grid,
-#user-management .lang-grid,
-#editUserModal .modal-check-grid,
-#editUserModal .lang-grid{
-  border:none !important;
-  background:transparent !important;
-  border-radius:0 !important;
-  padding:0 !important;
-  margin:8px 0 12px 0 !important;
-  box-shadow:none !important;
-}
-#user-management .check-grid,
-#editUserModal .modal-check-grid{
-  display:grid !important;
-  grid-template-columns:repeat(auto-fit,minmax(240px,1fr)) !important;
-  gap:10px 18px !important;
-  align-items:start !important;
-}
-#user-management .lang-grid,
-#editUserModal .lang-grid{
-  display:grid !important;
-  grid-template-columns:repeat(auto-fit,minmax(220px,1fr)) !important;
-  gap:8px 18px !important;
-  align-items:start !important;
-}
-#user-management .check-grid label,
-#user-management .lang-grid label,
-#editUserModal .modal-check-grid label,
-#editUserModal .lang-grid label{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:10px !important;
-  margin:0 !important;
-  padding:2px 0 !important;
-  line-height:1.35 !important;
-  min-width:0 !important;
-  width:auto !important;
-}
-#user-management .check-grid input[type="checkbox"],
-#user-management .lang-grid input[type="checkbox"],
-#editUserModal .modal-check-grid input[type="checkbox"],
-#editUserModal .lang-grid input[type="checkbox"]{
-  width:auto !important;
-  min-width:auto !important;
-  max-width:none !important;
-  flex:0 0 auto !important;
-  margin:2px 0 0 0 !important;
-}
-#user-management .check-grid label span,
-#user-management .lang-grid label span,
-#editUserModal .modal-check-grid label span,
-#editUserModal .lang-grid label span{
-  display:block !important;
-  flex:1 1 auto !important;
-  white-space:normal !important;
-  overflow:visible !important;
-  text-overflow:unset !important;
-}
-#user-management .lang-manager,
-#editUserModal .lang-manager{
-  display:flex !important;
-  gap:10px !important;
-  flex-wrap:wrap !important;
-  align-items:center !important;
-  margin:10px 0 6px 0 !important;
-}
-#user-management .lang-manager input[type="text"],
-#editUserModal .lang-manager input[type="text"]{
-  flex:1 1 320px !important;
-  min-width:240px !important;
-}
-#user-management .custom-lang-list,
-#editUserModal .custom-lang-list{
-  display:flex !important;
-  flex-wrap:wrap !important;
-  gap:8px !important;
-  margin:8px 0 10px 0 !important;
-}
-@media (max-width:900px){
-  #user-management .check-grid,
-  #user-management .lang-grid,
-  #editUserModal .modal-check-grid,
-  #editUserModal .lang-grid{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-}
-@media (max-width:560px){
-  #user-management .check-grid,
-  #user-management .lang-grid,
-  #editUserModal .modal-check-grid,
-  #editUserModal .lang-grid{grid-template-columns:1fr !important;}
-}
-</style>
-
-
-<style id="personal-layout-sections-fix">
-#add-user-form .section-block{
-  grid-column:1 / -1;
-  margin:8px 0 2px 0;
-}
-#add-user-form .section-title,
-#add-user-form .subsection-title{
-  grid-column:1 / -1;
-  margin:0;
-  padding-bottom:8px;
-  border-bottom:1px solid rgba(0,0,0,.10);
-  font-weight:700;
-  color:#163252;
-}
-#add-user-form .section-title{font-size:18px;}
-#add-user-form .subsection-title{
-  font-size:15px;
-  border-bottom:none;
-  padding-bottom:0;
-  margin-top:6px;
-}
-#add-user-form .section-block.compact{margin-top:2px; margin-bottom:0;}
-#add-user-form .form-row.section-row,
-#add-user-form .full.section-row{
-  grid-column:1 / -1;
-}
-</style>
-
-
-<style id="personal-module-adjustments">
-#add-user-form{grid-template-columns:repeat(4,minmax(0,1fr)) !important;gap:14px 14px !important;}
-#add-user-form .grid-row-4{grid-column:1 / -1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;}
-#add-user-form .grid-row-3{grid-column:1 / -1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;}
-#add-user-form .grid-row-1{grid-column:1 / -1;}
-#add-user-form .grid-span-2{grid-column:span 2;}
-#add-user-form .grid-span-4{grid-column:1 / -1;}
-#add-user-form .field-card{background:#ffffff;border:2px solid rgba(31,41,55,.18);border-radius:16px;padding:10px 12px;box-shadow:0 1px 2px rgba(15,23,42,.04);} 
-#add-user-form .field-card label{font-weight:700;font-size:13px;margin:0 0 6px 0;color:#111827;}
-#add-user-form .field-card input,#add-user-form .field-card select{background:#ffffff;border:none;box-shadow:none;padding:6px 2px;font-size:16px;}
-#add-user-form .field-card input:focus,#add-user-form .field-card select:focus{outline:none;}
-#add-user-form .field-card input::placeholder{color:#1f2937;opacity:.9;}
-#add-user-form .upload-card{display:flex;flex-direction:column;justify-content:center;min-height:86px;}
-#add-user-form .language-board{grid-column:1 / -1;}
-#add-user-form .language-board .lang-grid{display:grid !important;grid-template-columns:repeat(5,minmax(0,1fr)) !important;gap:10px 18px !important;}
-#add-user-form .license-grid, #editUserModal .license-grid{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 12px;margin-top:8px;}
-#add-user-form .license-grid label,#editUserModal .license-grid label{display:flex;align-items:center;gap:6px;font-size:13px;}
-.lang-item{display:flex !important;align-items:flex-start !important;gap:8px !important;flex-wrap:wrap;}
-.lang-item .lang-text{display:flex;align-items:center;gap:8px;min-width:120px;flex:1 1 120px;}
-.lang-item .lang-level-select{display:none;flex:1 1 220px;min-width:220px;max-width:100%;padding:6px 10px;border:1px solid rgba(0,0,0,.18);border-radius:10px;background:#fff;}
-.lang-item.active .lang-level-select{display:block;}
-#edit-lang-grid .lang-item .lang-level-select{min-width:180px;}
-#add-user-form .submit-wide{grid-column:1 / -1;width:100% !important;justify-content:center;font-weight:800;padding:14px 16px;}
-#add-user-form .section-title{border-bottom:none !important;padding-bottom:0 !important;margin-bottom:6px !important;}
-@media (max-width:1200px){
-  #add-user-form, #add-user-form .grid-row-4{grid-template-columns:repeat(2,minmax(0,1fr)) !important;}
-  #add-user-form .language-board .lang-grid{grid-template-columns:repeat(3,minmax(0,1fr)) !important;}
-  #add-user-form .license-grid, #editUserModal .license-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
-}
-@media (max-width:720px){
-  #add-user-form, #add-user-form .grid-row-4, #add-user-form .grid-row-3{grid-template-columns:1fr !important;}
-  #add-user-form .language-board .lang-grid{grid-template-columns:1fr !important;}
-  #add-user-form .license-grid, #editUserModal .license-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-  .lang-item{flex-direction:column;}
-  .lang-item .lang-level-select{min-width:100%;}
-}
-
-/* --- Fix: Personalfelder wieder weiß statt blau --- */
-#user-management .field-card,
-#user-management .upload-card,
-#editUserModal .field-card,
-#editUserModal .upload-card{
-  background:#fff !important;
-  border-color:rgba(31,41,55,.18) !important;
-}
-#user-management .field-card input,
-#user-management .field-card select,
-#editUserModal .field-card input,
-#editUserModal .field-card select{
-  background:#fff !important;
-}
-</style>
-
-
-<style>
-/* Final main calendar layout fix */
-#calendar{
-  min-height: 820px !important;
-}
-#calendar-fixed-host{
-  min-height: 820px !important;
-  width: 100% !important;
-}
-#calendar-fixed-host .fc-daygrid-day-frame{
-  min-height: 110px !important;
-}
-#calendar-fixed-host .fc-daygrid-day-top{
-  display: flex !important;
-  justify-content: flex-end !important;
-}
-#calendar-fixed-host .fc-daygrid-day-number{
-  display: inline-block !important;
-  color: #0b2545 !important;
-  font-weight: 700 !important;
-  opacity: 1 !important;
-  padding: 6px 8px !important;
-}
-#calendar-fixed-host .fc-daygrid-day-events{
-  min-height: 2.2em !important;
-}
-#calendar-fixed-host .fc-event{
-  display: block !important;
-  visibility: visible !important;
-  opacity: 1 !important;
-}
-</style>
-
-
-<style id="chef-calendar-employee-look">
-/* Chef-Kalender optisch an Mitarbeiteransicht angleichen */
-.scroll-x.calendar-scroll{
-  overflow-x: visible !important;
-  -webkit-overflow-scrolling: auto !important;
-}
-.scroll-x.calendar-scroll > *{
-  min-width: 0 !important;
-}
-
-#calendar,
-#calendar-fixed-host{
-  min-height: unset !important;
-  height: auto !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  overflow: visible !important;
-}
-
-#calendar .fc,
-#calendar-fixed-host .fc{
-  background: #fff !important;
-}
-
-#calendar .fc .fc-toolbar-title,
-#calendar-fixed-host .fc .fc-toolbar-title{
-  font-size: 15px !important;
-}
-
-#calendar .fc .fc-button,
-#calendar-fixed-host .fc .fc-button{
-  padding: 6px 8px !important;
-  font-size: 12px !important;
-}
-
-#calendar .fc-daygrid-day-frame,
-#calendar-fixed-host .fc-daygrid-day-frame{
-  min-height: unset !important;
-}
-
-#calendar .fc-daygrid-day-top,
-#calendar-fixed-host .fc-daygrid-day-top{
-  display: flex !important;
-  justify-content: flex-end !important;
-}
-
-#calendar .fc-daygrid-day-number,
-#calendar-fixed-host .fc-daygrid-day-number{
-  display: inline-block !important;
-  font-weight: 800 !important;
-  color: #000 !important;
-  opacity: 1 !important;
-  padding: 2px 6px !important;
-}
-
-#calendar .fc .fc-daygrid-day.fc-day-today,
-#calendar-fixed-host .fc .fc-daygrid-day.fc-day-today,
-#planning-calendar .fc .fc-daygrid-day.fc-day-today{
-  background: #d8f5d8 !important;
-}
-
-#calendar .fc-col-header-cell.fc-day-today,
-#calendar-fixed-host .fc-col-header-cell.fc-day-today,
-#planning-calendar .fc-col-header-cell.fc-day-today{
-  background: #d8f5d8 !important;
-}
-
-#calendar .fc .fc-daygrid-day.fc-day-sat,
-#calendar .fc .fc-daygrid-day.fc-day-sun,
-#calendar-fixed-host .fc .fc-daygrid-day.fc-day-sat,
-#calendar-fixed-host .fc .fc-daygrid-day.fc-day-sun,
-#planning-calendar .fc .fc-daygrid-day.fc-day-sat,
-#planning-calendar .fc .fc-daygrid-day.fc-day-sun,
-#calendar .fc .fc-col-header-cell.fc-day-sat,
-#calendar .fc .fc-col-header-cell.fc-day-sun,
-#calendar-fixed-host .fc .fc-col-header-cell.fc-day-sat,
-#calendar-fixed-host .fc .fc-col-header-cell.fc-day-sun,
-#planning-calendar .fc .fc-col-header-cell.fc-day-sat,
-#planning-calendar .fc .fc-col-header-cell.fc-day-sun{
-  background: #f2f2f2 !important;
-}
-
-#calendar .fc .fc-daygrid-event,
-#calendar-fixed-host .fc .fc-daygrid-event,
-#planning-calendar .fc .fc-daygrid-event{
-  padding: 1px 2px !important;
-}
-
-#calendar .fc .fc-daygrid-event .fc-event-main,
-#calendar-fixed-host .fc .fc-daygrid-event .fc-event-main,
-#planning-calendar .fc .fc-daygrid-event .fc-event-main{
-  line-height: 1.1 !important;
-  color: #111 !important;
-}
-
-#calendar .fc .fc-event-time,
-#calendar-fixed-host .fc .fc-event-time,
-#planning-calendar .fc .fc-event-time{
-  font-size: 10px !important;
-}
-
-#calendar .fc-event-title,
-#calendar-fixed-host .fc-event-title,
-#planning-calendar .fc-event-title{
-  font-size: 10.5px !important;
-  font-weight: 700 !important;
-  white-space: nowrap !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-}
-
-#calendar .cat-cp,
-#calendar-fixed-host .cat-cp,
-#planning-calendar .cat-cp{
-  background-color: #fff3cd !important;
-  border-color: #f1c40f !important;
-}
-
-#calendar .cat-cv,
-#calendar-fixed-host .cat-cv,
-#planning-calendar .cat-cv{
-  background-color: #dbeafe !important;
-  border-color: #60a5fa !important;
-}
-
-#calendar .cat-cp .fc-event-main,
-#calendar .cat-cv .fc-event-main,
-#calendar-fixed-host .cat-cp .fc-event-main,
-#calendar-fixed-host .cat-cv .fc-event-main,
-#planning-calendar .cat-cp .fc-event-main,
-#planning-calendar .cat-cv .fc-event-main{
-  color: #111 !important;
-}
-</style>
-
 </head>
 <body>
   <nav>
@@ -1500,7 +861,6 @@ button.confirm, button.reject, button.delete, button.inline{
       </thead>
       <tbody id="termine-list"></tbody>
     </table>
-    </div>
 </div>
   </div>
 
@@ -1639,149 +999,122 @@ button.confirm, button.reject, button.delete, button.inline{
   <div class="table-scroll">
 <div class="scroll-x">
 <div id="user-management" style="display:none;">
-    <h3>Personal verwalten</h3>
+    <div class="personal-shell">
+      <div class="personal-card">
+        <h3>Personal verwalten</h3>
+        <p class="personal-sub">Die Personal-Verwaltung wurde für die Ansicht „Personal“ erweitert und bündelt persönliche Angaben, zusätzliche Angaben, Qualifikationen und Sprachen in einer kompakten Verwaltungsansicht.</p>
 
-    <form id="add-user-form" class="user-form">
-      <div class="section-block"><h4 class="section-title">Persönliche Angaben</h4></div>
+        <form id="add-user-form" class="user-form personal-form">
+          <div class="personal-card">
+            <h4>Persönliche Angaben</h4>
+            <div class="personal-grid">
+              <div class="col-3"><label for="vorname">Vorname</label><input type="text" id="vorname" required></div>
+              <div class="col-3"><label for="nachname">Nachname</label><input type="text" id="nachname" required></div>
+              <div class="col-3"><label for="new-username">Benutzername</label><input type="text" id="new-username" required></div>
+              <div class="col-3"><label for="new-password">Passwort</label><input type="password" id="new-password" required></div>
+              <div class="col-3"><label for="geburtsdatum">Geburtsdatum</label><input type="date" id="geburtsdatum"></div>
+              <div class="col-3"><label for="geburtsort">Geburtsort</label><input type="text" id="geburtsort"></div>
+              <div class="col-3"><label for="email">E-Mail-Adresse</label><input type="email" id="email" placeholder="optional"></div>
+              <div class="col-3"><label for="telefon">Telefon</label><input type="text" id="telefon" placeholder="optional"></div>
+              <div class="col-3"><label for="staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="staatsangehoerigkeit"></div>
+              <div class="col-3"><label for="staatsnummer">Staatsnummer</label><input type="text" id="staatsnummer"></div>
+              <div class="col-3"><label for="new-role">Rolle</label><select id="new-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="vorgesetzter_cp">Vorgesetzter CP</option><option value="planner_bbs">Planner BBS</option><option value="planer">Planer</option></select></div>
+              <div class="col-3"><label for="bkv_rv">BKV / RV</label><input type="text" id="bkv_rv"></div>
+              <div class="col-3"><label for="sv5n">SV-5 / N</label><input type="text" id="sv5n"></div>
+              <div class="col-6">
+                <label>Bild hochladen / Datei auswählen</label>
+                <div class="personal-avatar">
+                  <img id="personal-image-preview" class="personal-avatar-preview" alt="Vorschau">
+                  <div style="flex:1;">
+                    <input type="file" id="personal-image-file" accept="image/*">
+                    <div class="personal-note" id="personal-image-name">Noch keine Datei ausgewählt</div>
+                    <input type="hidden" id="personal-image-data">
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
-      <div class="grid-row-4">
-        <div class="field-card"><label for="vorname">Vorname</label><input type="text" id="vorname" placeholder="Vorname" required></div>
-        <div class="field-card"><label for="nachname">Nachname</label><input type="text" id="nachname" placeholder="Nachname" required></div>
-        <div class="field-card"><label for="new-username">Benutzername</label><input type="text" id="new-username" placeholder="Benutzername" required></div>
-        <div class="field-card"><label for="new-password">Passwort</label><input type="password" id="new-password" placeholder="Passwort" required></div>
+          <div class="personal-card">
+            <h4>Zusätzliche Angaben</h4>
+            <div class="personal-grid">
+              <div class="col-3"><label for="amtliches_dokument">Amtliches Dokument</label><select id="amtliches_dokument"><option value="">Bitte wählen</option><option>Personalausweis</option><option>Reisepass</option><option>Aufenthaltstitel</option><option>Führerschein</option></select></div>
+              <div class="col-3"><label for="dokumentennummer">Dokumentennummer</label><input type="text" id="dokumentennummer"></div>
+              <div class="col-3"><label for="ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="ausstellungsdatum"></div>
+              <div class="col-3"><label for="ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="ausstellende_behoerde"></div>
+              <div class="col-3"><label for="s34a">§ 34a GewO / Nachweis</label><select id="s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="s34a_art">Nachweis-Art</label><select id="s34a_art"><option value="">Bitte wählen</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div>
+              <div class="col-3"><label for="amt">Amt</label><select id="amt"><option value="">Bitte wählen</option><option>Polizei</option><option>Ordnungsamt</option><option>Behörde</option><option>Keine Angabe</option></select></div>
+              <div class="col-3"><label for="bewerber_id">Bewerber-ID</label><input type="text" id="bewerber_id"></div>
+              <div class="col-3"><label for="bemerkung">Bemerkung</label><input type="text" id="bemerkung"></div>
+            </div>
+          </div>
+
+          <div class="personal-card">
+            <h4>Zusätzliche Qualifikationen</h4>
+            <div class="personal-grid">
+              <div class="col-3"><label for="bsw">BSW</label><select id="bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="fschein">F-Schein</label><select id="fschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="kati">KATI / weitere Auswahl</label><select id="kati"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="pschein">P-Schein</label><select id="pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="sanitaeter">Sani</label><select id="sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
+              <div class="col-3"><label for="steuernummer">Staats-/Steuernummer</label><input type="text" id="steuernummer"></div>
+              <div class="col-3"><label for="bewach_id">BKV/Bewach-ID</label><input type="text" id="bewach_id"></div>
+              <div class="col-3"><label for="stundensatz">Stundensatz (€/h)</label><input type="number" id="stundensatz" step="0.01" min="0"></div>
+              <div class="col-12">
+                <label>Checkboxen / Qualifikationen</label>
+                <div class="personal-check-grid" id="qualification-grid-create">
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="GSSK">GSSK</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Waffensachkunde">Waffensachkunde</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Personenschutz">Personenschutz</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Sachkunde §34a">Sachkunde §34a</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Brandschutzhelfer">Brandschutzhelfer</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Betriebssanitäter">Betriebssanitäter</label>
+                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Rettungsschwimmer">Rettungsschwimmer</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <label>Führerscheinklassen</label>
+                <div class="personal-check-grid" id="license-grid-create">
+                  <label class="personal-check-item"><input type="checkbox" name="license_class" value="AM">AM</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A">A</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A1">A1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A2">A2</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="B">B</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="BE">BE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C">C</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C1">C1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="CE">CE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C1E">C1E</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D">D</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D1">D1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="DE">DE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D1E">D1E</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="T">T</label>
+                </div>
+              </div>
+              <div class="col-12"><label for="sonstige">Sonstige</label><textarea id="sonstige"></textarea></div>
+            </div>
+          </div>
+
+          <div class="personal-card">
+            <h4>Fremdsprachen</h4>
+            <div class="personal-grid">
+              <div class="col-12">
+                <div class="personal-check-grid" id="language-grid-create">
+                  <label class="personal-check-item"><input type="checkbox" name="language" value="Deutsch">Deutsch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Englisch">Englisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Französisch">Französisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Italienisch">Italienisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Spanisch">Spanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Portugiesisch">Portugiesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Polnisch">Polnisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Russisch">Russisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Türkisch">Türkisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Arabisch">Arabisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Hindi">Hindi</label><label class="personal-check-item"><input type="checkbox" name="language" value="Urdu">Urdu</label><label class="personal-check-item"><input type="checkbox" name="language" value="Albanisch">Albanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Bosnisch">Bosnisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Kroatisch">Kroatisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Serbisch">Serbisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Rumänisch">Rumänisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Bulgarisch">Bulgarisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Griechisch">Griechisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Niederländisch">Niederländisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Schwedisch">Schwedisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Norwegisch">Norwegisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Dänisch">Dänisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Thai">Thai</label><label class="personal-check-item"><input type="checkbox" name="language" value="Indonesisch">Indonesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Vietnamesisch">Vietnamesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Chinesisch">Chinesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Japanisch">Japanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Persisch">Persisch</label>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="personal-dynamic-list" id="additional-language-list"></div>
+                <button type="button" class="personal-secondary" id="add-language-btn">+ Sprache hinzufügen</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="personal-actions">
+            <span class="personal-note">Alle Daten werden validiert, gespeichert und für Bearbeitung, Anzeige, PDF und Statusfunktionen verwendet.</span>
+            <button type="submit" class="personal-primary">Person anlegen &amp; Einladungslink senden</button>
+          </div>
+        </form>
       </div>
 
-      <div class="grid-row-4">
-        <div class="field-card"><label for="geburtsdatum">Geburtsdatum</label><input type="date" id="geburtsdatum"></div>
-        <div class="field-card"><label for="geburtsort">Geburtsort</label><input type="text" id="geburtsort" placeholder="Geburtsort"></div>
-        <div class="field-card"><label for="email">E-Mail-Adresse (optional)</label><input type="email" id="email" placeholder="E-Mail-Adresse (optional)"></div>
-        <div class="field-card"><label for="telefon">Telefon (optional)</label><input type="tel" id="telefon" placeholder="Telefon (optional)" inputmode="tel"></div>
+      <div class="personal-card">
+        <h4>Personalliste</h4>
+        <table class="user-table personal-table">
+          <thead>
+            <tr><th>Name</th><th>Bemerkung</th><th>§ 34a GewO</th><th>Bewerber ID</th><th>BSW</th><th>Sani</th><th>P-Schein</th><th>SVG</th><th>Erklärung</th><th>Aktionen</th></tr>
+          </thead>
+          <tbody id="user-list"></tbody>
+        </table>
       </div>
-
-      <div class="grid-row-4">
-        <div class="field-card"><label for="staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="staatsangehoerigkeit" placeholder="Staatsangehörigkeit"></div>
-        <div class="field-card"><label for="steuernummer">Steuernummer</label><input type="text" id="steuernummer" placeholder="Steuernummer" required></div>
-        <div class="field-card"><label for="new-role">Rolle</label><select id="new-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="vorgesetzter_cp">Vorgesetzter CP</option><option value="planner_bbs">Planer BBS</option><option value="planer">Planer</option></select></div>
-        <div class="field-card"><label for="stundensatz">SVS (€ / h)</label><input type="number" id="stundensatz" step="0.01" min="0" placeholder="SVS (€ / h)"></div>
-      </div>
-
-      <div class="field-card upload-card grid-span-2"><label for="new-photo">Bild hochladen</label><input type="file" id="new-photo" accept="image/*"><div style="margin-top:6px;"><img id="new-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;"></div></div>
-
-      <div class="section-block"><h4 class="section-title">Zusätzliche Angaben</h4></div>
-
-      <div class="grid-row-4">
-        <div class="field-card"><label for="amtliches_dokument">Amtliches Dokument</label><select id="amtliches_dokument"><option value="">Amtliches Dokument</option><option value="Personalausweis">Personalausweis</option><option value="Reisepass">Reisepass</option></select></div>
-        <div class="field-card"><label for="dokumentennr">Dokumentennummer</label><input type="text" id="dokumentennr" placeholder="Dokumentennummer"></div>
-        <div class="field-card"><label for="ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="ausstellungsdatum"></div>
-        <div class="field-card"><label for="ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="ausstellende_behoerde" placeholder="Ausstellende Behörde"></div>
-      </div>
-
-      <div class="grid-row-3">
-        <div class="field-card"><label for="s34a">§ 34a GewO Ja/Nein</label><select id="s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-        <div class="field-card"><label for="s34a_art">Art</label><select id="s34a_art"><option value="">-- Art auswählen --</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div>
-        <div class="field-card"><label for="bewach_id">Bewacher ID</label><input type="text" id="bewach_id" placeholder="Bewacher ID" required></div>
-      </div>
-
-      <div class="section-block compact"><h4 class="section-title">Zusätzliche Qualifikationen</h4></div>
-
-      <div class="grid-row-3">
-        <div class="field-card"><label for="bsw">BSW</label><select id="bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-        <div class="field-card"><label for="pschein">P-Schein</label><select id="pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-        <div class="field-card"><label for="sanitaeter">Sani</label><select id="sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-      </div>
-
-      <div class="check-grid full section-row">
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="gssk"> GSSK</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="personenschutz"> Personenschutz</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="fachkraft"> Fachkraft S&amp;S</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer/in</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="deeskalation"> Deeskalationstraining</label>
-        <label style="display:flex;align-items:center;gap:4px;"><input type="checkbox" id="behoerdlich"> Behördlich/Studium</label>
-      </div>
-
-      <div class="grid-span-4">
-        <label><b>Führerschein</b></label>
-        <div class="license-grid" id="license-grid">
-          <label><input type="checkbox" name="fuehrerschein_cb" value="AM"> AM</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="A"> A</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="A1"> A1</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="A2"> A2</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="B"> B</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="BE"> BE</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="C"> C</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="CE"> CE</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="D"> D</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="DE"> DE</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="L"> L</label>
-          <label><input type="checkbox" name="fuehrerschein_cb" value="T"> T</label>
-        </div>
-      </div>
-
-      <div class="field-card grid-span-4"><label for="sonstige">Sonstige</label><input type="text" id="sonstige" placeholder="Sonstige (optional)"></div>
-
-      <div class="section-block compact"><h5 class="subsection-title">Fremdsprachen</h5></div>
-      <div class="language-board">
-        <div class="check-grid lang-grid" id="lang-grid">
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Deutsch"> <span>Deutsch</span></span><select class="lang-level-select" data-language="Deutsch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Polnisch"> <span>Polnisch</span></span><select class="lang-level-select" data-language="Polnisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Russisch"> <span>Russisch</span></span><select class="lang-level-select" data-language="Russisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></span><select class="lang-level-select" data-language="Hebräisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Thai"> <span>Thai</span></span><select class="lang-level-select" data-language="Thai"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Englisch"> <span>Englisch</span></span><select class="lang-level-select" data-language="Englisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></span><select class="lang-level-select" data-language="Tschechisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></span><select class="lang-level-select" data-language="Ukrainisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Hindi"> <span>Hindi</span></span><select class="lang-level-select" data-language="Hindi"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Indonesisch"> <span>Indonesisch</span></span><select class="lang-level-select" data-language="Indonesisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Französisch"> <span>Französisch</span></span><select class="lang-level-select" data-language="Französisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Slowakisch"> <span>Slowakisch</span></span><select class="lang-level-select" data-language="Slowakisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Serbokroatisch"> <span>Serbokroatisch</span></span><select class="lang-level-select" data-language="Serbokroatisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Urdu"> <span>Urdu</span></span><select class="lang-level-select" data-language="Urdu"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></span><select class="lang-level-select" data-language="Schwedisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Italienisch"> <span>Italienisch</span></span><select class="lang-level-select" data-language="Italienisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></span><select class="lang-level-select" data-language="Ungarisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Türkisch"> <span>Türkisch</span></span><select class="lang-level-select" data-language="Türkisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></span><select class="lang-level-select" data-language="Chinesisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></span><select class="lang-level-select" data-language="Norwegisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Spanisch"> <span>Spanisch</span></span><select class="lang-level-select" data-language="Spanisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></span><select class="lang-level-select" data-language="Rumänisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Kurdisch"> <span>Kurdisch</span></span><select class="lang-level-select" data-language="Kurdisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Japanisch"> <span>Japanisch</span></span><select class="lang-level-select" data-language="Japanisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Dänisch"> <span>Dänisch</span></span><select class="lang-level-select" data-language="Dänisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></span><select class="lang-level-select" data-language="Portugiesisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></span><select class="lang-level-select" data-language="Bulgarisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Arabisch"> <span>Arabisch</span></span><select class="lang-level-select" data-language="Arabisch"><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-            <label class="lang-item"><span class="lang-text"><input type="checkbox" name="sprachen_cb" value="Finnisch"> <span>Finnisch</span></span><select class="lang-level-select" data-language="Finnisch"><option value="">Level</option><option value="Grundkenntnisse">Grundkenntnisse</option><option value="Fortgeschritten">Fortgeschritten</option><option value="Verhandlungssicher in Wort und Schrift">Verhandlungssicher in Wort und Schrift</option><option value="Muttersprache">Muttersprache</option></select></label>
-        </div>
-      </div>
-      <div class="lang-manager full">
-        <input type="text" id="lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
-        <button type="button" class="inline" id="lang-custom-add">➕ Sprache hinzufügen</button>
-      </div>
-      <div class="custom-lang-list full" id="lang-custom-list"></div>
-
-      <button type="submit" class="confirm submit-wide">Person anlegen &amp; Einladungslink versenden</button>
-    </form>
-
-    <h4>Personalliste</h4>
-    <div class="table-scroll">
-    <table class="user-table user-table-personal">
-      <thead>
-        <tr>
-          <th class="ta-left">Name</th>
-          <th class="ta-left">Bemerkung</th>
-          <th class="ta-center">§ 34a GewO</th>
-          <th class="ta-center">Bewacher&nbsp;ID</th>
-          <th class="ta-center">BSW</th>
-          <th class="ta-center">Sani</th>
-          <th class="ta-center">P‑Schein</th>
-          <th class="ta-center">SVS</th>
-          <th class="ta-center">Erklärung</th>
-          <th class="ta-center">Aktionen</th>
-        </tr>
-      </thead>
-      <tbody id="user-list"></tbody>
-    </table>
+    </div>
 </div>
   </div>
 
@@ -1844,14 +1177,12 @@ button.confirm, button.reject, button.delete, button.inline{
       <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
       <input id="event-rate" type="number" step="0.01" min="0" placeholder="z.B. 20.00">
 
-      
-      
       <div class="modal-actions">
         <button class="release" onclick="saveEvent('geplant')">📄 Nur planen</button>
         <button class="confirm" onclick="saveEvent('offen')">🚀 Direkt freigeben</button>
       </div>
-
-</div>
+      
+    </div>
   </div>
 
   <!-- Modal Einsatzdetails -->
@@ -1986,214 +1317,40 @@ button.confirm, button.reject, button.delete, button.inline{
 
   <!-- Modal Benutzer bearbeiten -->
   <div class="modal" id="editUserModal">
-    <div class="modal-content" tabindex="-1">
+    <div class="modal-content" tabindex="-1" style="max-width:1100px;">
       <span class="close-btn" onclick="closeEditModal()">×</span>
       <h3>Mitarbeiter bearbeiten</h3>
-
-      <label>Benutzername</label>
-      <input type="text" id="edit-username">
-
-      <label>Vorname</label>
-      <input type="text" id="edit-vorname">
-
-      <label>Nachname</label>
-      <input type="text" id="edit-nachname">
-
-      <label>E-Mail</label>
-      <input type="email" id="edit-email">
-
-      <label>Telefon</label>
-      <input type="tel" id="edit-telefon" inputmode="tel">
-
-      <label>Passwort</label>
-      <div style="display:flex;align-items:center;gap:8px;">
-        <input type="password" id="edit-password">
-        <button type="button" onclick="togglePassword('edit-password')">👁️</button>
-      </div>
-
-      <label>Rolle</label>
-      <select id="edit-role">
-        <option value="mitarbeiter">Mitarbeiter</option>
-        <option value="vorgesetzter">Vorgesetzter</option>
-          <option value="planer">Planer</option>
-      
-            <option value="planner_bbs">Planer BBS</option>
-            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
-        </select>
-
-      <label>34a</label>
-      <select id="edit-s34a">
-        <option value="nein">Nein</option>
-        <option value="ja">Ja</option>
-      </select>
-
-      <label>34a Art</label>
-      <select id="edit-s34a_art">
-        <option value="">--</option>
-        <option value="unterrichtung">Unterrichtung</option>
-        <option value="Sachkunde">Sachkunde</option>
-      </select>
-
-      <label>P-Schein</label>
-      <select id="edit-pschein">
-        <option value="nein">Nein</option>
-        <option value="ja">Ja</option>
-      </select>
-
-      <label>Bewach-ID</label>
-      <input type="text" id="edit-bewach-id">
-
-      <label>Steuernummer</label>
-      <input type="text" id="edit-steuernummer">
-
-      <label>BSW</label>
-      <select id="edit-bsw">
-        <option value="nein">Nein</option>
-        <option value="ja">Ja</option>
-      </select>
-
-      <label>Sanitäter</label>
-      <select id="edit-sanitaeter">
-        <option value="nein">Nein</option>
-        <option value="ja">Ja</option>
-      </select>
-
-      <label>SVS (€/h)</label>
-      <input type="number" id="edit-stundensatz" step="0.01" min="0">
-
-      <h4 style="margin:12px 0 6px 0;">Personalbogen</h4>
-
-      <label>Foto (optional)</label>
-      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:8px;">
-        <img id="edit-photo-preview" src="" alt="" style="display:none;max-height:80px;border-radius:8px;border:1px solid #ddd;">
-        <input type="file" id="edit-photo" accept="image/*">
-        <button type="button" class="confirm" onclick="uploadEditPhoto()">⬆️ Foto hochladen</button>
-        <button type="button" class="confirm" onclick="downloadClientPdf(currentEditUser)">📄 PDF-Auszug</button>
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label>Geburtsdatum</label>
-          <input type="date" id="edit-geburtsdatum">
-        </div>
-        <div>
-          <label>Staatsangehörigkeit</label>
-          <input type="text" id="edit-staatsangehoerigkeit">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label>Amtliches Dokument</label>
-          <select id="edit-amtliches_dokument">
-            <option value="">-</option>
-            <option value="Personalausweis">Personalausweis</option>
-            <option value="Reisepass">Reisepass</option>
-          </select>
-        </div>
-        <div>
-          <label>Dokumentennr. (intern)</label>
-          <input type="text" id="edit-dokumentennr">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label>Ausstellende Behörde</label>
-          <input type="text" id="edit-ausstellende_behoerde">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label>Ausstellungsdatum</label>
-          <input type="date" id="edit-ausstellungsdatum">
-        </div>
-        <div>
-          <label>Sanitäter Art</label>
-          <select id="edit-sanitaeter_art">
-            <option value="">-</option>
-            <option value="Rettungssanitäter">Rettungssanitäter</option>
-            <option value="Rettungsassistent">Rettungsassistent</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="modal-check-grid">
-        <label><input type="checkbox" id="edit-gssk"> GSSK</label>
-        <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde</label>
-        <label><input type="checkbox" id="edit-personenschutz"> Personenschutz</label>
-        <label><input type="checkbox" id="edit-fachkraft"> Fachkraft S&amp;S</label>
-        <label><input type="checkbox" id="edit-brandschutzhelfer"> Brandschutzhelfer/in</label>
-        <label><input type="checkbox" id="edit-deeskalation"> Deeskalationstraining</label>
-        <label><input type="checkbox" id="edit-behoerdlich"> Behördlich/Studium</label>
-      </div>
-
-      <div class="form-row">
-        <div style="flex:2;">
-          <label>Führerschein</label>
-          <div class="license-grid" id="edit-license-grid">
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="AM"> AM</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A"> A</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A1"> A1</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="A2"> A2</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="B"> B</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="BE"> BE</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="C"> C</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="CE"> CE</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="D"> D</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="DE"> DE</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="L"> L</label>
-            <label><input type="checkbox" name="edit_fuehrerschein_cb" value="T"> T</label>
+      <div class="personal-shell">
+        <div class="personal-card">
+          <h4>Persönliche Angaben</h4>
+          <div class="personal-grid">
+            <div class="col-3"><label for="edit-vorname">Vorname</label><input type="text" id="edit-vorname"></div><div class="col-3"><label for="edit-nachname">Nachname</label><input type="text" id="edit-nachname"></div><div class="col-3"><label for="edit-username">Benutzername</label><input type="text" id="edit-username"></div><div class="col-3"><label for="edit-password">Passwort</label><input type="password" id="edit-password"></div><div class="col-3"><label for="edit-geburtsdatum">Geburtsdatum</label><input type="date" id="edit-geburtsdatum"></div><div class="col-3"><label for="edit-geburtsort">Geburtsort</label><input type="text" id="edit-geburtsort"></div><div class="col-3"><label for="edit-email">E-Mail</label><input type="email" id="edit-email"></div><div class="col-3"><label for="edit-telefon">Telefon</label><input type="text" id="edit-telefon"></div><div class="col-3"><label for="edit-staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="edit-staatsangehoerigkeit"></div><div class="col-3"><label for="edit-staatsnummer">Staatsnummer</label><input type="text" id="edit-staatsnummer"></div><div class="col-3"><label for="edit-role">Rolle</label><select id="edit-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="planer">Planer</option><option value="planner_bbs">Planner BBS</option><option value="vorgesetzter_cp">Vorgesetzter CP</option></select></div><div class="col-3"><label for="edit-bkv_rv">BKV / RV</label><input type="text" id="edit-bkv_rv"></div><div class="col-3"><label for="edit-sv5n">SV-5 / N</label><input type="text" id="edit-sv5n"></div>
+            <div class="col-6"><label>Bild hochladen / Datei auswählen</label><div class="personal-avatar"><img id="edit-personal-image-preview" class="personal-avatar-preview" alt="Vorschau"><div style="flex:1;"><input type="file" id="edit-personal-image-file" accept="image/*"><div class="personal-note" id="edit-personal-image-name">Noch keine Datei ausgewählt</div><input type="hidden" id="edit-personal-image-data"></div></div></div>
           </div>
         </div>
-        <div>
-          <label>Sonstige</label>
-          <input type="text" id="edit-sonstige">
+        <div class="personal-card">
+          <h4>Zusätzliche Angaben</h4>
+          <div class="personal-grid">
+            <div class="col-3"><label for="edit-amtliches_dokument">Amtliches Dokument</label><select id="edit-amtliches_dokument"><option value="">Bitte wählen</option><option>Personalausweis</option><option>Reisepass</option><option>Aufenthaltstitel</option><option>Führerschein</option></select></div><div class="col-3"><label for="edit-dokumentennummer">Dokumentennummer</label><input type="text" id="edit-dokumentennummer"></div><div class="col-3"><label for="edit-ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="edit-ausstellungsdatum"></div><div class="col-3"><label for="edit-ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="edit-ausstellende_behoerde"></div><div class="col-3"><label for="edit-s34a">§ 34a GewO / Nachweis</label><select id="edit-s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-s34a_art">Nachweis-Art</label><select id="edit-s34a_art"><option value="">Bitte wählen</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div><div class="col-3"><label for="edit-amt">Amt</label><select id="edit-amt"><option value="">Bitte wählen</option><option>Polizei</option><option>Ordnungsamt</option><option>Behörde</option><option>Keine Angabe</option></select></div><div class="col-3"><label for="edit-bewerber_id">Bewerber-ID</label><input type="text" id="edit-bewerber_id"></div><div class="col-3"><label for="edit-bemerkung">Bemerkung</label><input type="text" id="edit-bemerkung"></div>
+          </div>
         </div>
-      </div>
-
-      <label>Fremdsprachen</label>
-      <div class="modal-check-grid lang-grid" id="edit-lang-grid">
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Deutsch"> <span>Deutsch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Englisch"> <span>Englisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Französisch"> <span>Französisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Italienisch"> <span>Italienisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Spanisch"> <span>Spanisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Türkisch"> <span>Türkisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Arabisch"> <span>Arabisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Russisch"> <span>Russisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Polnisch"> <span>Polnisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Ukrainisch"> <span>Ukrainisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Rumänisch"> <span>Rumänisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Portugiesisch"> <span>Portugiesisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Niederländisch"> <span>Niederländisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Tschechisch"> <span>Tschechisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Ungarisch"> <span>Ungarisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Griechisch"> <span>Griechisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Serbisch"> <span>Serbisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Kroatisch"> <span>Kroatisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Bosnisch"> <span>Bosnisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Albanisch"> <span>Albanisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Bulgarisch"> <span>Bulgarisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Schwedisch"> <span>Schwedisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Norwegisch"> <span>Norwegisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Dänisch"> <span>Dänisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Chinesisch"> <span>Chinesisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Japanisch"> <span>Japanisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Koreanisch"> <span>Koreanisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Hindi"> <span>Hindi</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Persisch"> <span>Persisch</span></label>
-            <label><input type="checkbox" name="edit_sprachen_cb" value="Hebräisch"> <span>Hebräisch</span></label>
-      </div>
-      <div class="lang-manager" style="margin:10px 0 4px 0;">
-        <input type="text" id="edit-lang-custom-input" placeholder="Sprache hinzufügen (z.B. Englisch)">
-        <button type="button" class="inline" id="edit-lang-custom-add">➕ Sprache hinzufügen</button>
-      </div>
-      <div class="custom-lang-list" id="edit-lang-custom-list"></div>
-
-<div class="modal-actions">
-        <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
+        <div class="personal-card">
+          <h4>Zusätzliche Qualifikationen</h4>
+          <div class="personal-grid">
+            <div class="col-3"><label for="edit-bsw">BSW</label><select id="edit-bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-fschein">F-Schein</label><select id="edit-fschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-kati">KATI / weitere Auswahl</label><select id="edit-kati"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-pschein">P-Schein</label><select id="edit-pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-sanitaeter">Sani</label><select id="edit-sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-steuernummer">Staats-/Steuernummer</label><input type="text" id="edit-steuernummer"></div><div class="col-3"><label for="edit-bewach-id">BKV/Bewach-ID</label><input type="text" id="edit-bewach-id"></div><div class="col-3"><label for="edit-stundensatz">Stundensatz (€/h)</label><input type="number" id="edit-stundensatz" step="0.01" min="0"></div>
+            <div class="col-12"><label>Checkboxen / Qualifikationen</label><div class="personal-check-grid" id="qualification-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="GSSK">GSSK</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Waffensachkunde">Waffensachkunde</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Personenschutz">Personenschutz</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Sachkunde §34a">Sachkunde §34a</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Brandschutzhelfer">Brandschutzhelfer</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Betriebssanitäter">Betriebssanitäter</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Rettungsschwimmer">Rettungsschwimmer</label></div></div>
+            <div class="col-12"><label>Führerscheinklassen</label><div class="personal-check-grid" id="license-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="AM">AM</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A">A</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A1">A1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A2">A2</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="B">B</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="BE">BE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C">C</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C1">C1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="CE">CE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C1E">C1E</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D">D</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D1">D1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="DE">DE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D1E">D1E</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="T">T</label></div></div>
+            <div class="col-12"><label for="edit-sonstige">Sonstige</label><textarea id="edit-sonstige"></textarea></div>
+          </div>
+        </div>
+        <div class="personal-card">
+          <h4>Fremdsprachen</h4>
+          <div class="personal-grid">
+            <div class="col-12"><div class="personal-check-grid" id="language-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Deutsch">Deutsch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Englisch">Englisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Französisch">Französisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Italienisch">Italienisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Spanisch">Spanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Portugiesisch">Portugiesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Polnisch">Polnisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Russisch">Russisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Türkisch">Türkisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Arabisch">Arabisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Hindi">Hindi</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Urdu">Urdu</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Albanisch">Albanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Bosnisch">Bosnisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Kroatisch">Kroatisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Serbisch">Serbisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Rumänisch">Rumänisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Bulgarisch">Bulgarisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Griechisch">Griechisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Niederländisch">Niederländisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Schwedisch">Schwedisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Norwegisch">Norwegisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Dänisch">Dänisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Thai">Thai</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Indonesisch">Indonesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Vietnamesisch">Vietnamesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Chinesisch">Chinesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Japanisch">Japanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Persisch">Persisch</label></div></div>
+            <div class="col-12"><div class="personal-dynamic-list" id="edit-additional-language-list"></div><button type="button" class="personal-secondary" id="edit-add-language-btn">+ Sprache hinzufügen</button></div>
+          </div>
+        </div>
+        <div class="personal-actions"><button class="personal-primary" onclick="saveUserEdit()">💾 Speichern</button></div>
       </div>
     </div>
   </div>
@@ -2362,11 +1519,7 @@ button.confirm, button.reject, button.delete, button.inline{
   </script>
   <script>
     const ROLE = "{{ role|default('chef') }}";
-    window.ROLE = ROLE;
-    const NORMALIZED_ROLE = String(ROLE).trim().toLowerCase().replace(/\s+/g, '_');
-    const CAN_VIEW_FULL_USERS = ['chef','vorgesetzter'].includes(NORMALIZED_ROLE);
-    const USER_LIST_ENDPOINT = CAN_VIEW_FULL_USERS ? '/users' : '/users_public';
-    const IS_PLANNER = (NORMALIZED_ROLE === 'planer' || NORMALIZED_ROLE === 'planner_bbs');
+    const IS_PLANNER = (String(ROLE).toLowerCase() === 'planer' || String(ROLE).toLowerCase() === 'planner_bbs');
     // ✅ Mobile helper: ensure taps open immediately (iOS/Safari sometimes delays click inside scroll containers)
     function bindImmediateTap(el, handler){
       if(!el) return;
@@ -2724,44 +1877,20 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
 
 
     document.addEventListener('DOMContentLoaded', async function() {
-      // Personal: Foto-Vorschau (Neu)
-      const newPhoto = document.getElementById("new-photo");
-      const newPrev  = document.getElementById("new-photo-preview");
-      if(newPhoto && newPrev){
-        newPhoto.addEventListener("change", ()=>{
-          const f = newPhoto.files && newPhoto.files[0];
-          if(!f){ newPrev.style.display="none"; newPrev.src=""; return; }
-          newPrev.src = URL.createObjectURL(f);
-          newPrev.style.display="block";
-        });
-      }
-
-      // Personal: Foto-Vorschau (Bearbeiten)
-      const editPhoto = document.getElementById("edit-photo");
-      const editPrev  = document.getElementById("edit-photo-preview");
-      if(editPhoto && editPrev){
-        editPhoto.addEventListener("change", ()=>{
-          const f = editPhoto.files && editPhoto.files[0];
-          if(!f){ /* keep existing preview */ return; }
-          editPrev.src = URL.createObjectURL(f);
-          editPrev.style.display="block";
-        });
-      }
-
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
-      {
-        let resUsers = await fetch(USER_LIST_ENDPOINT);
+      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+        let resUsers = await fetch("/users");
         let users = await resUsers.json();
-        usersList = sortUsersByLastFirst(users);
+        usersList = users;
+        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      } else {
+        let resUsers = await fetch("/users_public");
+        let users = await resUsers.json();
+        usersList = users;
         users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
       }
 
-      transformLanguageGrid('lang-grid', 'sprachen_cb');
-      transformLanguageGrid('edit-lang-grid', 'edit_sprachen_cb');
-      applyLanguageSelections('sprachen_cb', 'lang-grid', []);
-      applyLicenseSelections('fuehrerschein_cb', []);
-      applyLicenseSelections('edit_fuehrerschein_cb', []);
       toggleEventRateInputs('create');
 
       // Meine Termine: Default Monat/Jahr + Filter-Listener
@@ -2787,7 +1916,7 @@ document.getElementById("user-management").style.display="none";
         document.getElementById("report").style.display="none";
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-calendar");
-        try{ if(typeof calendar!=="undefined" && calendar){ calendar.render(); calendar.refetchEvents(); } }catch(_e){}
+        window.location.reload();
       };
 
       // 🗓️ Meine Termine (Chef)
@@ -2818,9 +1947,6 @@ document.getElementById("user-management").style.display="block";
         document.getElementById("report").style.display="none";
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-users");
-        if(typeof refreshCustomLanguages === "function"){
-          refreshCustomLanguages().catch(err=>console.error("Sprachen-Refresh fehlgeschlagen", err));
-        }
         loadUsers();
           };
         }
@@ -2894,9 +2020,8 @@ document.getElementById("planning").style.display="block";
         initialView:'dayGridMonth',
         locale:'de',
         firstDay: 1,
-        fixedWeekCount:true,
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
-        height:"92vh",
+        height:"85vh",
 
         dayCellClassNames: (arg)=>{
           const dow = arg.date.getDay();
@@ -2904,7 +2029,7 @@ document.getElementById("planning").style.display="block";
         },
 
         customButtons: {
-                    duplicateBtn: {
+          duplicateBtn: {
             text: "📄 Duplizieren",
             click: () => openDuplicateModal()
           },
@@ -3133,13 +2258,13 @@ document.getElementById("planning").style.display="block";
 
 
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
-          height:"92vh",
+          height:"85vh",
 
         dayCellClassNames: (arg)=>{
           const dow = arg.date.getDay();
           return (dow===0 || dow===6) ? ['weekend'] : [];
         },
-          selectable:true,
+          selectable:false,
           eventDisplay: "block",
           displayEventTime: false,          dayHeaderContent: (arg) => {
             const d = arg.date;
@@ -3150,14 +2275,6 @@ document.getElementById("planning").style.display="block";
           },
           dayMaxEventRows: false,
           dayMaxEvents: false,
-
-          dateClick: info => {
-            try{
-              if(info && info.jsEvent && info.jsEvent.target && info.jsEvent.target.closest && info.jsEvent.target.closest('.fc-event')){
-                return;
-              }
-            }catch(_){ }
-          },
 
           events: async (info,success)=>{
             let res=await fetch("/events");
@@ -3257,186 +2374,28 @@ document.getElementById("planning").style.display="block";
         }, 20000);
       }
 
-
-    const LANGUAGE_LEVEL_OPTIONS = ["Grundkenntnisse", "Fortgeschritten", "Verhandlungssicher in Wort und Schrift", "Muttersprache"];
-
-    function sortUsersByLastFirst(list){
-      return [...(list || [])].sort((a,b)=>{
-        const an = String(a?.nachname || "").localeCompare(String(b?.nachname || ""), "de", {sensitivity:"base"});
-        if(an !== 0) return an;
-        const av = String(a?.vorname || "").localeCompare(String(b?.vorname || ""), "de", {sensitivity:"base"});
-        if(av !== 0) return av;
-        return String(a?.username || "").localeCompare(String(b?.username || ""), "de", {sensitivity:"base"});
-      });
-    }
-
-    function parseLanguagesPayload(raw){
-      if(Array.isArray(raw)) return raw;
-      const text = String(raw || "").trim();
-      if(!text) return [];
-      if(text.startsWith("[") || text.startsWith("{")){
-        try{
-          const parsed = JSON.parse(text);
-          if(Array.isArray(parsed)) return parsed.map(item=> typeof item === "string" ? {name:item, level:""} : {name:(item.name || item.language || item.label || ""), level:(item.level || "")}).filter(x=>x.name);
-          if(parsed && Array.isArray(parsed.items)) return parsed.items.map(item=>({name:(item.name || item.language || item.label || ""), level:(item.level || "")})).filter(x=>x.name);
-        }catch(_){ }
+      // User hinzufügen
+      function getCheckedValues(name){
+        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el=>el.value);
       }
-      return text.split(",").map(s=>s.trim()).filter(Boolean).map(name=>({name, level:""}));
-    }
-
-    function collectLanguageSelections(groupName, gridId){
-      const grid = document.getElementById(gridId);
-      if(!grid) return [];
-      return Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).filter(cb=>cb.checked).map(cb=>{
-        const item = cb.closest('.lang-item');
-        const sel = item ? item.querySelector('.lang-level-select') : null;
-        return { name: cb.value, level: sel ? (sel.value || "") : "" };
-      });
-    }
-
-    function applyLanguageSelections(groupName, gridId, values){
-      const grid = document.getElementById(gridId);
-      if(!grid) return;
-      const entries = parseLanguagesPayload(values);
-      const map = {};
-      entries.forEach(item=>{ map[String(item.name)] = String(item.level || ""); });
-      Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).forEach(cb=>{
-        const item = cb.closest('.lang-item');
-        const sel = item ? item.querySelector('.lang-level-select') : null;
-        const has = Object.prototype.hasOwnProperty.call(map, cb.value);
-        cb.checked = has;
-        if(item) item.classList.toggle('active', has);
-        if(sel) sel.value = has ? (map[cb.value] || "") : "";
-      });
-    }
-
-    function syncLanguageDropdownVisibility(container){
-      if(!container) return;
-      container.querySelectorAll('.lang-item input[type="checkbox"]').forEach(cb=>{
-        const item = cb.closest('.lang-item');
-        if(item) item.classList.toggle('active', cb.checked);
-      });
-    }
-
-    function attachLanguageDropdownLogic(container){
-      if(!container || container.dataset.langInit === '1') return;
-      container.dataset.langInit = '1';
-      container.addEventListener('change', (ev)=>{
-        if(ev.target && ev.target.matches('.lang-item input[type="checkbox"]')){
-          const item = ev.target.closest('.lang-item');
-          if(item) item.classList.toggle('active', ev.target.checked);
-          const sel = item ? item.querySelector('.lang-level-select') : null;
-          if(sel && !ev.target.checked) sel.value = '';
-          if(sel && ev.target.checked && !sel.value) sel.value = 'Grundkenntnisse';
-        }
-      });
-      syncLanguageDropdownVisibility(container);
-    }
-
-    function transformLanguageGrid(gridId, groupName){
-      const grid = document.getElementById(gridId);
-      if(!grid) return;
-      Array.from(grid.querySelectorAll(`input[name="${groupName}"]`)).forEach(cb=>{
-        const label = cb.closest('label');
-        if(!label || label.classList.contains('lang-item')) return;
-        const textSpan = label.querySelector('span');
-        const language = cb.value || (textSpan ? textSpan.textContent.trim() : '');
-        label.classList.add('lang-item');
-        const textWrap = document.createElement('span');
-        textWrap.className = 'lang-text';
-        cb.parentNode.insertBefore(textWrap, cb);
-        textWrap.appendChild(cb);
-        if(textSpan){ textWrap.appendChild(textSpan); }
-        else { const sp=document.createElement('span'); sp.textContent = language; textWrap.appendChild(sp); }
-        const sel = document.createElement('select');
-        sel.className = 'lang-level-select';
-        sel.dataset.language = language;
-        sel.innerHTML = LANGUAGE_LEVEL_OPTIONS.map((v, i)=>`<option value="${v}" ${i === 0 ? "selected" : ""}>${v}</option>`).join('');
-        label.appendChild(sel);
-      });
-      attachLanguageDropdownLogic(grid);
-    }
-
-    function collectLicenseSelections(groupName){
-      return Array.from(document.querySelectorAll(`input[name="${groupName}"]:checked`)).map(i=>i.value);
-    }
-
-    function applyLicenseSelections(groupName, values){
-      const list = Array.isArray(values) ? values : String(values || '').split(',').map(s=>s.trim()).filter(Boolean);
-      document.querySelectorAll(`input[name="${groupName}"]`).forEach(cb=>{ cb.checked = list.includes(cb.value); });
-    }
-
-
-    // (Sprach-Manager entfernt – feste Fremdsprachenliste)
-
-    // User hinzufügen
-      if(!IS_PLANNER){
-      document.getElementById("add-user-form").onsubmit=async e=>{
-        e.preventDefault();
-        let data={
-          vorname:document.getElementById("vorname").value,
-          nachname:document.getElementById("nachname").value,
-          email:(document.getElementById("email").value || "").trim(),
-          telefon:(document.getElementById("telefon").value || "").trim(),
-          username:document.getElementById("new-username").value,
-          password:document.getElementById("new-password").value,
-          role:document.getElementById("new-role").value,
-          s34a:document.getElementById("s34a").value,
-          s34a_art:document.getElementById("s34a_art").value,
-          pschein:document.getElementById("pschein").value,
-          bewach_id: document.getElementById("bewach_id").value,
-          steuernummer: document.getElementById("steuernummer").value,
-          bsw: document.getElementById("bsw").value,
-          sanitaeter: document.getElementById("sanitaeter").value,
-          stundensatz: document.getElementById("stundensatz").value,
-          geburtsdatum: document.getElementById("geburtsdatum").value,
-          staatsangehoerigkeit: document.getElementById("staatsangehoerigkeit").value,
-          amtliches_dokument: document.getElementById("amtliches_dokument").value,
-          dokumentennr: document.getElementById("dokumentennr").value,
-          ausstellende_behoerde: document.getElementById("ausstellende_behoerde").value,
-          ausstellungsdatum: document.getElementById("ausstellungsdatum").value,
-          sanitaeter_art: document.getElementById("sanitaeter_art").value,
-          brandschutzhelfer: document.getElementById("brandschutzhelfer").checked ? "ja" : "nein",
-          deeskalation: document.getElementById("deeskalation").checked ? "ja" : "nein",
-          gssk: document.getElementById("gssk").checked ? "ja" : "nein",
-          fachkraft: document.getElementById("fachkraft").checked ? "ja" : "nein",
-          personenschutz: document.getElementById("personenschutz").checked ? "ja" : "nein",
-          behoerdlich: document.getElementById("behoerdlich").checked ? "ja" : "nein",
-          waffensachkunde: document.getElementById("waffensachkunde").checked ? "ja" : "nein",
-          fuehrerschein_klasse: collectLicenseSelections('fuehrerschein_cb'),
-          sonstige: document.getElementById("sonstige").value,
-          sprachen_levels: collectLanguageSelections('sprachen_cb', 'lang-grid'),
-          sprachen: collectLanguageSelections('sprachen_cb', 'lang-grid').map(i=>i.name).join(", ")
-
-        };
-        const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
-        const rAdd = await resAdd.json().catch(()=>({}));
-        if(!resAdd.ok || rAdd.error){
-          alert(rAdd.error || "Hinzufügen fehlgeschlagen");
-          return;
-        }
-        // optional: Foto hochladen (nachdem User existiert)
-        const pIn = document.getElementById("new-photo");
-        if(pIn && pIn.files && pIn.files[0]){
-          const fd = new FormData();
-          fd.append("photo", pIn.files[0]);
-          await fetch("/users/" + encodeURIComponent(data.username) + "/photo", { method:"POST", body: fd });
-        }
-
-        if(typeof refreshCustomLanguages === "function"){
-          await refreshCustomLanguages().catch(err=>console.error("Sprachen-Refresh fehlgeschlagen", err));
-        }
-        await loadUsers();
-        e.target.reset();
-        applyLanguageSelections('sprachen_cb', 'lang-grid', []); applyLicenseSelections('fuehrerschein_cb', []);
-        const pv=document.getElementById("new-photo-preview");
-        if(pv){ pv.style.display="none"; pv.src=""; }
-
-      };
+      function setCheckedValues(name, values){
+        const wanted = new Set(values || []);
+        document.querySelectorAll(`input[name="${name}"]`).forEach(el=>{ el.checked = wanted.has(el.value); });
       }
-    });
-
-    
+      function setupDynamicLanguageList(containerId, buttonId){ const container=document.getElementById(containerId); const button=document.getElementById(buttonId); if(!container || !button || button.dataset.bound==='1') return; button.dataset.bound='1'; button.addEventListener('click', ()=> addDynamicLanguageField(containerId, '')); }
+      function addDynamicLanguageField(containerId, value=''){ const container=document.getElementById(containerId); if(!container) return; const row=document.createElement('div'); row.className='personal-dynamic-row'; row.innerHTML=`<input type="text" class="extra-language-input" placeholder="Weitere Sprache" value="${String(value||'').replace(/"/g,'&quot;')}"><button type="button" class="personal-secondary">Entfernen</button>`; row.querySelector('button').onclick=()=>row.remove(); container.appendChild(row); }
+      function getDynamicLanguageValues(containerId){ const c=document.getElementById(containerId); if(!c) return []; return Array.from(c.querySelectorAll('.extra-language-input')).map(el=>el.value.trim()).filter(Boolean); }
+      function setDynamicLanguageValues(containerId, values){ const c=document.getElementById(containerId); if(!c) return; c.innerHTML=''; (values || []).forEach(v=> addDynamicLanguageField(containerId, v)); }
+      function bindImageInput(fileId, dataId, previewId, nameId){ const fileInput=document.getElementById(fileId); if(!fileInput || fileInput.dataset.bound==='1') return; fileInput.dataset.bound='1'; fileInput.addEventListener('change', ()=>{ const file=fileInput.files && fileInput.files[0]; document.getElementById(nameId).textContent = file ? file.name : 'Noch keine Datei ausgewählt'; if(!file){ document.getElementById(dataId).value=''; document.getElementById(previewId).src=''; return; } const reader=new FileReader(); reader.onload=e=>{ document.getElementById(dataId).value=e.target.result || ''; document.getElementById(previewId).src=e.target.result || ''; }; reader.readAsDataURL(file); }); }
+      function userFormPayload(mode='create'){ const p=mode==='edit' ? 'edit-' : ''; const qualificationName=mode==='edit' ? 'edit-qualification' : 'qualification'; const licenseName=mode==='edit' ? 'edit-license_class' : 'license_class'; const languageName=mode==='edit' ? 'edit-language' : 'language'; const additionalContainer=mode==='edit' ? 'edit-additional-language-list' : 'additional-language-list'; return { vorname:document.getElementById(`${p}vorname`).value.trim(), nachname:document.getElementById(`${p}nachname`).value.trim(), username:document.getElementById(`${p}${mode==='edit' ? 'username' : 'new-username'}`).value.trim(), password:document.getElementById(`${p}${mode==='edit' ? 'password' : 'new-password'}`).value, geburtsdatum:document.getElementById(`${p}geburtsdatum`).value, geburtsort:document.getElementById(`${p}geburtsort`).value.trim(), email:document.getElementById(`${p}email`).value.trim(), telefon:document.getElementById(`${p}telefon`).value.trim(), staatsangehoerigkeit:document.getElementById(`${p}staatsangehoerigkeit`).value.trim(), staatsnummer:document.getElementById(`${p}staatsnummer`).value.trim(), role:document.getElementById(`${p}role`).value, bkv_rv:document.getElementById(`${p}bkv_rv`).value.trim(), sv5n:document.getElementById(`${p}sv5n`).value.trim(), image_data:document.getElementById(`${p}personal-image-data`).value, image_name:document.getElementById(`${p}personal-image-name`).textContent === 'Noch keine Datei ausgewählt' ? '' : document.getElementById(`${p}personal-image-name`).textContent, amtliches_dokument:document.getElementById(`${p}amtliches_dokument`).value, dokumentennummer:document.getElementById(`${p}dokumentennummer`).value.trim(), ausstellungsdatum:document.getElementById(`${p}ausstellungsdatum`).value, ausstellende_behoerde:document.getElementById(`${p}ausstellende_behoerde`).value.trim(), s34a:document.getElementById(`${p}s34a`).value, s34a_art:document.getElementById(`${p}s34a_art`).value, amt:document.getElementById(`${p}amt`).value, bewerber_id:document.getElementById(`${p}bewerber_id`).value.trim(), bemerkung:document.getElementById(`${p}bemerkung`).value.trim(), bsw:document.getElementById(`${p}bsw`).value, fschein:document.getElementById(`${p}fschein`).value, kati:document.getElementById(`${p}kati`).value, pschein:document.getElementById(`${p}pschein`).value, sanitaeter:document.getElementById(`${p}sanitaeter`).value, steuernummer:document.getElementById(`${p}steuernummer`).value.trim(), bewach_id:document.getElementById(`${p}bewach-id`).value.trim(), stundensatz:document.getElementById(`${p}stundensatz`).value, qualifications:getCheckedValues(qualificationName), license_classes:getCheckedValues(licenseName), sprachen:getCheckedValues(languageName), weitere_sprachen:getDynamicLanguageValues(additionalContainer), sonstige:document.getElementById(`${p}sonstige`).value.trim() }; }
+      function validatePersonalPayload(payload, isEdit=false){ if(!payload.vorname || !payload.nachname || !payload.username) return 'Vorname, Nachname und Benutzername sind erforderlich.'; if(!isEdit && !payload.password) return 'Passwort ist erforderlich.'; if(payload.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payload.email)) return 'Bitte eine gültige E-Mail-Adresse eingeben.'; return ''; }
+      function formatBadge(v){ const yes=String(v||'').toLowerCase()==='ja'; return `<span class="personal-status ${yes ? 'ok' : 'no'}">${yes ? '✔' : '–'}</span>`; }
+      function formatConsentBadge(v){ return `<span class="personal-status ${v ? 'ok' : 'no'}">${v ? '✔ eingewilligt' : '✖ offen'}</span>`; }
+      bindImageInput('personal-image-file','personal-image-data','personal-image-preview','personal-image-name');
+      bindImageInput('edit-personal-image-file','edit-personal-image-data','edit-personal-image-preview','edit-personal-image-name');
+      setupDynamicLanguageList('additional-language-list','add-language-btn');
+      setupDynamicLanguageList('edit-additional-language-list','edit-add-language-btn');
+      if(!IS_PLANNER){ document.getElementById('add-user-form').onsubmit=async e=>{ e.preventDefault(); const data=userFormPayload('create'); const err=validatePersonalPayload(data,false); if(err){ alert(err); return; } const resAdd=await fetch('/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); const rAdd=await resAdd.json().catch(()=>({})); if(!resAdd.ok || rAdd.error){ alert(rAdd.error || 'Anlegen fehlgeschlagen'); return; } let successMsg='Person erfolgreich angelegt.'; if(rAdd.mail_sent){ successMsg += ' Der Einladungslink wurde per E-Mail versendet.'; } else if(rAdd.mail_error){ successMsg += ` Mail konnte nicht versendet werden: ${rAdd.mail_error}`; } alert(successMsg); e.target.reset(); document.getElementById('personal-image-preview').src=''; document.getElementById('personal-image-name').textContent='Noch keine Datei ausgewählt'; document.getElementById('personal-image-data').value=''; setDynamicLanguageValues('additional-language-list', []); ['qualification','license_class','language'].forEach(name=> setCheckedValues(name, [])); await loadUsers(); }; }
     // ===== Duplizieren (Kalender-Header) =====
     let dupSelectedDates = [];
     let dupSourceCategoryById = {}; // event_id -> 'CP'/'CV'
@@ -4016,7 +2975,7 @@ document.getElementById("confirmed-counter").textContent =
       const replacementSelect = document.getElementById("replacement-user");
       replacementSelect.innerHTML = "";
 
-      const candidates = sortUsersByLastFirst(usersList);
+      const candidates = usersList;
 
       candidates.forEach(u=>{
         const opt=document.createElement("option");
@@ -4050,19 +3009,7 @@ document.getElementById("confirmed-counter").textContent =
         timeSel.appendChild(opt);
         cancelTimeEdit();
       } else {
-        const confirmedUsersSorted = [...confirmedUsers].sort((a,b)=>{
-          const ua = usersList.find(x => String(x.username) === String(a)) || { username:a, vorname:"", nachname:"" };
-          const ub = usersList.find(x => String(x.username) === String(b)) || { username:b, vorname:"", nachname:"" };
-          const aa = fullNameForSort(ua);
-          const bb = fullNameForSort(ub);
-          const byLast = aa.nachname.localeCompare(bb.nachname, "de", {sensitivity:"base"});
-          if(byLast !== 0) return byLast;
-          const byFirst = aa.vorname.localeCompare(bb.vorname, "de", {sensitivity:"base"});
-          if(byFirst !== 0) return byFirst;
-          return aa.username.localeCompare(bb.username, "de", {sensitivity:"base"});
-        });
-
-        confirmedUsersSorted.forEach(u=>{
+        confirmedUsers.forEach(u=>{
           const opt=document.createElement("option");
           opt.value=u;
           opt.textContent=usersCache[u] || u;
@@ -4072,352 +3019,49 @@ document.getElementById("confirmed-counter").textContent =
     }
 
     // User Management
-    function fullNameForSort(u){
-      const nachname = String(u?.nachname || "").trim();
-      const vorname = String(u?.vorname || "").trim();
-      const username = String(u?.username || "").trim();
-      return {
-        nachname: nachname || username,
-        vorname: vorname || "",
-        username
-      };
-    }
-
-    function sortUsersByLastFirst(users){
-      return [...(users || [])].sort((a,b)=>{
-        const aa = fullNameForSort(a);
-        const bb = fullNameForSort(b);
-        const byLast = aa.nachname.localeCompare(bb.nachname, "de", {sensitivity:"base"});
-        if(byLast !== 0) return byLast;
-        const byFirst = aa.vorname.localeCompare(bb.vorname, "de", {sensitivity:"base"});
-        if(byFirst !== 0) return byFirst;
-        return aa.username.localeCompare(bb.username, "de", {sensitivity:"base"});
-      });
-    }
-
     async function loadUsers(){
-      let res=await fetch(USER_LIST_ENDPOINT);
+      let res=await fetch('/users');
       let users=await res.json();
-
-      // ✅ Alphabetisch nach Nachname, Vorname
-      users = sortUsersByLastFirst(users);
-
+      users.sort((a,b)=> String((a.nachname||'') + (a.vorname||'')).localeCompare(String((b.nachname||'') + (b.vorname||'')), 'de'));
       usersList = users;
       usersCache = {};
-      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
-
-      let list=document.getElementById("user-list");
-      list.innerHTML="";
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname || ''} ${u.nachname || ''}`.trim(); });
+      const list=document.getElementById('user-list');
+      list.innerHTML='';
       users.forEach(u=>{
-        const tr=document.createElement("tr");
-        if(!!u.acc_locked) tr.classList.add("acc-locked");
-
-        // Name
-        const tdName=document.createElement("td");
-        tdName.className="ta-left";
-        tdName.textContent=`${u.vorname||""} ${u.nachname||""}`.trim() || "-";
-        if(!!u.acc_locked){
-          const badge=document.createElement("span");
-          badge.className="lock-state-badge";
-          badge.textContent="ACC gesperrt";
-          tdName.appendChild(badge);
-        }
-        tr.appendChild(tdName);
-
-        // Bemerkung (freier Text)
-        const tdBem=document.createElement("td");
-        tdBem.className="ta-left";
-        tdBem.textContent=(u.sonstige || "").trim() || "-";
-        tr.appendChild(tdBem);
-
-        // §34a GewO
-        const td34a=document.createElement("td");
-        td34a.className="ta-center";
-        const s34 = capYesNo(u.s34a);
-        td34a.textContent = s34 + ((String(u.s34a||'').toLowerCase()==="ja" && u.s34a_art) ? ` (${u.s34a_art})` : "");
-        tr.appendChild(td34a);
-
-        // Bewacher ID
-        const tdBew=document.createElement("td");
-        tdBew.className="ta-center";
-        tdBew.textContent=u.bewach_id || "-";
-        tr.appendChild(tdBew);
-
-        // BSW
-        const tdBsw=document.createElement("td");
-        tdBsw.className="ta-center";
-        tdBsw.textContent=capYesNo(u.bsw || "nein");
-        tr.appendChild(tdBsw);
-
-        // Sani
-        const tdSan=document.createElement("td");
-        tdSan.className="ta-center";
-        tdSan.textContent=capYesNo(u.sanitaeter || "nein");
-        tr.appendChild(tdSan);
-
-        // P-Schein
-        const tdPs=document.createElement("td");
-        tdPs.className="ta-center";
-        tdPs.textContent=capYesNo(u.pschein || "nein");
-        tr.appendChild(tdPs);
-
-        // SVS (ehem. Stundensatz)
-        const tdRate=document.createElement("td");
-        tdRate.className="ta-center";
-        tdRate.textContent = (u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined)
-          ? (fmtNumDE(Number(u.stundensatz),2) + " €/h")
-          : "-";
-        tr.appendChild(tdRate);
-
-        // Erklärung (Datenschutz-Zustimmung)
-        const tdCons=document.createElement("td");
-        tdCons.className="ta-center";
-        const cb=document.createElement("input");
-        cb.type="checkbox";
-        cb.disabled=true;
-        cb.checked=!!u.consent_given;
-        cb.title = cb.checked ? "Zugestimmt" : "Nicht zugestimmt";
-        tdCons.appendChild(cb);
-        tr.appendChild(tdCons);
-
-        // Aktionen
-        const tdAct=document.createElement("td");
-        tdAct.className="ta-center actions-cell";
-
-        const btnPdf=document.createElement("button");
-        btnPdf.className="confirm";
-        btnPdf.type="button";
-        btnPdf.textContent="📄 PDF erzeugen";
-        btnPdf.addEventListener("click", ()=>downloadClientPdf(u.username));
-
-        const btnEdit=document.createElement("button");
-        btnEdit.className="confirm";
-        btnEdit.type="button";
-        btnEdit.textContent="✏️ Bearbeiten";
-        btnEdit.addEventListener("click", ()=>openEditModal(u));
-
-        const btnDel=document.createElement("button");
-        btnDel.className="reject";
-        btnDel.type="button";
-        btnDel.textContent="🗑️ Löschen";
-        btnDel.addEventListener("click", ()=>deleteUser(u.username));
-
-        const btnLock=document.createElement("button");
-        btnLock.className="inline lock-btn" + (u.acc_locked ? " is-locked" : "");
-        btnLock.type="button";
-        btnLock.textContent=u.acc_locked ? "🔓 Entsperren" : "🔒 Sperren";
-        btnLock.addEventListener("click", ()=>toggleUserLock(u));
-
-        tdAct.appendChild(btnPdf);
-        tdAct.appendChild(btnEdit);
-        tdAct.appendChild(btnDel);
-        tdAct.appendChild(btnLock);
-        tr.appendChild(tdAct);
-
+        const tr=document.createElement('tr');
+        const fullName = `${u.vorname || ''} ${u.nachname || ''}`.trim() || u.username;
+        tr.innerHTML = `
+          <td>${fullName}${u.is_locked ? ' <span class="personal-status no">gesperrt</span>' : ''}</td>
+          <td>${u.bemerkung || '-'}</td>
+          <td>${String(u.s34a||'').toLowerCase()==='ja' ? `Ja${u.s34a_art ? ` (${u.s34a_art})` : ''}` : 'Nein'}</td>
+          <td>${u.bewerber_id || '-'}</td>
+          <td>${formatBadge(u.bsw)}</td>
+          <td>${formatBadge(u.sanitaeter)}</td>
+          <td>${formatBadge(u.pschein)}</td>
+          <td>${u.sv5n || '-'}</td>
+          <td>${formatConsentBadge(!!u.consent_given)}</td>
+          <td><div class="personal-mini-actions"></div></td>
+        `;
+        const actions = tr.querySelector('.personal-mini-actions');
+        const pdfBtn = document.createElement('button'); pdfBtn.className='pdf'; pdfBtn.textContent='PDF anzeigen'; pdfBtn.onclick=()=>window.open(`/users/${encodeURIComponent(u.username)}/pdf`, '_blank');
+        const editBtn = document.createElement('button'); editBtn.className='edit'; editBtn.textContent='Bearbeiten'; editBtn.onclick=()=>openEditModal(u);
+        const delBtn = document.createElement('button'); delBtn.className='delete'; delBtn.textContent='Löschen'; delBtn.onclick=()=>deleteUser(u.username);
+        const lockBtn = document.createElement('button'); lockBtn.className='lock'; lockBtn.textContent=u.is_locked ? 'Entsperren' : 'Sperren'; lockBtn.onclick=()=>toggleUserLock(u);
+        actions.append(pdfBtn, editBtn, delBtn, lockBtn);
         list.appendChild(tr);
       });
-
-
-    async function deleteUser(username){
-      const ok = confirm(
-        `⚠️ Mitarbeiter "${username}" wirklich löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!`
-      );
-      if(!ok) return;
-
-      await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
-      loadUsers();
+      function updateReportSumRow(){ const monthHours=Array(12).fill(0); const monthCost=Array(12).fill(0); let totalHours=0; let totalCost=0; usersList.forEach(u=>{ const d=reportData[u.username]; if(!d) return; for(let mi=0; mi<12; mi++){ const md=d.months[mi]; monthHours[mi]+=Number(md.hours || 0); monthCost[mi]+=Number(md.cost || 0); } totalHours += Number(d.totalHours || 0); totalCost += Number(d.totalCost || 0); }); const ids=['rpt-sum-jan','rpt-sum-feb','rpt-sum-mar','rpt-sum-apr','rpt-sum-mai','rpt-sum-jun','rpt-sum-jul','rpt-sum-aug','rpt-sum-sep','rpt-sum-okt','rpt-sum-nov','rpt-sum-dez']; ids.forEach((id,i)=>{ const el=document.getElementById(id); if(!el) return; const h=monthHours[i]; const c=monthCost[i]; el.innerHTML = (!h && !c) ? `<span class="muted">-</span>` : `<div><b>${fmtNumDE(h,2)} h</b></div><div><span class="money-soft">${fmtNumDE(c,2)} €</span></div>`; }); const hEl=document.getElementById('rpt-sum-hours'); if(hEl) hEl.innerHTML=`<b>${fmtNumDE(totalHours,2)} h</b>`; const cEl=document.getElementById('rpt-sum-cost'); if(cEl) cEl.innerHTML=`<b>${fmtNumDE(totalCost,2)} €</b>`; }
+      updateReportSumRow();
     }
+    async function deleteUser(username){ const ok=confirm(`⚠️ Mitarbeiter "${username}" wirklich löschen?
 
-    async function toggleUserLock(user){
-      if(!user || !user.username) return;
-      const targetLocked = !Boolean(user.acc_locked);
-      const label = targetLocked ? "sperren" : "entsperren";
-      if(!confirm(`ACC von "${user.username}" wirklich ${label}?`)) return;
-      const res = await fetch("/users/" + encodeURIComponent(user.username) + "/lock", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ locked: targetLocked }) });
-      const data = await res.json().catch(()=>({}));
-      if(!res.ok || data.error){ alert(data.error || "Sperrstatus konnte nicht gespeichert werden."); return; }
-      await loadUsers();
-    }
+Dieser Vorgang kann nicht rückgängig gemacht werden!`); if(!ok) return; await fetch('/users/' + encodeURIComponent(username), { method:'DELETE' }); await loadUsers(); }
+    async function toggleUserLock(user){ const res=await fetch(`/users/${encodeURIComponent(user.username)}/lock`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({locked: !user.is_locked})}); const r=await res.json().catch(()=>({})); if(!res.ok || r.error){ alert(r.error || 'Status konnte nicht geändert werden.'); return; } await loadUsers(); }
+    function openEditModal(user){ currentEditUser=user.username; document.getElementById('edit-username').value=user.username || ''; document.getElementById('edit-vorname').value=user.vorname || ''; document.getElementById('edit-nachname').value=user.nachname || ''; document.getElementById('edit-password').value=user.password || ''; document.getElementById('edit-geburtsdatum').value=user.geburtsdatum || ''; document.getElementById('edit-geburtsort').value=user.geburtsort || ''; document.getElementById('edit-email').value=user.email || ''; document.getElementById('edit-telefon').value=user.telefon || ''; document.getElementById('edit-staatsangehoerigkeit').value=user.staatsangehoerigkeit || ''; document.getElementById('edit-staatsnummer').value=user.staatsnummer || ''; document.getElementById('edit-role').value=user.role || 'mitarbeiter'; document.getElementById('edit-bkv_rv').value=user.bkv_rv || ''; document.getElementById('edit-sv5n').value=user.sv5n || ''; document.getElementById('edit-amtliches_dokument').value=user.amtliches_dokument || ''; document.getElementById('edit-dokumentennummer').value=user.dokumentennummer || ''; document.getElementById('edit-ausstellungsdatum').value=user.ausstellungsdatum || ''; document.getElementById('edit-ausstellende_behoerde').value=user.ausstellende_behoerde || ''; document.getElementById('edit-s34a').value=user.s34a || 'nein'; document.getElementById('edit-s34a_art').value=user.s34a_art || ''; document.getElementById('edit-amt').value=user.amt || ''; document.getElementById('edit-bewerber_id').value=user.bewerber_id || ''; document.getElementById('edit-bemerkung').value=user.bemerkung || ''; document.getElementById('edit-bsw').value=user.bsw || 'nein'; document.getElementById('edit-fschein').value=user.fschein || 'nein'; document.getElementById('edit-kati').value=user.kati || 'nein'; document.getElementById('edit-pschein').value=user.pschein || 'nein'; document.getElementById('edit-sanitaeter').value=user.sanitaeter || 'nein'; document.getElementById('edit-steuernummer').value=user.steuernummer || ''; document.getElementById('edit-bewach-id').value=user.bewach_id || ''; document.getElementById('edit-stundensatz').value=(user.stundensatz ?? '') === '' ? '' : Number(user.stundensatz); document.getElementById('edit-sonstige').value=user.sonstige || ''; document.getElementById('edit-personal-image-data').value=user.image_data || ''; document.getElementById('edit-personal-image-name').textContent=user.image_name || 'Noch keine Datei ausgewählt'; document.getElementById('edit-personal-image-preview').src=user.image_data || ''; setCheckedValues('edit-qualification', user.qualifications || []); setCheckedValues('edit-license_class', user.license_classes || []); setCheckedValues('edit-language', user.sprachen || []); setDynamicLanguageValues('edit-additional-language-list', user.weitere_sprachen || []); document.getElementById('editUserModal').style.display='flex'; }
+    function closeEditModal(){ document.getElementById('editUserModal').style.display='none'; }
+    async function saveUserEdit(){ const oldUsername=currentEditUser; const data=userFormPayload('edit'); const err=validatePersonalPayload(data,true); if(err){ alert(err); return; } const newUsernameRaw=data.username; const newUsernameUrl=encodeURIComponent(newUsernameRaw); if(oldUsername !== newUsernameRaw){ const resRename=await fetch('/users/rename',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old_username: oldUsername, new_username: newUsernameRaw})}); const rRename=await resRename.json().catch(()=>({error:'Ungültige Server-Antwort'})); if(!resRename.ok || rRename.error){ alert(rRename.error || 'Umbenennen fehlgeschlagen'); return; } currentEditUser=newUsernameRaw; } if(!data.password) delete data.password; const resSave=await fetch('/users/' + newUsernameUrl,{method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); const rSave=await resSave.json().catch(()=>({})); if(!resSave.ok || rSave.error){ alert(rSave.error || 'Speichern fehlgeschlagen'); return; } closeEditModal(); await loadUsers(); if(typeof calendar !== 'undefined' && calendar) calendar.refetchEvents(); if(typeof planningCalendar !== 'undefined' && planningCalendar) planningCalendar.refetchEvents(); }
 
-    function downloadClientPdf(username){
-      if(!username) return;
-      window.location = "/users/" + encodeURIComponent(username) + "/client_pdf";
-    }
-
-    async function uploadEditPhoto(){
-      if(!currentEditUser){ alert("Kein Mitarbeiter ausgewählt"); return; }
-      const inp = document.getElementById("edit-photo");
-      if(!inp || !inp.files || !inp.files[0]){ alert("Bitte zuerst ein Foto auswählen."); return; }
-      const fd = new FormData();
-      fd.append("photo", inp.files[0]);
-      const res = await fetch("/users/" + encodeURIComponent(currentEditUser) + "/photo", { method:"POST", body: fd });
-      const r = await res.json().catch(()=>({}));
-      if(!res.ok || r.error){ alert(r.error || "Upload fehlgeschlagen"); return; }
-      // Vorschau aktualisieren
-      const pv = document.getElementById("edit-photo-preview");
-      if(pv){ pv.src = r.photo_url; pv.style.display="block"; }
-      await loadUsers();
-    }
-
-    function openEditModal(user){
-      document.getElementById("edit-username").value=user.username;
-      currentEditUser = user.username;
-
-      document.getElementById("edit-vorname").value=user.vorname || "";
-      document.getElementById("edit-nachname").value=user.nachname || "";
-      document.getElementById("edit-email").value=user.email || "";
-      
-      document.getElementById("edit-telefon").value=user.telefon || user.phone || "";document.getElementById("edit-password").value=user.password||"";
-      document.getElementById("edit-role").value=user.role || "mitarbeiter";
-      document.getElementById("edit-s34a").value=user.s34a || "nein";
-      document.getElementById("edit-s34a_art").value=user.s34a_art || "";
-      document.getElementById("edit-pschein").value=user.pschein || "nein";
-
-      document.getElementById("edit-bewach-id").value=user.bewach_id || "";
-      document.getElementById("edit-steuernummer").value=user.steuernummer || "";
-      document.getElementById("edit-bsw").value=user.bsw || "nein";
-      document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
-
-      document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
-
-      // Personalbogen
-      document.getElementById("edit-geburtsdatum").value = (user.geburtsdatum || "");
-      document.getElementById("edit-staatsangehoerigkeit").value = (user.staatsangehoerigkeit || "");
-      document.getElementById("edit-amtliches_dokument").value = (user.amtliches_dokument || "");
-      document.getElementById("edit-dokumentennr").value = (user.dokumentennr || "");
-      document.getElementById("edit-ausstellende_behoerde").value = (user.ausstellende_behoerde || "");
-      document.getElementById("edit-ausstellungsdatum").value = (user.ausstellungsdatum || "");
-      document.getElementById("edit-sanitaeter_art").value = (user.sanitaeter_art || "");
-
-      document.getElementById("edit-brandschutzhelfer").checked = String(user.brandschutzhelfer||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-deeskalation").checked = String(user.deeskalation||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-gssk").checked = String(user.gssk||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-fachkraft").checked = String(user.fachkraft||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-personenschutz").checked = String(user.personenschutz||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-behoerdlich").checked = String(user.behoerdlich||"nein").toLowerCase()==="ja";
-      document.getElementById("edit-waffensachkunde").checked = String(user.waffensachkunde||"nein").toLowerCase()==="ja";
-
-      applyLicenseSelections('edit_fuehrerschein_cb', user.fuehrerschein_klassen || user.fuehrerschein_klasse || []);
-      document.getElementById("edit-sonstige").value = (user.sonstige || "");
-
-      const editLangGrid = document.getElementById("edit-lang-grid");
-      const langEntries = Array.isArray(user.sprachen_levels) && user.sprachen_levels.length ? user.sprachen_levels : parseLanguagesPayload(user.sprachen || "");
-      langEntries.forEach(item=>{
-        const lang = String(item.name || "").trim();
-        if(!lang) return;
-        const selector = `input[name="edit_sprachen_cb"][value="${(window.CSS && CSS.escape) ? CSS.escape(lang) : lang}"]`;
-        if(editLangGrid && !editLangGrid.querySelector(selector)){
-          const label = document.createElement("label");
-          const cb = document.createElement("input");
-          cb.type = "checkbox";
-          cb.name = "edit_sprachen_cb";
-          cb.value = lang;
-          const span = document.createElement("span");
-          span.textContent = lang;
-          label.appendChild(cb);
-          label.appendChild(span);
-          editLangGrid.appendChild(label);
-        }
-      });
-      transformLanguageGrid('edit-lang-grid', 'edit_sprachen_cb');
-      applyLanguageSelections('edit_sprachen_cb', 'edit-lang-grid', langEntries);
-// Foto Vorschau
-      const pv = document.getElementById("edit-photo-preview");
-      if(pv){
-        if(user.photo_url){
-          pv.src = user.photo_url;
-          pv.style.display = "block";
-        } else {
-          pv.src = "";
-          pv.style.display = "none";
-        }
-      }
-
-      document.getElementById("editUserModal").style.display="flex";
-    }
-
-    function closeEditModal(){ document.getElementById("editUserModal").style.display="none"; }
-
-    async function saveUserEdit(){
-      const oldUsername = currentEditUser;
-      const newUsernameRaw = document.getElementById("edit-username").value.trim();
-      const newUsername = newUsernameRaw; // Anzeige
-      const newUsernameUrl = encodeURIComponent(newUsernameRaw); // ✅ für URL
-
-      if(!newUsernameRaw){ alert("Benutzername darf nicht leer sein."); return; }
-
-      // 1) ggf. umbenennen
-      if(oldUsername !== newUsernameRaw){
-        const resRename = await fetch("/users/rename", {
-          method:"POST", headers:{"Content-Type":"application/json"},
-          body:JSON.stringify({ old_username: oldUsername, new_username: newUsernameRaw })
-        });
-        const rRename = await resRename.json().catch(()=>({error:"Ungültige Server-Antwort"}));
-        if(!resRename.ok || rRename.error){
-          alert(rRename.error || "Umbenennen fehlgeschlagen");
-          return;
-        }
-        // ✅ wichtig: internen Edit-User aktualisieren
-        currentEditUser = newUsernameRaw;
-      }
-
-      // 2) Daten speichern
-      let data={
-        vorname:document.getElementById("edit-vorname").value,
-        nachname:document.getElementById("edit-nachname").value,
-        email:(document.getElementById("edit-email").value || "").trim(),
-        telefon:(document.getElementById("edit-telefon").value || "").trim(),
-        password:(document.getElementById("edit-password").value || "").trim() ? document.getElementById("edit-password").value : null,
-        role:document.getElementById("edit-role").value,
-        s34a:document.getElementById("edit-s34a").value,
-        s34a_art:document.getElementById("edit-s34a_art").value,
-        pschein:document.getElementById("edit-pschein").value,
-        bewach_id: document.getElementById("edit-bewach-id").value,
-        steuernummer: document.getElementById("edit-steuernummer").value,
-        bsw: document.getElementById("edit-bsw").value,
-        sanitaeter: document.getElementById("edit-sanitaeter").value,
-        stundensatz:document.getElementById("edit-stundensatz").value,
-        geburtsdatum: document.getElementById("edit-geburtsdatum").value,
-        staatsangehoerigkeit: document.getElementById("edit-staatsangehoerigkeit").value,
-        amtliches_dokument: document.getElementById("edit-amtliches_dokument").value,
-        dokumentennr: document.getElementById("edit-dokumentennr").value,
-        ausstellende_behoerde: document.getElementById("edit-ausstellende_behoerde").value,
-        ausstellungsdatum: document.getElementById("edit-ausstellungsdatum").value,
-        sanitaeter_art: document.getElementById("edit-sanitaeter_art").value,
-        brandschutzhelfer: document.getElementById("edit-brandschutzhelfer").checked ? "ja" : "nein",
-        deeskalation: document.getElementById("edit-deeskalation").checked ? "ja" : "nein",
-        gssk: document.getElementById("edit-gssk").checked ? "ja" : "nein",
-        fachkraft: document.getElementById("edit-fachkraft").checked ? "ja" : "nein",
-        personenschutz: document.getElementById("edit-personenschutz").checked ? "ja" : "nein",
-        behoerdlich: document.getElementById("edit-behoerdlich").checked ? "ja" : "nein",
-        waffensachkunde: document.getElementById("edit-waffensachkunde").checked ? "ja" : "nein",
-        fuehrerschein_klasse: collectLicenseSelections('edit_fuehrerschein_cb'),
-        sonstige: document.getElementById("edit-sonstige").value,
-        sprachen_levels: collectLanguageSelections('edit_sprachen_cb', 'edit-lang-grid'),
-        sprachen: collectLanguageSelections('edit_sprachen_cb', 'edit-lang-grid').map(i=>i.name).join(", ")
-
-      };
-
-      const resSave = await fetch("/users/"+newUsernameUrl,{
-        method:"PUT", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify(data)
-      });
-
-      const rSave = await resSave.json().catch(()=>({}));
-      if(!resSave.ok || rSave.error){
-        alert(rSave.error || "Speichern fehlgeschlagen");
-        return;
-      }
-
-      closeEditModal();
-
-      // ✅ sicher aktualisieren (Tabelle + Cache)
-      await loadUsers();
-
-      // optional: Kalender/Planung aktualisieren, falls Namen/Stundensatz geändert wurden
-      if(typeof calendar !== "undefined" && calendar) calendar.refetchEvents();
-      if(typeof planningCalendar !== "undefined" && planningCalendar) planningCalendar.refetchEvents();
-    }
 
     function togglePassword(id){
       let input=document.getElementById(id);
@@ -4457,7 +3101,7 @@ document.getElementById("confirmed-counter").textContent =
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
-      usersList = sortUsersByLastFirst(await ures.json());
+      usersList = await ures.json();
       const uMap = userByUsername();
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
@@ -4669,8 +3313,8 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     // ZÄHLER laden (Einsätze pro Mitarbeiter: Jan–Dez)
     async function loadCounter(){
       // Users + Cache
-      let ures = await fetch(USER_LIST_ENDPOINT);
-      usersList = sortUsersByLastFirst(await ures.json());
+      let ures = await fetch("/users");
+      usersList = await ures.json();
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
 
@@ -5113,8 +3757,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
       const yy = String(d.getFullYear());
       return `${dd}.${mm}.${yy}`;
     }
-
-    }
+    
 </script>
 
 <script>
@@ -5129,106 +3772,7 @@ function setCategoryBadge(cat){
 
 
 <script>
-/* ✅ Sprach-Manager: Chef kann eigene Sprachen serverseitig speichern und in der Personalansicht verwenden. */
-function initLanguageManagers(){
-  const addGrid  = document.getElementById("lang-grid");
-  const editGrid = document.getElementById("edit-lang-grid");
-  const addInput = document.getElementById("lang-custom-input");
-  const addBtn   = document.getElementById("lang-custom-add");
-  const addList  = document.getElementById("lang-custom-list");
-  const editInput = document.getElementById("edit-lang-custom-input");
-  const editBtn   = document.getElementById("edit-lang-custom-add");
-  const editList  = document.getElementById("edit-lang-custom-list");
-  if(!addGrid || !editGrid) return;
-
-  const norm = (s)=> String(s||"").trim().replace(/\s{2,}/g, " ");
-  const esc = (value)=> window.CSS && CSS.escape ? CSS.escape(value) : String(value).replace(/([ #;?%&,.+*~\':"!^$\[\]()=>|\/@])/g,'\\$1');
-  const hasCheckbox = (grid, name, value)=> !!grid.querySelector(`input[name="${name}"][value="${esc(value)}"]`);
-  const appendCheckbox = (grid, name, value)=>{
-    const v = norm(value);
-    if(!v || hasCheckbox(grid, name, v)) return;
-    const label = document.createElement("label");
-    const cb = document.createElement("input");
-    cb.type = "checkbox";
-    cb.name = name;
-    cb.value = v;
-    const span = document.createElement("span");
-    span.textContent = v;
-    label.appendChild(cb);
-    label.appendChild(span);
-    grid.appendChild(label);
-  };
-  const ensureInGrids = (langs)=> langs.forEach(lang=>{ appendCheckbox(addGrid, "sprachen_cb", lang); appendCheckbox(editGrid, "edit_sprachen_cb", lang); });
-  const renderChips = (target, langs, onRemove)=>{
-    if(!target) return;
-    target.innerHTML = "";
-    langs.forEach(lang=>{
-      const chip = document.createElement("span");
-      chip.className = "custom-lang-chip";
-      const txt = document.createElement("span");
-      txt.textContent = lang;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.textContent = "✕";
-      btn.title = `${lang} entfernen`;
-      btn.addEventListener("click", ()=>onRemove(lang));
-      chip.appendChild(txt);
-      chip.appendChild(btn);
-      target.appendChild(chip);
-    });
-  };
-
-  const refresh = async ()=>{
-    const res = await fetch("/custom_languages");
-    const data = await res.json().catch(()=>[]);
-    if(!res.ok) throw new Error((data && data.error) || "Custom-Sprachen konnten nicht geladen werden.");
-    const langs = Array.isArray(data) ? data.map(norm).filter(Boolean) : [];
-    ensureInGrids(langs);
-    renderChips(addList, langs, removeLanguage);
-    renderChips(editList, langs, removeLanguage);
-  };
-
-  const addLanguage = async (raw)=>{
-    const value = norm(raw);
-    if(!value){ alert("Bitte eine Sprache eingeben."); return false; }
-    const res = await fetch("/custom_languages", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({ name: value }) });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok || data.error){ alert(data.error || "Sprache konnte nicht hinzugefügt werden."); return false; }
-    ensureInGrids([data.name || value]);
-    await refresh();
-    return true;
-  };
-
-  async function removeLanguage(lang){
-    const res = await fetch("/custom_languages/" + encodeURIComponent(lang), { method:"DELETE" });
-    const data = await res.json().catch(()=>({}));
-    if(!res.ok || data.error){ alert(data.error || "Sprache konnte nicht entfernt werden."); return; }
-    [addGrid, editGrid].forEach(grid=>{
-      grid.querySelectorAll(`input[value="${esc(lang)}"]`).forEach(input=>{
-        const label = input.closest("label");
-        if(label) label.remove();
-      });
-    });
-    await refresh();
-  }
-
-  const bind = (btn, input)=>{
-    if(!btn || !input) return;
-    btn.addEventListener("click", async ()=>{ const ok = await addLanguage(input.value); if(ok){ input.value = ""; input.focus(); } });
-    input.addEventListener("keydown", (e)=>{ if(e.key === "Enter"){ e.preventDefault(); btn.click(); } });
-  };
-
-  bind(addBtn, addInput);
-  bind(editBtn, editInput);
-  window.refreshCustomLanguages = refresh;
-  window.addCustomLanguage = addLanguage;
-  refresh().catch(err=>{ console.error(err); alert(err.message || "Sprachen konnten nicht initialisiert werden."); });
-}
-</script>
-
-<script>
 document.addEventListener("DOMContentLoaded", function(){
-  initLanguageManagers();
   // ✅ Defaults: Report & Zähler starten mit CV
   const rt = document.getElementById("report-type");
   if(rt && (!rt.value)) rt.value = "CV";
@@ -5321,27 +3865,26 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
     hideTab("tab-counter");
     hide("counter");
 
-    // Personal weg
+    // Personal weg (Tab heißt tab-users)
     hideTab("tab-users");
     hide("user-management");
 
-    // Report: CP erzwingen + Toggle ausblenden
+    // Report: CP erzwingen + Filter UI ausblenden
     const rtgl = document.getElementById("report-cat-toggle");
     if(rtgl){
       rtgl.querySelectorAll("button").forEach(b=>{
         const v = String(b.dataset.value||"").toUpperCase();
         if(v === "CV") b.style.display = "none";
-        if(v === "CP") b.classList.add("active");
-      });
-      rtgl.style.display = "none";
-    }
-
-    // Kategorie-Label im Report entfernen (falls vorhanden)
+        if(v === "CP"){ b.classList.add("active"); }
+    // Kategorie-Label im Report entfernen
     const rptFilter = document.querySelector("#report .filter-card");
     if(rptFilter){
       rptFilter.querySelectorAll("label").forEach(l=>{
         if(String(l.textContent||"").toLowerCase().includes("kategorie")) l.style.display="none";
       });
+    }
+  });
+      rtgl.style.display = "none";
     }
 
     // Falls es ein Select gibt (z.B. report-type), auf CP fixieren und ausblenden
@@ -5427,163 +3970,9 @@ document.addEventListener('DOMContentLoaded', function(){
 });
 </script>
 
+</body>
+</html>
 
-<script>
-document.addEventListener("DOMContentLoaded", function(){
-  const form = document.getElementById("add-user-form");
-  if(!form) return;
-
-  form.addEventListener("submit", function(){
-    setTimeout(()=>{
-      form.reset();
-
-      applyLanguageSelections('sprachen_cb', 'lang-grid', []);
-
-      const preview = document.getElementById("new-photo-preview") || document.getElementById("photo-preview");
-      if(preview){
-        preview.src="";
-        preview.style.display="none";
-      }
-    },500);
-  });
-});
-</script>
-
-
-
-
-
-<script>
-/* --- FINAL HOTFIX: Tabs vollständig entkoppeln und robust neu binden --- */
-document.addEventListener("DOMContentLoaded", function(){
-  const role = String("{{ role|default('chef') }}").trim().toLowerCase().replace(/\s+/g, "_");
-  const isPlanner = ["planer", "planner_bbs"].includes(role);
-
-  const sections = {
-    "tab-calendar": "calendar",
-    "tab-termine": "termine",
-    "tab-planning": "planning",
-    "tab-users": "user-management",
-    "tab-report": "report",
-    "tab-counter": "counter"
-  };
-
-  const existingTabs = Object.keys(sections).filter(id => document.getElementById(id));
-  const existingSections = [...new Set(Object.values(sections))].filter(id => document.getElementById(id));
-
-  function hideAllSections(){
-    existingSections.forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.style.display = "none";
-    });
-  }
-
-  function setActive(tabId){
-    existingTabs.forEach(id => {
-      const tab = document.getElementById(id);
-      if(tab) tab.classList.toggle("active", id === tabId);
-    });
-  }
-
-  function safeCall(fnName){
-    try {
-      if(typeof window[fnName] === 'function') return window[fnName]();
-    } catch(err) { console.error(fnName + ' fehlgeschlagen', err); }
-  }
-
-  function getPlanningCalendar(){
-    try {
-      if(window.planningCalendar) return window.planningCalendar;
-      if(typeof planningCalendar !== 'undefined') return planningCalendar;
-    } catch(err) {}
-    return null;
-  }
-
-  function getMainCalendar(){
-    try {
-      if(window.calendar) return window.calendar;
-      if(typeof calendar !== 'undefined') return calendar;
-    } catch(err) {}
-    return null;
-  }
-
-  function openTab(tabId){
-    const sectionId = sections[tabId];
-    const section = sectionId ? document.getElementById(sectionId) : null;
-
-    hideAllSections();
-    if(section) section.style.display = 'block';
-    setActive(tabId);
-
-    if(tabId === 'tab-users') {
-      safeCall('refreshCustomLanguages');
-      safeCall('loadUsers');
-    }
-    if(tabId === 'tab-termine') safeCall('loadMyTermine');
-    if(tabId === 'tab-report') safeCall('loadReport');
-    if(tabId === 'tab-counter') safeCall('loadCounter');
-
-    if(tabId === 'tab-planning'){
-      try {
-        if(typeof window.initPlanningCalendar === 'function' && !getPlanningCalendar()) {
-          window.initPlanningCalendar();
-        } else if(typeof initPlanningCalendar === 'function' && !getPlanningCalendar()) {
-          initPlanningCalendar();
-        }
-        const pc = getPlanningCalendar();
-        if(pc){
-          if(typeof pc.render === 'function') pc.render();
-          if(typeof pc.refetchEvents === 'function') pc.refetchEvents();
-        }
-      } catch(err) {
-        console.error('Planung konnte nicht geöffnet werden', err);
-      }
-    }
-
-    if(tabId === 'tab-calendar'){
-      try {
-        const cal = getMainCalendar();
-        if(cal && typeof cal.render === 'function') cal.render();
-      } catch(err) {
-        console.error('Kalender konnte nicht geöffnet werden', err);
-      }
-    }
-
-    try { window.dispatchEvent(new Event('resize')); } catch(err) {}
-  }
-
-  // Alte Event-Handler vollständig entfernen, indem Tabs geklont werden.
-  existingTabs.forEach(tabId => {
-    const oldTab = document.getElementById(tabId);
-    if(!oldTab || !oldTab.parentNode) return;
-    const newTab = oldTab.cloneNode(true);
-    oldTab.parentNode.replaceChild(newTab, oldTab);
-  });
-
-  existingTabs.forEach(tabId => {
-    const tab = document.getElementById(tabId);
-    if(!tab) return;
-    tab.addEventListener('click', function(e){
-      e.preventDefault();
-      e.stopPropagation();
-      if(typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
-      openTab(tabId);
-      return false;
-    }, true);
-  });
-
-  if(isPlanner && document.getElementById('tab-planning')) {
-    openTab('tab-planning');
-  } else if(document.getElementById('tab-calendar')) {
-    openTab('tab-calendar');
-  }
-});
-</script>
-
-
-<script>
-// Doppelter Tab-Manager entfernt. Die primäre Tab-Logik weiter oben bleibt aktiv.
-</script>
 
 <script>
 // ✅ Kategorie-Badge bei Firma im Einsatzdetails-Modal setzen
@@ -5615,217 +4004,3 @@ async function sendEventMailFromCalendar(){
   alert("E-Mail wurde an alle Mitarbeiter versendet.");
 }
 </script>
-
-<script>
-/* --- Fix: robuste Tab-Umschaltung für Dashboard --- */
-document.addEventListener("DOMContentLoaded", function(){
-  const ROLE_FIX = String("{{ role|default('chef') }}").trim().toLowerCase().replace(/\s+/g, "_");
-  const IS_PLANNER_FIX = ["planer","planner_bbs"].includes(ROLE_FIX);
-
-  const sections = {
-    "tab-calendar": "calendar",
-    "tab-termine": "termine",
-    "tab-planning": "planning",
-    "tab-users": "user-management",
-    "tab-report": "report",
-    "tab-counter": "counter"
-  };
-
-  const allSectionIds = Object.values(sections);
-  const allTabIds = Object.keys(sections);
-
-  function hideAllSections(){
-    allSectionIds.forEach(id => {
-      const el = document.getElementById(id);
-      if(el) el.style.display = "none";
-    });
-  }
-
-  function setActive(tabId){
-    allTabIds.forEach(id => {
-      const tab = document.getElementById(id);
-      if(tab) tab.classList.toggle("active", id === tabId);
-    });
-  }
-
-  function openTab(tabId){
-    const sectionId = sections[tabId];
-    const section = sectionId ? document.getElementById(sectionId) : null;
-    hideAllSections();
-    if(section) section.style.display = "block";
-    setActive(tabId);
-
-    if(tabId === "tab-users" && typeof loadUsers === "function") loadUsers();
-    if(tabId === "tab-termine" && typeof loadMyTermine === "function") loadMyTermine();
-    if(tabId === "tab-report" && typeof loadReport === "function") loadReport();
-    if(tabId === "tab-counter" && typeof loadCounter === "function") loadCounter();
-    if(tabId === "tab-planning") {
-      try{
-        if(typeof initPlanningCalendar === "function" && !window.planningCalendar){ initPlanningCalendar(); }
-        if(window.planningCalendar){
-          window.planningCalendar.render();
-          window.planningCalendar.refetchEvents();
-        }
-        window.dispatchEvent(new Event("resize"));
-      }catch(err){ console.error("Planung konnte nicht geöffnet werden", err); }
-    }
-    if(tabId === "tab-calendar") {
-      try{ if(window.calendar){ window.calendar.render(); } window.dispatchEvent(new Event("resize")); }catch(err){}
-    }
-  }
-
-  allTabIds.forEach(tabId => {
-    const tab = document.getElementById(tabId);
-    if(!tab) return;
-    tab.onclick = function(e){
-      e.preventDefault();
-      openTab(tabId);
-      return false;
-    };
-  });
-
-  if(IS_PLANNER_FIX){
-    openTab("tab-planning");
-  } else {
-    openTab("tab-calendar");
-  }
-});
-</script>
-
-<script>
-/* Main calendar refresh fix: vorhandenen Kalender NICHT neu aufbauen,
-   sondern nur sauber nachrendern. Der Neuaufbau hat Klicks/Größe zerstört. */
-(function(){
-  function getMainCalendar(){
-    try{
-      if(window.calendar && typeof window.calendar.render === 'function') return window.calendar;
-    }catch(_){ }
-    return null;
-  }
-
-  function refreshMainCalendar(){
-    const cal = getMainCalendar();
-    if(!cal) return;
-    try{ cal.render(); }catch(err){ console.error('Main calendar render Fehler:', err); }
-    try{ if(typeof cal.updateSize === 'function') cal.updateSize(); }catch(err){ console.error('Main calendar updateSize Fehler:', err); }
-    try{ if(typeof cal.refetchEvents === 'function') cal.refetchEvents(); }catch(err){ console.error('Main calendar refetchEvents Fehler:', err); }
-  }
-
-  function bindTab(){
-    const tab = document.getElementById('tab-calendar');
-    if(!tab || tab.dataset.mainTabBound === '1') return;
-    tab.dataset.mainTabBound = '1';
-    tab.addEventListener('click', function(){
-      setTimeout(refreshMainCalendar, 20);
-      setTimeout(refreshMainCalendar, 180);
-      setTimeout(refreshMainCalendar, 500);
-    }, true);
-  }
-
-  document.addEventListener('DOMContentLoaded', function(){
-    bindTab();
-    setTimeout(refreshMainCalendar, 250);
-  });
-
-  window.addEventListener('load', function(){
-    bindTab();
-    setTimeout(refreshMainCalendar, 400);
-    setTimeout(refreshMainCalendar, 900);
-  });
-})();
-</script>
-
-
-<script>
-/* Final Stabilizer: Planung laden, Kalenderhöhe korrigieren */
-(function(){
-  function canCreateEvents(){
-    const role = String(window.ROLE || '').trim().toLowerCase();
-    return ['chef','vorgesetzter','vorgesetzter_cp','planer','planner_bbs'].includes(role);
-  }
-
-  function todayYmd(){
-    const now = new Date();
-    const yyyy = now.getFullYear();
-    const mm = String(now.getMonth()+1).padStart(2,'0');
-    const dd = String(now.getDate()).padStart(2,'0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function ensureCalendarSizes(){
-    ['calendar','calendar-fixed-host','planning-calendar'].forEach(id => {
-      const el = document.getElementById(id);
-      if(el){
-        el.style.minHeight = (id === 'planning-calendar') ? '86vh' : '92vh';
-      }
-    });
-  }
-
-  function renderPlanningReliable(){
-    try{
-      const planningWrap = document.getElementById('planning');
-      if(planningWrap) planningWrap.style.display = 'block';
-      if(typeof window.initPlanningCalendar === 'function' && !window.planningCalendar){
-        window.initPlanningCalendar();
-      } else if(typeof initPlanningCalendar === 'function' && !window.planningCalendar){
-        initPlanningCalendar();
-      }
-      const pc = window.planningCalendar || (typeof planningCalendar !== 'undefined' ? planningCalendar : null);
-      if(pc){
-        requestAnimationFrame(() => {
-          try{ pc.render(); }catch(e){ console.error(e); }
-          try{ pc.updateSize(); }catch(e){ }
-          try{ pc.refetchEvents(); }catch(e){ console.error(e); }
-        });
-        setTimeout(() => {
-          try{ pc.render(); }catch(e){ }
-          try{ pc.updateSize(); }catch(e){ }
-          try{ pc.refetchEvents(); }catch(e){ }
-        }, 120);
-      }
-    }catch(err){
-      console.error('Planung render fehlgeschlagen', err);
-    }
-  }
-
-  const oldOpenEventModal = window.openEventModal;
-  window.openEventModal = function(){
-    if(!canCreateEvents()){
-      alert('Für diese Rolle ist das Anlegen von Einsätzen nicht freigeschaltet.');
-      return;
-    }
-    if(!window.selectedDate && typeof selectedDate !== 'undefined' && !selectedDate){
-      selectedDate = todayYmd();
-    }
-    if(!window.selectedDate && typeof selectedDate === 'undefined'){
-      window.selectedDate = todayYmd();
-    }
-    try{
-      const startInput = document.getElementById('start-time');
-      if(startInput && !startInput.value) startInput.value = '08:00';
-    }catch(_){ }
-    return oldOpenEventModal ? oldOpenEventModal.apply(this, arguments) : undefined;
-  };
-
-  document.addEventListener('DOMContentLoaded', function(){
-    ensureCalendarSizes();
-
-    const planningTab = document.getElementById('tab-planning');
-    if(planningTab){
-      planningTab.addEventListener('click', function(){
-        setTimeout(renderPlanningReliable, 0);
-      }, true);
-    }
-
-    const isPlanner = ['planer','planner_bbs'].includes(String(window.ROLE || '').trim().toLowerCase());
-    if(isPlanner){
-      setTimeout(renderPlanningReliable, 0);
-      setTimeout(renderPlanningReliable, 150);
-    }
-
-  });
-})();
-</script>
-
-</body>
-</html>
