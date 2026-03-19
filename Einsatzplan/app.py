@@ -151,6 +151,11 @@ def render_first_available_template(*template_names, **context):
             return render_template(template_name, **context)
         except TemplateNotFound as exc:
             last_exc = exc
+            # Fallback: Datei liegt direkt neben app.py und nicht im templates-Ordner
+            fallback_path = os.path.join(BASE_DIR, template_name)
+            if os.path.exists(fallback_path):
+                with open(fallback_path, "r", encoding="utf-8") as f:
+                    return app.jinja_env.from_string(f.read()).render(**context)
             continue
     if last_exc is not None:
         raise last_exc
