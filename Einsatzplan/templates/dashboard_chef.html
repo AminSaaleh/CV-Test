@@ -2894,6 +2894,7 @@ document.getElementById("planning").style.display="block";
         initialView:'dayGridMonth',
         locale:'de',
         firstDay: 1,
+        fixedWeekCount:true,
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
         height:"92vh",
 
@@ -2903,14 +2904,7 @@ document.getElementById("planning").style.display="block";
         },
 
         customButtons: {
-          addEventBtn: {
-            text: "➕ Einsatz",
-            click: () => {
-              selectedDate = todayYmd();
-              openEventModal();
-            }
-          },
-          duplicateBtn: {
+                    duplicateBtn: {
             text: "📄 Duplizieren",
             click: () => openDuplicateModal()
           },
@@ -2922,7 +2916,7 @@ document.getElementById("planning").style.display="block";
           } : {})
         },
         headerToolbar: {
-          left: CAN_MAIL_ALL ? "prev,next today addEventBtn duplicateBtn mailAllBtn" : "prev,next today addEventBtn duplicateBtn",
+          left: CAN_MAIL_ALL ? "prev,next today duplicateBtn mailAllBtn" : "prev,next today duplicateBtn",
           center: "title",
           right: "dayGridMonth,dayGridWeek"
         },
@@ -5699,180 +5693,51 @@ document.addEventListener("DOMContentLoaded", function(){
 </script>
 
 <script>
-/* Final main-calendar rebuild:
-   - rendert den Kalender in einem eigenen Host innerhalb von #calendar
-   - erzwingt sichtbare Tageszahlen und Event-Titel
-   - umgeht alte kollidierende Kalender-Instanzen
-*/
+/* Main calendar refresh fix: vorhandenen Kalender NICHT neu aufbauen,
+   sondern nur sauber nachrendern. Der Neuaufbau hat Klicks/Größe zerstört. */
 (function(){
-  function id(x){ return document.getElementById(x); }
-
-  async function fetchMainCalendarEvents(){
+  function getMainCalendar(){
     try{
-      const res = await fetch("/events?ts=" + Date.now(), { credentials: "same-origin" });
-      const data = await res.json().catch(()=>[]);
-      return Array.isArray(data) ? data : [];
-    }catch(err){
-      console.error("Kalender-Events konnten nicht geladen werden:", err);
-      return [];
-    }
-  }
-
-  function normalize(ev){
-    const out = Object.assign({}, ev || {});
-    if(out.start){
-      const s = new Date(out.start);
-      if(!isNaN(s)) out.start = s.toISOString();
-    }
-    if(out.planned_end_time && !out.end){
-      const e = new Date(out.planned_end_time);
-      if(!isNaN(e)) out.end = e.toISOString();
-    }
-    if(!out.title) out.title = "(ohne Titel)";
-    return out;
-  }
-
-  function ensureCalendarHost(){
-    const wrap = id("calendar");
-    if(!wrap) return null;
-    let host = id("calendar-fixed-host");
-    if(!host){
-      wrap.innerHTML = "";
-      host = document.createElement("div");
-      host.id = "calendar-fixed-host";
-      wrap.appendChild(host);
-    }
-    return host;
-  }
-
-  function openDetails(info){
-    try{
-      if(typeof openDetailsModal === "function"){
-        openDetailsModal(info.event);
-      }
-    }catch(err){
-      console.error("openDetailsModal Fehler:", err);
-    }
-  }
-
-  function dayCellContent(arg){
-    return { html: '<span class="fc-daynum-fixed">' + arg.date.getDate() + '</span>' };
-  }
-
-  function eventContent(arg){
-    const wrap = document.createElement("div");
-    const title = document.createElement("div");
-    title.textContent = arg.event.title || "(ohne Titel)";
-    title.style.fontWeight = "700";
-    title.style.fontSize = "12px";
-    title.style.whiteSpace = "normal";
-    wrap.appendChild(title);
-    return { domNodes: [wrap] };
-  }
-
-  function buildMainCalendar(){
-    const host = ensureCalendarHost();
-    if(!host || !window.FullCalendar) return null;
-
-    if(window.__mainCalendarRebuilt){
-      return window.__mainCalendarRebuilt;
-    }
-
-    const cal = new FullCalendar.Calendar(host, {
-      initialView: "dayGridMonth",
-      locale: "de",
-      firstDay: 1,
-      height: "92vh",
-      contentHeight: "90vh",
-      expandRows: true,
-      fixedWeekCount: false,
-      showNonCurrentDates: true,
-      dayMaxEventRows: 4,
-      selectable: true,
-      eventDisplay: "block",
-      displayEventTime: true,
-      eventTimeFormat: { hour: "2-digit", minute: "2-digit", hour12: false },
-      headerToolbar: { left: "prev,next today", center: "title", right: "dayGridMonth,dayGridWeek" },
-      buttonText: { today: "today", month: "month", week: "week" },
-      dayCellContent: dayCellContent,
-      dayCellClassNames: function(arg){
-        const dow = arg.date.getDay();
-        return (dow === 0 || dow === 6) ? ["weekend"] : [];
-      },
-      dateClick: function(info){
-        try{
-          if(info && info.jsEvent && info.jsEvent.target && info.jsEvent.target.closest && info.jsEvent.target.closest('.fc-event')){
-            return;
-          }
-        }catch(_){ }
-        try{
-          if(typeof selectedDate !== 'undefined'){
-            selectedDate = info.dateStr;
-          }
-          window.selectedDate = info.dateStr;
-        }catch(_){
-          window.selectedDate = info.dateStr;
-        }
-        if(typeof window.openEventModal === 'function'){
-          window.openEventModal();
-        } else if(typeof openEventModal === 'function'){
-          openEventModal();
-        }
-      },
-      events: async function(info, successCallback){
-        const data = (await fetchMainCalendarEvents()).map(normalize);
-        successCallback(data);
-      },
-      eventContent: eventContent,
-      eventClick: openDetails
-    });
-
-    cal.render();
-    window.__mainCalendarRebuilt = cal;
-    window.calendar = cal;
-    return cal;
+      if(window.calendar && typeof window.calendar.render === 'function') return window.calendar;
+    }catch(_){ }
+    return null;
   }
 
   function refreshMainCalendar(){
-    const cal = buildMainCalendar();
+    const cal = getMainCalendar();
     if(!cal) return;
-    window.calendar = cal;
-    try{
-      cal.render();
-      if(typeof cal.updateSize === "function") cal.updateSize();
-      if(typeof cal.refetchEvents === "function") cal.refetchEvents();
-    }catch(err){
-      console.error("Main calendar refresh Fehler:", err);
-    }
+    try{ cal.render(); }catch(err){ console.error('Main calendar render Fehler:', err); }
+    try{ if(typeof cal.updateSize === 'function') cal.updateSize(); }catch(err){ console.error('Main calendar updateSize Fehler:', err); }
+    try{ if(typeof cal.refetchEvents === 'function') cal.refetchEvents(); }catch(err){ console.error('Main calendar refetchEvents Fehler:', err); }
   }
 
   function bindTab(){
-    const tab = id("tab-calendar");
-    if(!tab || tab.dataset.mainTabBound === "1") return;
-    tab.dataset.mainTabBound = "1";
-    tab.addEventListener("click", function(){
-      setTimeout(refreshMainCalendar, 60);
-      setTimeout(refreshMainCalendar, 250);
-      setTimeout(refreshMainCalendar, 700);
+    const tab = document.getElementById('tab-calendar');
+    if(!tab || tab.dataset.mainTabBound === '1') return;
+    tab.dataset.mainTabBound = '1';
+    tab.addEventListener('click', function(){
+      setTimeout(refreshMainCalendar, 20);
+      setTimeout(refreshMainCalendar, 180);
+      setTimeout(refreshMainCalendar, 500);
     }, true);
   }
 
-  document.addEventListener("DOMContentLoaded", function(){
+  document.addEventListener('DOMContentLoaded', function(){
     bindTab();
     setTimeout(refreshMainCalendar, 250);
   });
 
-  window.addEventListener("load", function(){
+  window.addEventListener('load', function(){
     bindTab();
     setTimeout(refreshMainCalendar, 400);
-    setTimeout(refreshMainCalendar, 1200);
+    setTimeout(refreshMainCalendar, 900);
   });
 })();
 </script>
 
 
 <script>
-/* Final Stabilizer: Planung laden, Einsätze aus Planung anlegen, Kalenderhöhe korrigieren */
+/* Final Stabilizer: Planung laden, Kalenderhöhe korrigieren */
 (function(){
   function canCreateEvents(){
     const role = String(window.ROLE || '').trim().toLowerCase();
