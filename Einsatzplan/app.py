@@ -6,26 +6,15 @@
 #   export SECRET_KEY="."
 #   python app.py
 #
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file, abort
-import os, uuid, re, json
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file
+import os, uuid, re, json, io
 from datetime import datetime
-import io
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import mm
-from reportlab.lib.utils import ImageReader
-from reportlab.lib import colors
-from PIL import Image
-from urllib.parse import urljoin
-from urllib.request import urlopen
-from jinja2 import TemplateNotFound
-
 
 
 def normalize_role(role: str) -> str:
     r = (role or "").strip().lower()
     # akzeptiere Anzeigenamen mit Leerzeichen
-    if r in ["planner bbs", "planner_bbs","planer bbs", "planer_bbs"]:
+    if r in ["planner bbs", "planner_bbs"]:
         return "planner_bbs"
     if r in ["vorgesetzter cp", "vorgesetzter_cp"]:
         return "vorgesetzter_cp"
@@ -65,10 +54,9 @@ def send_mail(to_addr: str, subject: str, body: str) -> None:
         s.login(SMTP_USER, SMTP_PASS)
         s.send_message(msg)
 
-def build_welcome_mail(employee_name: str, username: str, password: str, portal_url: str) -> str:
-    display_name = (employee_name or "").strip() or username
+def build_welcome_mail(employee_name: str, username: str, password: str) -> str:
     lines = [
-        f"Hallo {display_name},",
+        f"Hallo {employee_name},",
         "",
         "herzlich willkommen beim Casutt Veranstaltungsservice!",
         "",
@@ -77,14 +65,15 @@ def build_welcome_mail(employee_name: str, username: str, password: str, portal_
         f"Passwort: {password}",
         "",
         "Hier geht es zur CV-Planung:",
-        portal_url,
+        "https://cv-planung.onrender.com",
         "",
-        "Wir freuen uns auf die Zusammenarbeit!",
+        "Wir freuen uns auf die zusammenarbeit!",
         "",
         "Viele Grüße",
-        "Casutt Veranstaltungsservice",
+        "CV Planung"
     ]
     return "\n".join(lines)
+
 
 def build_change_mail(employee_name: str,
                       event_title: str,
@@ -138,28 +127,11 @@ def build_change_mail(employee_name: str,
 import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, "templates"), static_folder=os.path.join(BASE_DIR, "static"))
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
-
-
-def render_first_available_template(*template_names, **context):
-    last_exc = None
-    for template_name in template_names:
-        try:
-            return render_template(template_name, **context)
-        except TemplateNotFound as exc:
-            last_exc = exc
-            # Fallback: Datei liegt direkt neben app.py und nicht im templates-Ordner
-            fallback_path = os.path.join(BASE_DIR, template_name)
-            if os.path.exists(fallback_path):
-                with open(fallback_path, "r", encoding="utf-8") as f:
-                    return app.jinja_env.from_string(f.read()).render(**context)
-            continue
-    if last_exc is not None:
-        raise last_exc
-    raise TemplateNotFound("Kein Template-Name übergeben.")
 
 # Supabase/PostgreSQL connection string
 DATABASE_URL = os.environ.get("DATABASE_URL")
@@ -230,92 +202,6 @@ def row_to_dict(row):
     return dict(row)
 
 
-def table_exists(db, table_name: str) -> bool:
-    cur = db.execute(
-        """
-        SELECT 1
-        FROM information_schema.tables
-        WHERE table_schema = 'public' AND table_name = %s
-        """,
-        (table_name,),
-    )
-    return cur.fetchone() is not None
-
-
-def ensure_events_schema():
-    """
-    Defensive check for Render/Supabase so /events does not crash
-    when event/response are missing or only partially migrated.
-    """
-    db = get_db()
-
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS event (
-            id TEXT PRIMARY KEY,
-            title TEXT,
-            ort TEXT,
-            dienstkleidung TEXT,
-            auftraggeber TEXT,
-            start TEXT,
-            planned_end_time TEXT,
-            frist TEXT,
-            status TEXT,
-            category TEXT DEFAULT 'CP',
-            required_staff INTEGER DEFAULT 0,
-            use_event_rate INTEGER DEFAULT 1,
-            stundensatz DOUBLE PRECISION
-        );
-        """
-    )
-
-    db.execute(
-        """
-        CREATE TABLE IF NOT EXISTS response (
-            id SERIAL PRIMARY KEY,
-            event_id TEXT NOT NULL REFERENCES event(id) ON DELETE CASCADE,
-            username TEXT,
-            status TEXT,
-            remark TEXT,
-            start_time TEXT,
-            end_time TEXT,
-            rate_override DOUBLE PRECISION
-        );
-        """
-    )
-
-    for c, ddl in [
-        ("id", "ALTER TABLE event ADD COLUMN id TEXT"),
-        ("title", "ALTER TABLE event ADD COLUMN title TEXT"),
-        ("ort", "ALTER TABLE event ADD COLUMN ort TEXT"),
-        ("dienstkleidung", "ALTER TABLE event ADD COLUMN dienstkleidung TEXT"),
-        ("auftraggeber", "ALTER TABLE event ADD COLUMN auftraggeber TEXT"),
-        ("start", "ALTER TABLE event ADD COLUMN start TEXT"),
-        ("planned_end_time", "ALTER TABLE event ADD COLUMN planned_end_time TEXT"),
-        ("frist", "ALTER TABLE event ADD COLUMN frist TEXT"),
-        ("status", "ALTER TABLE event ADD COLUMN status TEXT"),
-        ("category", "ALTER TABLE event ADD COLUMN category TEXT DEFAULT 'CP'"),
-        ("required_staff", "ALTER TABLE event ADD COLUMN required_staff INTEGER DEFAULT 0"),
-        ("use_event_rate", "ALTER TABLE event ADD COLUMN use_event_rate INTEGER DEFAULT 1"),
-        ("stundensatz", "ALTER TABLE event ADD COLUMN stundensatz DOUBLE PRECISION"),
-    ]:
-        if not col_exists(db, "event", c):
-            db.execute(ddl)
-
-    for c, ddl in [
-        ("username", "ALTER TABLE response ADD COLUMN username TEXT"),
-        ("status", "ALTER TABLE response ADD COLUMN status TEXT"),
-        ("remark", "ALTER TABLE response ADD COLUMN remark TEXT"),
-        ("start_time", "ALTER TABLE response ADD COLUMN start_time TEXT"),
-        ("end_time", "ALTER TABLE response ADD COLUMN end_time TEXT"),
-        ("rate_override", "ALTER TABLE response ADD COLUMN rate_override DOUBLE PRECISION"),
-    ]:
-        if not col_exists(db, "response", c):
-            db.execute(ddl)
-
-    db.commit()
-
-
 def to_int(v, default=0):
     try:
         return int(v)
@@ -327,14 +213,18 @@ def to_int(v, default=0):
 
 
 
-def normalize_s34a_art(v: str) -> str:
-    s = (v or "").strip()
-    if not s:
-        return ""
-    # Einheitliche Schreibweise
-    if s.lower() == "sachkunde":
+def normalize_s34a_art(value):
+    if not value:
+        return value
+
+    value = value.strip().lower()
+
+    if value == "unterrichtung":
+        return "Unterrichtung"
+    if value == "sachkunde":
         return "Sachkunde"
-    return s
+
+    return value
 
 
 def status_to_css_token(value: str) -> str:
@@ -388,49 +278,51 @@ def init_db():
     # NOTE: In Postgres ist "user" ein reserviertes Wort -> wir nutzen "users".
     db.execute(
         '''
-        CREATE TABLE IF NOT EXISTS users (
-            username TEXT PRIMARY KEY,
-            password TEXT NOT NULL,
-            role TEXT DEFAULT 'mitarbeiter',
-            vorname TEXT,
-            nachname TEXT,
-            email TEXT,
-            s34a TEXT,
-            s34a_art TEXT,
-            pschein TEXT,
-            bewach_id TEXT,
-            steuernummer TEXT,
-            bsw TEXT,
-            sanitaeter TEXT,
-            stundensatz DOUBLE PRECISION,
-
-            -- Erweiterung: Personalbogen (intern)
-            photo_url TEXT,
-            geburtsdatum TEXT,                -- ISO: YYYY-MM-DD
-            staatsangehoerigkeit TEXT,
-            amtliches_dokument TEXT,          -- 'Personalausweis' | 'Reisepass'
-            dokumentennr TEXT,
-            ausstellende_behoerde TEXT,
-            ausstellungsdatum TEXT,           -- ISO: YYYY-MM-DD
-
-            -- Qualifikationen / Fähigkeiten
-            sanitaeter_art TEXT,              -- 'Rettungssanitäter' | 'Rettungsassistent'
-            brandschutzhelfer TEXT,           -- ja/nein
-            deeskalation TEXT,                -- ja/nein
-            gssk TEXT,                        -- ja/nein
-            fachkraft TEXT,                   -- ja/nein
-            personenschutz TEXT,              -- ja/nein
-            behoerdlich TEXT,                 -- ja/nein (behördliche Ausbildung/Studium)
-            waffensachkunde TEXT,             -- ja/nein
-            fuehrerschein_klasse TEXT,        -- 'B' | 'C' | 'CE' | ''
-            sonstige TEXT,
-            sprachen TEXT,                    -- CSV oder JSON (Frontend sendet CSV)
-
-            consent_given BOOLEAN DEFAULT FALSE,
-            consent_name TEXT,
-            consent_date TEXT
-        );
-        '''
+        
+CREATE TABLE IF NOT EXISTS users (
+    username TEXT PRIMARY KEY,
+    password TEXT NOT NULL,
+    role TEXT DEFAULT 'mitarbeiter',
+    vorname TEXT,
+    nachname TEXT,
+    email TEXT,
+    telefon TEXT,
+    geburtsdatum TEXT,
+    geburtsort TEXT,
+    staatsangehoerigkeit TEXT,
+    staatsnummer TEXT,
+    bkv_rv TEXT,
+    sv5n TEXT,
+    image_data TEXT,
+    image_name TEXT,
+    amtliches_dokument TEXT,
+    dokumentennummer TEXT,
+    ausstellungsdatum TEXT,
+    ausstellende_behoerde TEXT,
+    s34a TEXT,
+    s34a_art TEXT,
+    amt TEXT,
+    bewerber_id TEXT,
+    steuernummer TEXT,
+    bewach_id TEXT,
+    bsw TEXT,
+    fschein TEXT,
+    kati TEXT,
+    sanitaeter TEXT,
+    pschein TEXT,
+    stundensatz DOUBLE PRECISION,
+    bemerkung TEXT,
+    sonstige TEXT,
+    qualifications_json TEXT,
+    license_classes_json TEXT,
+    sprachen_json TEXT,
+    weitere_sprachen_json TEXT,
+    consent_given BOOLEAN DEFAULT FALSE,
+    consent_name TEXT,
+    consent_date TEXT,
+    is_locked BOOLEAN DEFAULT FALSE
+);
+'''
     )
 
     db.execute(
@@ -469,60 +361,57 @@ def init_db():
         '''
     )
 
-    db.execute(
-        '''
-        CREATE TABLE IF NOT EXISTS custom_language (
-            id SERIAL PRIMARY KEY,
-            name TEXT UNIQUE NOT NULL
-        );
-        '''
-    )
-
     # Indizes
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_event ON response(event_id);")
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_user  ON response(username);")
 
     # ---- Migrationen (falls Tabellen schon existieren, aber Spalten fehlen) ----
-    # users
-    for c, ddl in [
-        ("email", "ALTER TABLE users ADD COLUMN email TEXT"),
-        ("bewach_id", "ALTER TABLE users ADD COLUMN bewach_id TEXT"),
-        ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
-        ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
-        ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
-        ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
-        ("photo_url", "ALTER TABLE users ADD COLUMN photo_url TEXT"),
-        ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
-        ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
-        ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
-        ("dokumentennr", "ALTER TABLE users ADD COLUMN dokumentennr TEXT"),
-        ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
-        ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
-        ("sanitaeter_art", "ALTER TABLE users ADD COLUMN sanitaeter_art TEXT"),
-        ("brandschutzhelfer", "ALTER TABLE users ADD COLUMN brandschutzhelfer TEXT"),
-        ("deeskalation", "ALTER TABLE users ADD COLUMN deeskalation TEXT"),
-        ("gssk", "ALTER TABLE users ADD COLUMN gssk TEXT"),
-        ("fachkraft", "ALTER TABLE users ADD COLUMN fachkraft TEXT"),
-        ("personenschutz", "ALTER TABLE users ADD COLUMN personenschutz TEXT"),
-        ("behoerdlich", "ALTER TABLE users ADD COLUMN behoerdlich TEXT"),
-        ("waffensachkunde", "ALTER TABLE users ADD COLUMN waffensachkunde TEXT"),
-        ("fuehrerschein_klasse", "ALTER TABLE users ADD COLUMN fuehrerschein_klasse TEXT"),
-        ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
-        ("sprachen", "ALTER TABLE users ADD COLUMN sprachen TEXT"),
-        ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
-        ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
-        ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
-        ("acc_locked", "ALTER TABLE users ADD COLUMN acc_locked BOOLEAN DEFAULT FALSE"),
-        ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
-        ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
-        ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
-        ("vorname", "ALTER TABLE users ADD COLUMN vorname TEXT"),
-        ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
-        ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
-        ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
-    ]:
-        if not col_exists(db, "users", c):
-            db.execute(ddl)
+    
+# users
+for c, ddl in [
+    ("email", "ALTER TABLE users ADD COLUMN email TEXT"),
+    ("telefon", "ALTER TABLE users ADD COLUMN telefon TEXT"),
+    ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
+    ("geburtsort", "ALTER TABLE users ADD COLUMN geburtsort TEXT"),
+    ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
+    ("staatsnummer", "ALTER TABLE users ADD COLUMN staatsnummer TEXT"),
+    ("bkv_rv", "ALTER TABLE users ADD COLUMN bkv_rv TEXT"),
+    ("sv5n", "ALTER TABLE users ADD COLUMN sv5n TEXT"),
+    ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
+    ("image_name", "ALTER TABLE users ADD COLUMN image_name TEXT"),
+    ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
+    ("dokumentennummer", "ALTER TABLE users ADD COLUMN dokumentennummer TEXT"),
+    ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
+    ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
+    ("bewach_id", "ALTER TABLE users ADD COLUMN bewach_id TEXT"),
+    ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
+    ("amt", "ALTER TABLE users ADD COLUMN amt TEXT"),
+    ("bewerber_id", "ALTER TABLE users ADD COLUMN bewerber_id TEXT"),
+    ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
+    ("fschein", "ALTER TABLE users ADD COLUMN fschein TEXT"),
+    ("kati", "ALTER TABLE users ADD COLUMN kati TEXT"),
+    ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
+    ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
+    ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
+    ("bemerkung", "ALTER TABLE users ADD COLUMN bemerkung TEXT"),
+    ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
+    ("qualifications_json", "ALTER TABLE users ADD COLUMN qualifications_json TEXT"),
+    ("license_classes_json", "ALTER TABLE users ADD COLUMN license_classes_json TEXT"),
+    ("sprachen_json", "ALTER TABLE users ADD COLUMN sprachen_json TEXT"),
+    ("weitere_sprachen_json", "ALTER TABLE users ADD COLUMN weitere_sprachen_json TEXT"),
+    ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
+    ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
+    ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
+    ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
+    ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
+    ("vorname", "ALTER TABLE users ADD COLUMN vorname TEXT"),
+    ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
+    ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
+    ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
+    ("is_locked", "ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE"),
+]:
+    if not col_exists(db, "users", c):
+        db.execute(ddl)
 
     # event
     for c, ddl in [
@@ -576,14 +465,194 @@ def init_db():
         db.commit()
 
 
+USER_LIST_FIELDS = [
+    "username", "password", "role", "vorname", "nachname", "email", "telefon",
+    "geburtsdatum", "geburtsort", "staatsangehoerigkeit", "staatsnummer",
+    "bkv_rv", "sv5n", "image_data", "image_name",
+    "amtliches_dokument", "dokumentennummer", "ausstellungsdatum", "ausstellende_behoerde",
+    "s34a", "s34a_art", "amt", "bewerber_id", "steuernummer", "bewach_id",
+    "bsw", "fschein", "kati", "sanitaeter", "pschein", "stundensatz",
+    "bemerkung", "sonstige", "qualifications_json", "license_classes_json",
+    "sprachen_json", "weitere_sprachen_json", "consent_given", "consent_name",
+    "consent_date", "is_locked"
+]
+
+YES_NO_FIELDS = ["s34a", "bsw", "fschein", "kati", "sanitaeter", "pschein"]
+JSON_LIST_FIELDS = ["qualifications_json", "license_classes_json", "sprachen_json", "weitere_sprachen_json"]
+
+
+def json_dumps_safe(value):
+    try:
+        return json.dumps(value or [], ensure_ascii=False)
+    except Exception:
+        return "[]"
+
+
+def json_loads_safe(value):
+    if value in (None, ""):
+        return []
+    if isinstance(value, list):
+        return value
+    try:
+        parsed = json.loads(value)
+        return parsed if isinstance(parsed, list) else []
+    except Exception:
+        return []
+
+
+def normalize_yes_no(value, default="nein"):
+    v = str(value or "").strip().lower()
+    if v in ("1", "true", "yes", "ja", "y"):
+        return "ja"
+    if v in ("0", "false", "no", "nein", "n"):
+        return "nein"
+    return default
+
+
+def normalize_bool(value):
+    if isinstance(value, bool):
+        return value
+    return str(value or "").strip().lower() in ("1", "true", "yes", "ja", "y")
+
+
+def clean_str(value):
+    return str(value or "").strip()
+
+
+def enrich_user_record(row):
+    u = dict(row)
+    for f in JSON_LIST_FIELDS:
+        u[f] = json_loads_safe(u.get(f))
+    u["qualifications"] = u.get("qualifications_json", [])
+    u["license_classes"] = u.get("license_classes_json", [])
+    u["sprachen"] = u.get("sprachen_json", [])
+    u["weitere_sprachen"] = u.get("weitere_sprachen_json", [])
+    u["is_locked"] = bool(u.get("is_locked") or False)
+    u["consent_given"] = bool(u.get("consent_given") or False)
+    u["full_name"] = f"{clean_str(u.get('vorname'))} {clean_str(u.get('nachname'))}".strip()
+    return u
+
+
+def normalize_user_payload(d, existing=None):
+    existing = dict(existing or {})
+    payload = {k: existing.get(k) for k in USER_LIST_FIELDS}
+
+    scalar_fields = [
+        "username", "password", "role", "vorname", "nachname", "email", "telefon",
+        "geburtsdatum", "geburtsort", "staatsangehoerigkeit", "staatsnummer", "bkv_rv", "sv5n",
+        "image_data", "image_name", "amtliches_dokument", "dokumentennummer", "ausstellungsdatum",
+        "ausstellende_behoerde", "s34a_art", "amt", "bewerber_id", "steuernummer", "bewach_id",
+        "bemerkung", "sonstige"
+    ]
+    for f in scalar_fields:
+        if f in d:
+            payload[f] = clean_str(d.get(f))
+
+    if "stundensatz" in d:
+        payload["stundensatz"] = None if d.get("stundensatz") in (None, "") else float(d.get("stundensatz"))
+    elif existing and "stundensatz" in existing:
+        payload["stundensatz"] = existing.get("stundensatz")
+    else:
+        payload["stundensatz"] = None
+
+    payload["role"] = clean_str(payload.get("role") or "mitarbeiter") or "mitarbeiter"
+    payload["s34a_art"] = normalize_s34a_art(payload.get("s34a_art") or "")
+
+    for f in YES_NO_FIELDS:
+        if f in d:
+            payload[f] = normalize_yes_no(d.get(f))
+        elif existing:
+            payload[f] = normalize_yes_no(existing.get(f), default=existing.get(f) or "nein")
+        else:
+            payload[f] = "nein"
+
+    list_map = {
+        "qualifications_json": d.get("qualifications", existing.get("qualifications_json") if existing else []),
+        "license_classes_json": d.get("license_classes", existing.get("license_classes_json") if existing else []),
+        "sprachen_json": d.get("sprachen", existing.get("sprachen_json") if existing else []),
+        "weitere_sprachen_json": d.get("weitere_sprachen", existing.get("weitere_sprachen_json") if existing else []),
+    }
+    for field, value in list_map.items():
+        payload[field] = json_dumps_safe(value if isinstance(value, list) else json_loads_safe(value))
+
+    if "consent_given" in d:
+        payload["consent_given"] = normalize_bool(d.get("consent_given"))
+    else:
+        payload["consent_given"] = bool(existing.get("consent_given") or False)
+    payload["consent_name"] = clean_str(d.get("consent_name")) if "consent_name" in d else clean_str(existing.get("consent_name"))
+    payload["consent_date"] = clean_str(d.get("consent_date")) if "consent_date" in d else clean_str(existing.get("consent_date"))
+    payload["is_locked"] = normalize_bool(d.get("is_locked")) if "is_locked" in d else bool(existing.get("is_locked") or False)
+
+    return payload
+
+
+def validate_user_payload(payload, is_new=False):
+    required = ["vorname", "nachname", "username", "role"]
+    if is_new:
+        required.append("password")
+    for field in required:
+        if not clean_str(payload.get(field)):
+            return f"{field} ist erforderlich"
+    email = clean_str(payload.get("email"))
+    if email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
+        return "Bitte eine gültige E-Mail-Adresse eingeben."
+    return None
+
+
+def build_user_pdf(user):
+    buf = io.BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    width, height = A4
+    y = height - 40
+
+    def line(text="", gap=16, bold=False):
+        nonlocal y
+        if y < 60:
+            c.showPage()
+            y = height - 40
+        c.setFont("Helvetica-Bold" if bold else "Helvetica", 10 if not bold else 12)
+        c.drawString(40, y, str(text)[:120])
+        y -= gap
+
+    c.setTitle(f"Personal_{user.get('username') or 'profil'}")
+    line("Personaldaten", bold=True, gap=22)
+    line(f"Name: {user.get('full_name') or '-'}")
+    line(f"Benutzername: {user.get('username') or '-'}")
+    line(f"Rolle: {user.get('role') or '-'}")
+    line(f"E-Mail: {user.get('email') or '-'}")
+    line(f"Telefon: {user.get('telefon') or '-'}")
+    line(f"Geburtsdatum / -ort: {user.get('geburtsdatum') or '-'} / {user.get('geburtsort') or '-'}")
+    line(f"Staatsangehörigkeit / Staatsnummer: {user.get('staatsangehoerigkeit') or '-'} / {user.get('staatsnummer') or '-'}")
+    line(f"BKV/RV: {user.get('bkv_rv') or '-'}")
+    line(f"SV-5/N: {user.get('sv5n') or '-'}")
+    line(f"Amtliches Dokument: {user.get('amtliches_dokument') or '-'}")
+    line(f"Dokumentennummer: {user.get('dokumentennummer') or '-'}")
+    line(f"Ausstellungsdatum / Behörde: {user.get('ausstellungsdatum') or '-'} / {user.get('ausstellende_behoerde') or '-'}")
+    line(f"§34a / Nachweis: {user.get('s34a') or '-'} {('(' + user.get('s34a_art') + ')') if user.get('s34a_art') else ''}")
+    line(f"Amt / Bewerber-ID: {user.get('amt') or '-'} / {user.get('bewerber_id') or '-'}")
+    line(f"BSW / F-Schein / KATI: {user.get('bsw') or '-'} / {user.get('fschein') or '-'} / {user.get('kati') or '-'}")
+    line(f"Sanitäter / P-Schein / SVG: {user.get('sanitaeter') or '-'} / {user.get('pschein') or '-'} / {user.get('sv5n') or '-'}")
+    line(f"Qualifikationen: {', '.join(user.get('qualifications') or []) or '-'}")
+    line(f"Führerscheinklassen: {', '.join(user.get('license_classes') or []) or '-'}")
+    line(f"Sprachen: {', '.join(user.get('sprachen') or []) or '-'}")
+    line(f"Weitere Sprachen: {', '.join(user.get('weitere_sprachen') or []) or '-'}")
+    line(f"Sonstige: {user.get('sonstige') or '-'}")
+    line(f"Bemerkung: {user.get('bemerkung') or '-'}")
+    line(f"Datenschutzerklärung: {'Ja' if user.get('consent_given') else 'Nein'}")
+    line(f"Status: {'Gesperrt' if user.get('is_locked') else 'Aktiv'}")
+    c.save()
+    buf.seek(0)
+    return buf
+
+
 def safe_init_db():
     try:
         with app.app_context():
             init_db()
-        print("DB-Initialisierung erfolgreich.", flush=True)
+        print("DB-Initialisierung erfolgreich.")
     except Exception as e:
         # Wichtig: nicht crashen, nur Fehler loggen
-        print("FEHLER bei init_db():", repr(e), flush=True)
+        print("FEHLER bei init_db():", repr(e))
 
 
 # Wird beim Import einmal ausgeführt
@@ -606,9 +675,6 @@ def login():
         u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
 
         if u and u.get("password") == password:
-            if bool(u.get("acc_locked") or False):
-                session.clear()
-                return render_template("login.html", error="Dieser Account ist gesperrt. Bitte wende dich an die Verwaltung.")
             session["username"] = username
             session["role"] = u.get("role") or "mitarbeiter"
             return redirect(url_for("dashboard"))
@@ -624,16 +690,11 @@ def dashboard():
 
     role = normalize_role(session.get("role") or "mitarbeiter")
 
-    me = get_db().execute("SELECT username, acc_locked FROM users WHERE username=%s", (session.get("username"),)).fetchone()
-    if me and bool(me.get("acc_locked") or False):
-        session.clear()
-        return redirect(url_for("login"))
-
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_first_available_template("dashboard_chef.html", "dashboard_chef_sauber.html", user=session["username"], role=role)
+        return render_template("dashboard_chef.html", user=session["username"], role=role)
 
-    return render_first_available_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
+    return render_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
 
 
 @app.route("/logout")
@@ -683,33 +744,26 @@ def consent_set():
     return jsonify({"status": "ok"})
 
 
+
 # ---------------- Users API ----------------
 @app.route("/users", methods=["GET"])
 def get_users():
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
         "SELECT * FROM users WHERE username NOT IN (%s,%s) ORDER BY nachname, vorname",
-        ("AdminTest","TestAdmin")
+        ("AdminTest", "TestAdmin")
     )
-    users = [row_to_dict(r) for r in cur.fetchall()]
+    users = [enrich_user_record(r) for r in cur.fetchall()]
     for u in users:
         if u.get("stundensatz") is None:
             u["stundensatz"] = ""
-        u["acc_locked"] = bool(u.get("acc_locked") or False)
-        u["sprachen_levels"] = _parse_language_entries(u.get("sprachen") or "")
-        u["fuehrerschein_klassen"] = _parse_multi_values(u.get("fuehrerschein_klasse") or "")
     return jsonify(users)
 
 
 @app.route("/users_public", methods=["GET"])
 def users_public():
-    """
-    Minimaler User-Export (nur Name) für Planung.
-    Erlaubt für eingeloggte Rollen inkl. Planer – ohne sensible Felder/Passwörter.
-    """
     if "username" not in session:
         return jsonify({"error": "Nicht eingeloggt"}), 403
 
@@ -726,158 +780,78 @@ def users_public():
 
 @app.route("/users", methods=["POST"])
 def add_user():
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
-    username = (d.get("username") or "").strip()
-    if not username:
-        return jsonify({"error": "username ist erforderlich"}), 400
+    payload = normalize_user_payload(d)
+    err = validate_user_payload(payload, is_new=True)
+    if err:
+        return jsonify({"error": err}), 400
 
     db = get_db()
+    if db.execute("SELECT 1 FROM users WHERE username=%s", (payload["username"],)).fetchone():
+        return jsonify({"error": "Benutzername existiert bereits."}), 400
 
-    # stundensatz darf leer sein
-    stundensatz = d.get("stundensatz")
-    stundensatz = None if stundensatz in (None, "") else float(stundensatz)
-
-    email = (d.get("email") or "").strip()
-    password_plain = d.get("password") or ""
-    first_name = (d.get("vorname") or "").strip()
-    last_name = (d.get("nachname") or "").strip()
-    employee_name = f"{first_name} {last_name}".strip() or username
+    columns = USER_LIST_FIELDS
+    values = [payload.get(c) for c in columns]
+    placeholders = ",".join(["%s"] * len(columns))
+    sql = f"INSERT INTO users ({','.join(columns)}) VALUES ({placeholders})"
 
     try:
-        db.execute(
-            """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen,acc_locked)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            (
-                username,
-                password_plain,
-                d.get("role") or "mitarbeiter",
-                first_name,
-                last_name,
-                email,
-                d.get("s34a") or "nein",
-                normalize_s34a_art(d.get("s34a_art") or ""),
-                d.get("pschein") or "nein",
-                d.get("bewach_id") or "",
-                d.get("steuernummer") or "",
-                d.get("bsw") or "nein",
-                d.get("sanitaeter") or "nein",
-                stundensatz,
-                d.get("photo_url") or "",
-                (d.get("geburtsdatum") or "").strip(),
-                (d.get("staatsangehoerigkeit") or "").strip(),
-                (d.get("amtliches_dokument") or "").strip(),
-                (d.get("dokumentennr") or "").strip(),
-                (d.get("ausstellende_behoerde") or "").strip(),
-                (d.get("ausstellungsdatum") or "").strip(),
-                (d.get("sanitaeter_art") or "").strip(),
-                d.get("brandschutzhelfer") or "nein",
-                d.get("deeskalation") or "nein",
-                d.get("gssk") or "nein",
-                d.get("fachkraft") or "nein",
-                d.get("personenschutz") or "nein",
-                d.get("behoerdlich") or "nein",
-                d.get("waffensachkunde") or "nein",
-                (_normalize_multi_text(d.get("fuehrerschein_klasse") or "")).strip(),
-                (d.get("sonstige") or "").strip(),
-                _serialize_language_entries(d.get("sprachen_levels")) or (d.get("sprachen") or "").strip(),
-                bool(d.get("acc_locked") or False),
-            ),
-        )
-        _sync_custom_languages(db, d.get("sprachen") or "")
+        db.execute(sql, tuple(values))
         db.commit()
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
 
+    email = clean_str(payload.get("email"))
+    employee_name = f"{clean_str(payload.get('vorname'))} {clean_str(payload.get('nachname'))}".strip() or payload["username"]
     mail_sent = False
     mail_error = ""
+    invite_link = "https://cv-planung.onrender.com"
     if email:
+        subject = "Deine Zugangsdaten zum Portal"
+        body = build_welcome_mail(employee_name, payload["username"], payload["password"]) + f"\n\nEinladungslink: {invite_link}"
         try:
-            portal_url = request.host_url.rstrip("/")
-            subject = "Willkommen bei Casutt Veranstaltungsservice – deine Zugangsdaten"
-            body = build_welcome_mail(employee_name, username, password_plain, portal_url)
             send_mail(email, subject, body)
             mail_sent = True
         except Exception as e:
             mail_error = str(e)
+    else:
+        mail_error = "Keine E-Mail-Adresse hinterlegt."
 
     return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
+
+
 @app.route("/users/rename", methods=["POST"])
 def rename_user():
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
-    old_username = (d.get("old_username") or "").strip()
-    new_username = (d.get("new_username") or "").strip()
-
+    old_username = clean_str(d.get("old_username"))
+    new_username = clean_str(d.get("new_username"))
     if not old_username or not new_username:
         return jsonify({"error": "old_username und new_username erforderlich"}), 400
 
     db = get_db()
-
     try:
         old = db.execute("SELECT * FROM users WHERE username=%s", (old_username,)).fetchone()
         if not old:
             return jsonify({"error": "Alter Benutzer nicht gefunden"}), 404
-
         if db.execute("SELECT 1 FROM users WHERE username=%s", (new_username,)).fetchone():
             return jsonify({"error": "Neuer Benutzername existiert schon"}), 400
 
-        # Wichtig: In SQLite kann ein UPDATE des PK (username) scheitern,
-        # wenn es Foreign-Key-Referenzen gibt (response.username -> user.username),
-        # da im Schema kein ON UPDATE CASCADE definiert ist.
-        # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
-        db.execute(
-            """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz,photo_url,geburtsdatum,staatsangehoerigkeit,amtliches_dokument,dokumentennr,ausstellende_behoerde,ausstellungsdatum,sanitaeter_art,brandschutzhelfer,deeskalation,gssk,fachkraft,personenschutz,behoerdlich,waffensachkunde,fuehrerschein_klasse,sonstige,sprachen,acc_locked)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
-            (
-                new_username,
-                old["password"],
-                old["role"] or "mitarbeiter",
-                old["vorname"] or "",
-                old["nachname"] or "",
-                (old.get("email") or "").strip(),
-                old["s34a"] or "nein",
-                normalize_s34a_art(old["s34a_art"] or ""),
-                old["pschein"] or "nein",
-                old["bewach_id"] or "",
-                old["steuernummer"] or "",
-                old["bsw"] or "nein",
-                old["sanitaeter"] or "nein",
-                old["stundensatz"],
-                old.get("photo_url") or "",
-                (old.get("geburtsdatum") or "").strip(),
-                (old.get("staatsangehoerigkeit") or "").strip(),
-                (old.get("amtliches_dokument") or "").strip(),
-                (old.get("dokumentennr") or "").strip(),
-                (old.get("ausstellende_behoerde") or "").strip(),
-                (old.get("ausstellungsdatum") or "").strip(),
-                (old.get("sanitaeter_art") or "").strip(),
-                old.get("brandschutzhelfer") or "nein",
-                old.get("deeskalation") or "nein",
-                old.get("gssk") or "nein",
-                old.get("fachkraft") or "nein",
-                old.get("personenschutz") or "nein",
-                old.get("behoerdlich") or "nein",
-                old.get("waffensachkunde") or "nein",
-                (old.get("fuehrerschein_klasse") or "").strip(),
-                (old.get("sonstige") or "").strip(),
-                (old.get("sprachen") or "").strip(),
-                bool(old.get("acc_locked") or False)
-            )
-        )
-
+        payload = normalize_user_payload({}, old)
+        payload["username"] = new_username
+        columns = USER_LIST_FIELDS
+        values = [payload.get(c) for c in columns]
+        placeholders = ",".join(["%s"] * len(columns))
+        sql = f"INSERT INTO users ({','.join(columns)}) VALUES ({placeholders})"
+        db.execute(sql, tuple(values))
         db.execute("UPDATE response SET username=%s WHERE username=%s", (new_username, old_username))
         db.execute("DELETE FROM users WHERE username=%s", (old_username,))
-
         db.commit()
         return jsonify({"status": "ok"})
     except IntegrityError as e:
@@ -888,125 +862,37 @@ def rename_user():
         return jsonify({"error": f"Serverfehler: {str(e)}"}), 500
 
 
-
 @app.route("/users/<username>", methods=["PUT"])
 def edit_user(username):
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
     db = get_db()
-
-    u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
-    if not u:
+    current = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    if not current:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    updates = dict(u)
-    for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
-              "bewach_id", "steuernummer", "bsw", "sanitaeter",
-              "photo_url", "geburtsdatum", "staatsangehoerigkeit", "amtliches_dokument", "dokumentennr",
-              "ausstellende_behoerde", "ausstellungsdatum",
-              "sanitaeter_art", "brandschutzhelfer", "deeskalation", "gssk", "fachkraft", "personenschutz",
-              "behoerdlich", "waffensachkunde", "fuehrerschein_klasse", "sonstige", "sprachen", "sprachen_levels", "acc_locked"]:
-        if k in d:
-            # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
-            # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
-            if k == "s34a_art":
-                newv = normalize_s34a_art(d.get(k))
-                if str(newv or "").strip() == "":
-                    continue
-                updates[k] = newv
-            else:
-                updates[k] = d[k]
+    payload = normalize_user_payload(d, current)
+    err = validate_user_payload(payload, is_new=False)
+    if err:
+        return jsonify({"error": err}), 400
 
-    if "password" in d and d["password"] is not None:
-        updates["password"] = d["password"]
+    update_fields = [c for c in USER_LIST_FIELDS if c != "username"]
+    set_clause = ", ".join([f"{c}=%s" for c in update_fields])
+    values = [payload.get(c) for c in update_fields] + [username]
 
-    if "stundensatz" in d:
-        updates["stundensatz"] = None if d["stundensatz"] in ("", None) else float(d["stundensatz"])
-
-    db.execute(
-        """UPDATE users SET
-           password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
-           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, stundensatz=%s,
-           photo_url=%s, geburtsdatum=%s, staatsangehoerigkeit=%s, amtliches_dokument=%s, dokumentennr=%s,
-           ausstellende_behoerde=%s, ausstellungsdatum=%s,
-           sanitaeter_art=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft=%s, personenschutz=%s,
-           behoerdlich=%s, waffensachkunde=%s, fuehrerschein_klasse=%s, sonstige=%s, sprachen=%s, acc_locked=%s
-           WHERE username=%s""",
-        (
-            updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
-            updates["s34a"], updates["s34a_art"], updates["pschein"],
-            updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"],
-            updates["stundensatz"],
-            updates.get("photo_url") or "",
-            updates.get("geburtsdatum") or "",
-            updates.get("staatsangehoerigkeit") or "",
-            updates.get("amtliches_dokument") or "",
-            updates.get("dokumentennr") or "",
-            updates.get("ausstellende_behoerde") or "",
-            updates.get("ausstellungsdatum") or "",
-            updates.get("sanitaeter_art") or "",
-            updates.get("brandschutzhelfer") or "nein",
-            updates.get("deeskalation") or "nein",
-            updates.get("gssk") or "nein",
-            updates.get("fachkraft") or "nein",
-            updates.get("personenschutz") or "nein",
-            updates.get("behoerdlich") or "nein",
-            updates.get("waffensachkunde") or "nein",
-            _normalize_multi_text(updates.get("fuehrerschein_klasse") or ""),
-            updates.get("sonstige") or "",
-            _serialize_language_entries(updates.get("sprachen_levels")) or ", ".join(_parse_languages(updates.get("sprachen") or "")),
-            bool(updates.get("acc_locked") or False),
-            username
-        )
-    )
-    _sync_custom_languages(db, updates.get("sprachen") or "")
+    db.execute(f"UPDATE users SET {set_clause} WHERE username=%s", tuple(values))
     db.commit()
     return jsonify({"status": "ok"})
 
 
 @app.route("/users/<username>", methods=["DELETE"])
 def delete_user(username):
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     db = get_db()
     db.execute("DELETE FROM users WHERE username=%s", (username,))
-    db.commit()
-    return jsonify({"status": "ok"})
-
-
-@app.route("/custom_languages", methods=["GET"])
-def get_custom_languages():
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-    rows = get_db().execute("SELECT name FROM custom_language ORDER BY LOWER(name), name").fetchall()
-    return jsonify([str(r.get("name") or "").strip() for r in rows if str(r.get("name") or "").strip()])
-
-
-@app.route("/custom_languages", methods=["POST"])
-def add_custom_language():
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-    d = request.json or {}
-    name = _normalize_language_label(d.get("name") or "")
-    if not name:
-        return jsonify({"error": "Bitte eine Sprache eingeben."}), 400
-    db = get_db()
-    db.execute("INSERT INTO custom_language (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (name,))
-    db.commit()
-    return jsonify({"status": "ok", "name": name})
-
-
-@app.route("/custom_languages/<path:name>", methods=["DELETE"])
-def delete_custom_language(name):
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-    lang = _normalize_language_label(name)
-    db = get_db()
-    db.execute("DELETE FROM custom_language WHERE name=%s", (lang,))
     db.commit()
     return jsonify({"status": "ok"})
 
@@ -1016,587 +902,136 @@ def lock_user(username):
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     d = request.json or {}
-    locked = bool(d.get("locked") or False)
     db = get_db()
-    u = db.execute("SELECT username FROM users WHERE username=%s", (username,)).fetchone()
-    if not u:
+    current = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    if not current:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
-    db.execute("UPDATE users SET acc_locked=%s WHERE username=%s", (locked, username))
+    locked = normalize_bool(d.get("locked")) if "locked" in d else (not bool(current.get("is_locked") or False))
+    db.execute("UPDATE users SET is_locked=%s WHERE username=%s", (locked, username))
     db.commit()
-    return jsonify({"status": "ok", "acc_locked": locked})
+    return jsonify({"status": "ok", "is_locked": locked})
 
 
-# ---------------- Mitarbeiter: Foto Upload & PDF-Auszug ----------------
-UPLOAD_DIR = os.path.join(app.root_path, "static", "uploads", "users")
-os.makedirs(UPLOAD_DIR, exist_ok=True)
-
-ALLOWED_PHOTO_EXT = {".jpg", ".jpeg", ".png", ".webp"}
-
-
-def _safe_photo_ext(filename: str) -> str:
-    ext = os.path.splitext((filename or "").lower())[1]
-    return ext if ext in ALLOWED_PHOTO_EXT else ".jpg"
-
-
-@app.route("/users/<username>/photo", methods=["POST"])
-def upload_user_photo(username):
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter
+@app.route("/users/<username>/pdf", methods=["GET"])
+def user_pdf(username):
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
-
-    if "photo" not in request.files:
-        return jsonify({"error": "Datei-Feld 'photo' fehlt"}), 400
-
-    f = request.files["photo"]
-    if not f or not (f.filename or "").strip():
-        return jsonify({"error": "Keine Datei gewählt"}), 400
-
-    db = get_db()
-    u = db.execute("SELECT username FROM users WHERE username=%s", (username,)).fetchone()
-    if not u:
-        return jsonify({"error": "Benutzer nicht gefunden"}), 404
-
-    ext = _safe_photo_ext(f.filename)
-    final_ext = ".png" if ext == ".webp" else ext
-    fn = f"{username}_{uuid.uuid4().hex}{final_ext}"
-    abs_path = os.path.join(UPLOAD_DIR, fn)
-
-    try:
-        with Image.open(f.stream) as img:
-            fmt = "PNG" if final_ext == ".png" else "JPEG"
-            save_img = img.convert("RGBA") if fmt == "PNG" else img.convert("RGB")
-            save_img.save(abs_path, format=fmt)
-    except Exception:
-        f.stream.seek(0)
-        f.save(abs_path)
-
-    rel_url = f"/static/uploads/users/{fn}"
-    db.execute("UPDATE users SET photo_url=%s WHERE username=%s", (rel_url, username))
-    db.commit()
-    return jsonify({"status": "ok", "photo_url": rel_url})
-
-
-def _yesno_label(v: str) -> str:
-    return "Ja" if str(v or "").strip().lower() == "ja" else "Nein"
-
-
-LANGUAGE_LEVEL_OPTIONS = [
-    "Grundkenntnisse",
-    "Fortgeschritten",
-    "Verhandlungssicher in Wort und Schrift",
-    "Muttersprache",
-]
-
-
-def _normalize_language_label(value: str) -> str:
-    return re.sub(r"\s{2,}", " ", str(value or "").strip())
-
-
-def _normalize_multi_text(raw_value):
-    if raw_value is None:
-        return ""
-    if isinstance(raw_value, list):
-        parts = raw_value
-    else:
-        s = str(raw_value or "").strip()
-        if not s:
-            return ""
-        try:
-            parsed = json.loads(s)
-            if isinstance(parsed, list):
-                parts = parsed
-            else:
-                parts = re.split(r"[,;\n]+", s)
-        except Exception:
-            parts = re.split(r"[,;\n]+", s)
-
-    items = []
-    seen = set()
-    for part in parts:
-        label = re.sub(r"\s{2,}", " ", str(part or "").strip())
-        key = label.casefold()
-        if label and key not in seen:
-            seen.add(key)
-            items.append(label)
-    return ", ".join(items)
-
-
-def _parse_multi_values(raw_value):
-    return [v for v in _normalize_multi_text(raw_value).split(", ") if v]
-
-
-def _parse_language_entries(raw):
-    entries = []
-    seen = set()
-
-    if raw is None:
-        return entries
-
-    if isinstance(raw, (list, tuple)):
-        payload = raw
-    else:
-        text = str(raw or "").strip()
-        if not text:
-            return entries
-        payload = None
-        if text.startswith("[") or text.startswith("{"):
-            try:
-                payload = json.loads(text)
-            except Exception:
-                payload = None
-        if payload is None:
-            payload = [part.strip() for part in text.split(",") if part.strip()]
-
-    if isinstance(payload, dict):
-        if isinstance(payload.get("items"), list):
-            payload = payload.get("items")
-        else:
-            payload = [{"name": k, "level": v} for k, v in payload.items()]
-
-    for item in payload if isinstance(payload, list) else []:
-        if isinstance(item, dict):
-            name = _normalize_language_label(item.get("name") or item.get("language") or item.get("label") or "")
-            level = str(item.get("level") or "").strip()
-        else:
-            name = _normalize_language_label(item)
-            level = ""
-        key = name.casefold()
-        if name and key not in seen:
-            seen.add(key)
-            entries.append({"name": name, "level": level if level in LANGUAGE_LEVEL_OPTIONS else ""})
-    return entries
-
-
-def _serialize_language_entries(entries):
-    normalized = []
-    seen = set()
-    for item in entries or []:
-        if isinstance(item, dict):
-            name = _normalize_language_label(item.get("name") or item.get("language") or item.get("label") or "")
-            level = str(item.get("level") or "").strip()
-        else:
-            name = _normalize_language_label(item)
-            level = ""
-        key = name.casefold()
-        if name and key not in seen:
-            seen.add(key)
-            normalized.append({"name": name, "level": level if level in LANGUAGE_LEVEL_OPTIONS else ""})
-    if not normalized:
-        return ""
-    return json.dumps(normalized, ensure_ascii=False)
-
-
-def _parse_languages(raw: str):
-    return [item["name"] for item in _parse_language_entries(raw)]
-
-
-def _format_languages(raw: str):
-    entries = _parse_language_entries(raw)
-    parts = []
-    for item in entries:
-        if item.get("level"):
-            parts.append(f'{item["name"]} ({item["level"]})')
-        else:
-            parts.append(item["name"])
-    return ", ".join(parts)
-
-
-def _sync_custom_languages(db, raw_languages) -> None:
-    for lang in _parse_languages(raw_languages):
-        db.execute("INSERT INTO custom_language (name) VALUES (%s) ON CONFLICT (name) DO NOTHING", (lang,))
-
-
-def _image_reader_from_path(abs_photo: str):
-    if not abs_photo or not os.path.isfile(abs_photo):
-        return None
-    try:
-        with Image.open(abs_photo) as pil_img:
-            if pil_img.mode not in ("RGB", "L"):
-                pil_img = pil_img.convert("RGB")
-            else:
-                pil_img = pil_img.copy()
-            return ImageReader(pil_img)
-    except Exception:
-        try:
-            return ImageReader(abs_photo)
-        except Exception:
-            return None
-
-
-def _image_reader_from_bytes(raw: bytes):
-    if not raw:
-        return None
-    try:
-        with Image.open(io.BytesIO(raw)) as pil_img:
-            if pil_img.mode not in ("RGB", "L"):
-                pil_img = pil_img.convert("RGB")
-            else:
-                pil_img = pil_img.copy()
-            return ImageReader(pil_img)
-    except Exception:
-        try:
-            return ImageReader(io.BytesIO(raw))
-        except Exception:
-            return None
-
-
-def _safe_photo_reader(photo_url: str, host_url: str = ""):
-    photo_url = str(photo_url or "").strip()
-    if not photo_url:
-        return None, "Kein Bild hinterlegt"
-
-    # 1) Lokale /static-Pfade bevorzugen
-    normalized = photo_url
-    if normalized.startswith("http://") or normalized.startswith("https://"):
-        absolute_url = normalized
-    else:
-        if not normalized.startswith("/"):
-            normalized = "/" + normalized
-        absolute_url = urljoin(host_url or "", normalized)
-
-        candidate_paths = []
-        if normalized.startswith("/static/"):
-            rel_path = normalized.lstrip("/")
-            candidate_paths.extend([
-                os.path.join(app.root_path, rel_path),
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), rel_path),
-                os.path.join(os.getcwd(), rel_path),
-            ])
-        else:
-            candidate_paths.extend([
-                normalized,
-                os.path.join(app.root_path, normalized.lstrip("/")),
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), normalized.lstrip("/")),
-            ])
-
-        seen = set()
-        for candidate in candidate_paths:
-            candidate = os.path.abspath(candidate)
-            if candidate in seen:
-                continue
-            seen.add(candidate)
-            reader = _image_reader_from_path(candidate)
-            if reader:
-                return reader, None
-
-    # 2) Fallback: per HTTP laden (hilft auf Hosting-Plattformen mit anderem Dateisystem)
-    try:
-        if absolute_url:
-            with urlopen(absolute_url, timeout=10) as resp:
-                if getattr(resp, "status", 200) >= 400:
-                    return None, "Bild konnte nicht geladen werden"
-                raw = resp.read()
-            reader = _image_reader_from_bytes(raw)
-            if reader:
-                return reader, None
-    except Exception:
-        pass
-
-    return None, "Bilddatei nicht gefunden"
-
-
-def _format_date_de(value: str, fallback: str = "-") -> str:
-    s = str(value or "").strip()
-    if not s:
-        return fallback
-    for parser in (
-        lambda v: datetime.fromisoformat(v.replace("Z", "")),
-        lambda v: datetime.strptime(v, "%Y-%m-%d"),
-    ):
-        try:
-            return parser(s).strftime("%d.%m.%Y")
-        except Exception:
-            pass
-    return s
-
-
-def _draw_wrapped_text(c, text: str, x: float, y: float, max_width: float, font_name: str = "Helvetica", font_size: int = 10, leading: float = None):
-    text = str(text or "").strip() or "-"
-    leading = leading or (font_size * 1.35)
-    c.setFont(font_name, font_size)
-    words = text.split()
-    lines = []
-    current = ""
-    for word in words:
-        trial = f"{current} {word}".strip()
-        if c.stringWidth(trial, font_name, font_size) <= max_width:
-            current = trial
-        else:
-            if current:
-                lines.append(current)
-            current = word
-    if current:
-        lines.append(current)
-    if not lines:
-        lines = ["-"]
-    for line in lines:
-        c.drawString(x, y, line)
-        y -= leading
-    return y
-
-
-@app.route("/users/<username>/client_pdf", methods=["GET"])
-def user_client_pdf(username):
-    # ✅ Chef/Vorgesetzter dürfen exportieren
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
     if not u:
-        abort(404)
-
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    w, h = A4
-
-    margin = 16 * mm
-    content_w = w - (2 * margin)
-    header_h = 22 * mm
-
-    c.setFillColor(colors.HexColor("#1f2937"))
-    c.roundRect(margin, h - margin - header_h, content_w, header_h, 5 * mm, stroke=0, fill=1)
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawString(margin + 8 * mm, h - margin - 8 * mm, "Mitarbeiterprofil")
-    c.setFont("Helvetica", 9)
-    c.drawString(margin + 8 * mm, h - margin - 14 * mm, f"Export am {datetime.now().strftime('%d.%m.%Y %H:%M')}")
-
-    full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
-    card_top = h - margin - header_h - 8 * mm
-    card_h = 55 * mm
-    c.setFillColor(colors.white)
-    c.setStrokeColor(colors.HexColor("#d1d5db"))
-    c.roundRect(margin, card_top - card_h, content_w, card_h, 4 * mm, stroke=1, fill=1)
-
-    text_x = margin + 8 * mm
-    text_y = card_top - 10 * mm
-    photo_reader, photo_error = _safe_photo_reader(u.get("photo_url") or "", request.host_url)
-    photo_w = 34 * mm
-    photo_h = 42 * mm
-    photo_x = w - margin - 8 * mm - photo_w
-    photo_y = card_top - 8 * mm - photo_h
-
-    c.setFillColor(colors.HexColor("#f3f4f6"))
-    c.roundRect(photo_x - 2 * mm, photo_y - 2 * mm, photo_w + 4 * mm, photo_h + 4 * mm, 3 * mm, stroke=0, fill=1)
-    if photo_reader:
-        c.drawImage(photo_reader, photo_x, photo_y, photo_w, photo_h, preserveAspectRatio=True, mask='auto', anchor='c')
-    else:
-        c.setFillColor(colors.HexColor("#6b7280"))
-        c.setFont("Helvetica-Bold", 9)
-        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2) + 2 * mm, "Kein Bild")
-        c.setFont("Helvetica", 7)
-        c.drawCentredString(photo_x + (photo_w / 2), photo_y + (photo_h / 2) - 2 * mm, photo_error or "Nicht verfügbar")
-
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(text_x, text_y, full_name)
-    c.setFont("Helvetica", 10)
-    c.drawString(text_x, text_y - 7 * mm, f"Benutzername: {username}")
-    c.drawString(text_x, text_y - 13 * mm, f"E-Mail: {(u.get('email') or '-').strip() or '-'}")
-    c.drawString(text_x, text_y - 19 * mm, f"Geburtsdatum: {_format_date_de(u.get('geburtsdatum') or '', '-')}")
-    c.drawString(text_x, text_y - 25 * mm, f"Staatsangehörigkeit: {(u.get('staatsangehoerigkeit') or '-').strip() or '-'}")
-
-    section_top = card_top - card_h - 8 * mm
-    col_gap = 8 * mm
-    col_w = (content_w - col_gap) / 2
-
-    def draw_section(x, top_y, title, rows):
-        title_h = 8 * mm
-        row_h = 8 * mm
-        total_h = title_h + (len(rows) * row_h)
-        c.setFillColor(colors.white)
-        c.setStrokeColor(colors.HexColor("#d1d5db"))
-        c.roundRect(x, top_y - total_h, col_w, total_h, 4 * mm, stroke=1, fill=1)
-        c.setFillColor(colors.HexColor("#eef2ff"))
-        c.roundRect(x + 1.5 * mm, top_y - title_h + 1.5 * mm, col_w - 3 * mm, title_h - 3 * mm, 3 * mm, stroke=0, fill=1)
-        c.setFillColor(colors.HexColor("#111827"))
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(x + 4 * mm, top_y - 5.5 * mm, title)
-        y = top_y - title_h - 5.5 * mm
-        for label, value in rows:
-            c.setFillColor(colors.HexColor("#6b7280"))
-            c.setFont("Helvetica-Bold", 9)
-            c.drawString(x + 4 * mm, y, f"{label}:")
-            c.setFillColor(colors.black)
-            c.setFont("Helvetica", 9)
-            c.drawString(x + 30 * mm, y, str(value or "-"))
-            y -= row_h
-        return top_y - total_h
-
-    s34a = str(u.get("s34a") or "").strip().lower()
-    s34a_txt = "Ja" if s34a == "ja" else "Nein"
-    s34a_art = (u.get("s34a_art") or "").strip()
-    if s34a == "ja" and s34a_art:
-        s34a_txt += f" ({s34a_art})"
-
-    left_bottom = draw_section(margin, section_top, "Basisdaten", [("§ 34a GewO", s34a_txt), ("Bewacher-ID", (u.get("bewach_id") or "-").strip() or "-"), ("P-Schein", _yesno_label(u.get("pschein"))), ("BSW", _yesno_label(u.get("bsw"))), ("SVS", (f"{float(u.get('stundensatz')):.2f} €/h".replace('.', ',')) if u.get("stundensatz") not in (None, "") else "-")])
-
-    san_txt = "Nein"
-    if str(u.get("sanitaeter") or "").strip().lower() == "ja":
-        art = (u.get("sanitaeter_art") or "").strip()
-        san_txt = f"Ja{(' (' + art + ')') if art else ''}"
-
-    right_bottom = draw_section(margin + col_w + col_gap, section_top, "Qualifikationen", [("Sanitätsdienst", san_txt), ("Brandschutzhelfer/in", _yesno_label(u.get("brandschutzhelfer"))), ("Deeskalation", _yesno_label(u.get("deeskalation"))), ("GSSK", _yesno_label(u.get("gssk"))), ("Fachkraft S&S", _yesno_label(u.get("fachkraft"))), ("Personenschutz", _yesno_label(u.get("personenschutz"))), ("Waffensachkunde", _yesno_label(u.get("waffensachkunde"))), ("Behördlich/Studium", _yesno_label(u.get("behoerdlich"))), ("Führerschein", ", ".join(_parse_multi_values(u.get("fuehrerschein_klasse") or "")) or "-")])
-
-    box_top = min(left_bottom, right_bottom) - 8 * mm
-    box_h = 34 * mm
-    c.setFillColor(colors.white)
-    c.setStrokeColor(colors.HexColor("#d1d5db"))
-    c.roundRect(margin, box_top - box_h, content_w, box_h, 4 * mm, stroke=1, fill=1)
-    c.setFillColor(colors.HexColor("#ecfdf5"))
-    c.roundRect(margin + 1.5 * mm, box_top - 8 * mm + 1.5 * mm, content_w - 3 * mm, 8 * mm - 3 * mm, 3 * mm, stroke=0, fill=1)
-    c.setFillColor(colors.HexColor("#111827"))
-    c.setFont("Helvetica-Bold", 11)
-    c.drawString(margin + 4 * mm, box_top - 5.5 * mm, "Fremdsprachen & Hinweise")
-
-    languages = _format_languages(u.get("sprachen") or "") or "-"
-    y = box_top - 12 * mm
-    c.setFillColor(colors.HexColor("#6b7280"))
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margin + 4 * mm, y, "Sprachen:")
-    c.setFillColor(colors.black)
-    y = _draw_wrapped_text(c, languages, margin + 28 * mm, y, content_w - 34 * mm, "Helvetica", 9, 4.5 * mm)
-    c.setFillColor(colors.HexColor("#6b7280"))
-    c.setFont("Helvetica-Bold", 9)
-    c.drawString(margin + 4 * mm, y - 1 * mm, "Sonstige:")
-    c.setFillColor(colors.black)
-    _draw_wrapped_text(c, (u.get("sonstige") or "-").strip() or "-", margin + 28 * mm, y - 1 * mm, content_w - 34 * mm, "Helvetica", 9, 4.5 * mm)
-
-    c.setFillColor(colors.HexColor("#6b7280"))
-    c.setFont("Helvetica", 8)
-    c.drawRightString(w - margin, 9 * mm, "Casutt Planungsportal – Mitarbeiterprofil-Auszug")
-
-    c.showPage()
-    c.save()
-
-    buf.seek(0)
-    filename = f"mitarbeiter_{username}_auszug.pdf"
-    return send_file(buf, mimetype="application/pdf", as_attachment=True, download_name=filename)
-
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+    pdf = build_user_pdf(enrich_user_record(u))
+    return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=f"personal_{username}.pdf")
 
 # ---------------- Events API ----------------
 @app.route("/events", methods=["GET"])
 def events_list():
+    # ✅ Login erforderlich (damit Planer/Mitarbeiter nicht anonym zugreifen)
     if "username" not in session:
         return jsonify({"error": "Nicht eingeloggt"}), 403
 
+    # ✅ DSGVO: Mitarbeiter ohne Einwilligung dürfen keine Einsätze laden
     if employee_requires_consent():
         return jsonify({"error":"Bitte zuerst auf der Startseite in die Datenverarbeitung einwilligen."}), 403
 
     db = get_db()
     role = normalize_role(session.get("role") or "mitarbeiter")
 
-    try:
-        ensure_events_schema()
-        ecur = db.execute("SELECT * FROM event ORDER BY start NULLS LAST, title NULLS LAST")
-        events = [row_to_dict(e) for e in ecur.fetchall()]
-    except Exception as e:
-        try:
-            db.rollback()
-        except Exception:
-            pass
-        print("FEHLER /events SELECT event:", repr(e), flush=True)
-        return jsonify([])
+    ecur = db.execute("SELECT * FROM event")
+    events = [row_to_dict(e) for e in ecur.fetchall()]
 
-    if role == "planner_bbs":
+    # ✅ Rollen-Restriktionen (serverseitig)
+    role_lc = normalize_role(role)
+    if role_lc == "planner_bbs":
         events = [e for e in events if (e.get("category") or "CP").strip().upper() == "CV"]
-
+    # Mitarbeiter: Profil-Stundensatz holen (für my_rate)
     my_profile_rate = 0.0
     if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        try:
-            me = db.execute("SELECT * FROM users WHERE username=%s", (session.get("username"),)).fetchone()
-            if me:
-                my_profile_rate = float(me.get("stundensatz") or 0.0)
-        except Exception as e:
-            try:
-                db.rollback()
-            except Exception:
-                pass
-            print("FEHLER /events SELECT users:", repr(e), flush=True)
+        me = db.execute("SELECT * FROM users WHERE username=%s", (session.get("username"),)).fetchone()
+        if me:
+            my_profile_rate = float(me.get("stundensatz") or 0.0)
 
     result = []
     for e in events:
+        rcur = db.execute(
+            "SELECT username,status,remark,start_time,end_time,rate_override FROM response WHERE event_id=%s",
+            (e["id"],)
+        )
+        rmap = {
+            r["username"]: {
+                "status": r["status"] or "",
+                "remark": r["remark"] or "",
+                "start_time": r["start_time"] or "",
+                "end_time": r.get("end_time") or "",
+                "rate_override": r["rate_override"]
+            } for r in rcur.fetchall()
+        }
+        e["responses"] = rmap
+
+        # ---- UI helpers: CSS Klassen für FullCalendar (Dot/Block Färbung) ----
+        # Diese Erweiterung entfernt/ändert keine bestehende Logik; sie ergänzt nur Metadaten fürs Frontend.
+        cls = []
+        # Kategorie (CP/CV)
+        cat = (e.get("category") or "CP").strip().upper()
+        if cat not in ("CP","CV"):
+            cat = "CP"
+        cls.append("cat-" + cat.lower())
+
+        # Event-Status (geplant/offen/...)
+        ev_status_token = status_to_css_token(e.get("status", ""))
+        if ev_status_token:
+            cls.append(f"status-event-{ev_status_token}")
+
+        # Zusatz-Status für Chef-Ansicht (nur bei status 'offen'):
+        # - 'voll'  => benötigte Mitarbeiter erreicht (grün)
+        # - 'bewerbung' => es gibt Bewerbungen/Zusagen, aber noch nicht voll (blau)
+        # Diese Logik ergänzt nur CSS-Klassen und ändert keine Daten in der DB.
         try:
-            event_id = e.get("id")
-            if not event_id:
-                continue
+            req = int(e.get("required_staff") or 0)
+        except Exception:
+            req = 0
 
-            rcur = db.execute(
-                "SELECT username,status,remark,start_time,end_time,rate_override FROM response WHERE event_id=%s",
-                (event_id,)
-            )
-            rows = rcur.fetchall()
+        # Bewerbungen/Zusagen zählen (alles, was nicht leer ist und nicht explizit entfernt wurde)
+        has_applications = any(
+            (rv.get("status") or "").strip() in ("zugesagt", "bestätigt")
+            for rv in (rmap or {}).values()
+        )
 
-            rmap = {}
-            for r in rows:
-                username = r.get("username")
-                if not username:
-                    continue
-                rmap[username] = {
-                    "status": r.get("status") or "",
-                    "remark": r.get("remark") or "",
-                    "start_time": r.get("start_time") or "",
-                    "end_time": r.get("end_time") or "",
-                    "rate_override": r.get("rate_override"),
-                }
+        confirmed_count = sum(
+            1 for rv in (rmap or {}).values()
+            if (rv.get("status") or "").strip() == "bestätigt"
+        )
 
-            e["responses"] = rmap
+        if (e.get("status") or "").strip().lower() == "offen":
+            if req > 0 and confirmed_count >= req:
+                cls.append("status-event-voll")
+            elif has_applications:
+                cls.append("status-event-bewerbung")
 
-            cls = []
-            cat = (e.get("category") or "CP").strip().upper()
-            if cat not in ("CP", "CV"):
-                cat = "CP"
-            cls.append("cat-" + cat.lower())
+        # Für Mitarbeiter: eigener Response-Status als Klasse (zugesagt/bestätigt/abgelehnt/...)
+        if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+            my = rmap.get(session.get("username"), {}) or {}
+            my_status_token = status_to_css_token(my.get("status", ""))
+            if my_status_token:
+                cls.append(f"status-{my_status_token}")
 
-            ev_status_token = status_to_css_token(e.get("status", ""))
-            if ev_status_token:
-                cls.append(f"status-event-{ev_status_token}")
+        # An FullCalendar übergeben (wird als classNames akzeptiert)
+        e["classNames"] = cls
 
-            req = to_int(e.get("required_staff"), 0)
+        # ✅ BUGFIX: 0 darf NICHT zu 1 werden
+        raw_u = e.get("use_event_rate")
+        use_event_rate = 1 if raw_u is None else int(raw_u)
 
-            has_applications = any(
-                (rv.get("status") or "").strip() in ("zugesagt", "bestätigt")
-                for rv in (rmap or {}).values()
-            )
-            confirmed_count = sum(
-                1 for rv in (rmap or {}).values()
-                if (rv.get("status") or "").strip() == "bestätigt"
-            )
-
-            if (e.get("status") or "").strip().lower() == "offen":
-                if req > 0 and confirmed_count >= req:
-                    cls.append("status-event-voll")
-                elif has_applications:
-                    cls.append("status-event-bewerbung")
-
-            if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-                my = rmap.get(session.get("username"), {}) or {}
-                my_status_token = status_to_css_token(my.get("status", ""))
-                if my_status_token:
-                    cls.append(f"status-{my_status_token}")
-
-            e["classNames"] = cls
-
-            use_event_rate = to_int(e.get("use_event_rate"), 1)
-
-            if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-                e["my_rate"] = 0
+        # Chef/Vorgesetzter/Planer: keine eigenen Raten berechnen
+        if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+            e["my_rate"] = 0
+        else:
+            if use_event_rate == 1:
+                e["my_rate"] = float(e.get("stundensatz") or 0.0)
             else:
-                if use_event_rate == 1:
-                    e["my_rate"] = float(e.get("stundensatz") or 0.0)
-                else:
-                    e["my_rate"] = my_profile_rate
+                e["my_rate"] = my_profile_rate
 
-            result.append(e)
-
-        except Exception as ex:
-            try:
-                db.rollback()
-            except Exception:
-                pass
-            print("FEHLER /events bei Event:", repr(ex), "event=", e, flush=True)
-            continue
+        result.append(e)
 
     return jsonify(result)
 
@@ -1995,52 +1430,65 @@ def edit_entry():
         except Exception:
             return jsonify({"error": "rate_override ungültig"}), 400
 
-    if not event_id or not username:
-        return jsonify({"error": "event_id und username erforderlich"}), 400
+    if not event_id:
+        return jsonify({"error": "event_id erforderlich"}), 400
 
     db = get_db()
 
-    # --- ALT-WERTE holen (für Change-Detection) ---
-    old_row = db.execute(
-        "SELECT start_time, remark FROM response WHERE event_id=%s AND username=%s",
-        (event_id, username)
-    ).fetchone()
-    old_start = (old_row.get("start_time") if old_row else "") or ""
-    old_remark = (old_row.get("remark") if old_row else "") or ""
+    old_start = ""
+    old_remark = ""
 
-    exists = db.execute(
-        "SELECT 1 FROM response WHERE event_id=%s AND username=%s",
-        (event_id, username)
-    ).fetchone()
+    if username:
+        old_row = db.execute(
+            "SELECT start_time, remark FROM response WHERE event_id=%s AND username=%s",
+            (event_id, username)
+        ).fetchone()
+        old_start = (old_row.get("start_time") if old_row else "") or ""
+        old_remark = (old_row.get("remark") if old_row else "") or ""
 
-    if exists:
-        db.execute(
-            """
-            UPDATE response SET
-              start_time    = COALESCE(NULLIF(%s,''), start_time),
-              end_time      = COALESCE(NULLIF(%s,''), end_time),
-              remark        = %s,
-              rate_override = %s
-            WHERE event_id=%s AND username=%s
-            """,
-            (start_time, end_time, remark, rate_override, event_id, username)
-        )
+        exists = db.execute(
+            "SELECT 1 FROM response WHERE event_id=%s AND username=%s",
+            (event_id, username)
+        ).fetchone()
+
+        if exists:
+            db.execute(
+                """
+                UPDATE response SET
+                  start_time    = COALESCE(NULLIF(%s,''), start_time),
+                  end_time      = COALESCE(NULLIF(%s,''), end_time),
+                  remark        = %s,
+                  rate_override = %s
+                WHERE event_id=%s AND username=%s
+                """,
+                (start_time, end_time, remark, rate_override, event_id, username)
+            )
+        else:
+            db.execute(
+                """
+                INSERT INTO response (event_id, username, status, remark, start_time, end_time, rate_override)
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                """,
+                (event_id, username, "bestätigt", remark, start_time or "", end_time or "", rate_override)
+            )
     else:
         db.execute(
             """
-            INSERT INTO response (event_id, username, status, remark, start_time, end_time, rate_override)
-            VALUES (%s,%s,%s,%s,%s,%s,%s)
+            UPDATE response SET
+              end_time      = COALESCE(NULLIF(%s,''), end_time),
+              remark        = %s,
+              rate_override = %s
+            WHERE event_id=%s
             """,
-            (event_id, username, "bestätigt", remark, start_time or "", end_time or "", rate_override)
+            (end_time, remark, rate_override, event_id)
         )
 
     db.commit()
 
-    # --- ÄNDERUNG erkennen ---
     changed_start = bool(start_time) and (start_time != old_start)
     changed_remark = (remark != old_remark)
 
-    if changed_start or changed_remark:
+    if username and (changed_start or changed_remark):
         u = db.execute(
             "SELECT vorname, nachname, email FROM users WHERE username=%s",
             (username,)
@@ -2066,11 +1514,9 @@ def edit_entry():
             try:
                 send_mail((u.get("email") or "").strip(), subject, body)
             except Exception:
-                # Mail-Fehler sollen die API nicht kaputt machen
                 pass
 
     return jsonify({"status": "ok"})
-
 
 
 
@@ -2212,7 +1658,6 @@ def send_mail_all():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
-
 
 
 
