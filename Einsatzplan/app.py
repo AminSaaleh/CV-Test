@@ -130,7 +130,8 @@ from psycopg2 import IntegrityError
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-app = Flask(__name__)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
 
 # Supabase/PostgreSQL connection string
@@ -1657,7 +1658,7 @@ def send_mail_all():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)
 
 
 
