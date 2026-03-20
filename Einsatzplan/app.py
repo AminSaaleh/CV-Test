@@ -130,8 +130,7 @@ from psycopg2 import IntegrityError
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-app = Flask(__name__, template_folder=os.path.join(BASE_DIR, 'templates'), static_folder=os.path.join(BASE_DIR, 'static'))
+app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
 
 # Supabase/PostgreSQL connection string
@@ -367,52 +366,52 @@ CREATE TABLE IF NOT EXISTS users (
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_user  ON response(username);")
 
     # ---- Migrationen (falls Tabellen schon existieren, aber Spalten fehlen) ----
-    
-# users
-for c, ddl in [
-    ("email", "ALTER TABLE users ADD COLUMN email TEXT"),
-    ("telefon", "ALTER TABLE users ADD COLUMN telefon TEXT"),
-    ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
-    ("geburtsort", "ALTER TABLE users ADD COLUMN geburtsort TEXT"),
-    ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
-    ("staatsnummer", "ALTER TABLE users ADD COLUMN staatsnummer TEXT"),
-    ("bkv_rv", "ALTER TABLE users ADD COLUMN bkv_rv TEXT"),
-    ("sv5n", "ALTER TABLE users ADD COLUMN sv5n TEXT"),
-    ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
-    ("image_name", "ALTER TABLE users ADD COLUMN image_name TEXT"),
-    ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
-    ("dokumentennummer", "ALTER TABLE users ADD COLUMN dokumentennummer TEXT"),
-    ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
-    ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
-    ("bewach_id", "ALTER TABLE users ADD COLUMN bewach_id TEXT"),
-    ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
-    ("amt", "ALTER TABLE users ADD COLUMN amt TEXT"),
-    ("bewerber_id", "ALTER TABLE users ADD COLUMN bewerber_id TEXT"),
-    ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
-    ("fschein", "ALTER TABLE users ADD COLUMN fschein TEXT"),
-    ("kati", "ALTER TABLE users ADD COLUMN kati TEXT"),
-    ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
-    ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
-    ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
-    ("bemerkung", "ALTER TABLE users ADD COLUMN bemerkung TEXT"),
-    ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
-    ("qualifications_json", "ALTER TABLE users ADD COLUMN qualifications_json TEXT"),
-    ("license_classes_json", "ALTER TABLE users ADD COLUMN license_classes_json TEXT"),
-    ("sprachen_json", "ALTER TABLE users ADD COLUMN sprachen_json TEXT"),
-    ("weitere_sprachen_json", "ALTER TABLE users ADD COLUMN weitere_sprachen_json TEXT"),
-    ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
-    ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
-    ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
-    ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
-    ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
-    ("vorname", "ALTER TABLE users ADD COLUMN vorname TEXT"),
-    ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
-    ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
-    ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
-    ("is_locked", "ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE"),
-]:
-    if not col_exists(db, "users", c):
-        db.execute(ddl)
+
+    # users
+    for c, ddl in [
+        ("email", "ALTER TABLE users ADD COLUMN email TEXT"),
+        ("telefon", "ALTER TABLE users ADD COLUMN telefon TEXT"),
+        ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
+        ("geburtsort", "ALTER TABLE users ADD COLUMN geburtsort TEXT"),
+        ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
+        ("staatsnummer", "ALTER TABLE users ADD COLUMN staatsnummer TEXT"),
+        ("bkv_rv", "ALTER TABLE users ADD COLUMN bkv_rv TEXT"),
+        ("sv5n", "ALTER TABLE users ADD COLUMN sv5n TEXT"),
+        ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
+        ("image_name", "ALTER TABLE users ADD COLUMN image_name TEXT"),
+        ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
+        ("dokumentennummer", "ALTER TABLE users ADD COLUMN dokumentennummer TEXT"),
+        ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
+        ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
+        ("bewach_id", "ALTER TABLE users ADD COLUMN bewach_id TEXT"),
+        ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
+        ("amt", "ALTER TABLE users ADD COLUMN amt TEXT"),
+        ("bewerber_id", "ALTER TABLE users ADD COLUMN bewerber_id TEXT"),
+        ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
+        ("fschein", "ALTER TABLE users ADD COLUMN fschein TEXT"),
+        ("kati", "ALTER TABLE users ADD COLUMN kati TEXT"),
+        ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
+        ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
+        ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
+        ("bemerkung", "ALTER TABLE users ADD COLUMN bemerkung TEXT"),
+        ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
+        ("qualifications_json", "ALTER TABLE users ADD COLUMN qualifications_json TEXT"),
+        ("license_classes_json", "ALTER TABLE users ADD COLUMN license_classes_json TEXT"),
+        ("sprachen_json", "ALTER TABLE users ADD COLUMN sprachen_json TEXT"),
+        ("weitere_sprachen_json", "ALTER TABLE users ADD COLUMN weitere_sprachen_json TEXT"),
+        ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
+        ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
+        ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
+        ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
+        ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
+        ("vorname", "ALTER TABLE users ADD COLUMN vorname TEXT"),
+        ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
+        ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
+        ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
+        ("is_locked", "ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE"),
+    ]:
+        if not col_exists(db, "users", c):
+            db.execute(ddl)
 
     # event
     for c, ddl in [
@@ -1658,7 +1657,7 @@ def send_mail_all():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=False)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", "5000")), debug=True)
 
 
 
