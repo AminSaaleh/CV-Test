@@ -7,7 +7,7 @@
 #   python app.py
 #
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g
-import os, uuid, re, io
+import os, uuid, re, io, json
 from datetime import datetime
 
 
@@ -213,6 +213,58 @@ def to_int(v, default=0):
             return default
 
 
+def yesno(v, default="nein"):
+    s = str(v or "").strip().lower()
+    return "ja" if s in ("1", "true", "ja", "yes", "on") else default
+
+
+def parse_language_skills(value):
+    if isinstance(value, dict):
+        return value
+    if not value:
+        return {}
+    try:
+        data = json.loads(value)
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def dump_language_skills(value):
+    if isinstance(value, str):
+        try:
+            json.loads(value)
+            return value
+        except Exception:
+            return json.dumps({}, ensure_ascii=False)
+    return json.dumps(value or {}, ensure_ascii=False)
+
+
+def normalize_user_payload(d):
+    language_skills = d.get("language_skills") or {}
+    if isinstance(language_skills, str):
+        language_skills = parse_language_skills(language_skills)
+
+    cleaned_languages = {}
+    for lang, level in (language_skills or {}).items():
+        lang_name = str(lang or "").strip()
+        level_name = str(level or "").strip()
+        if lang_name and level_name:
+            cleaned_languages[lang_name] = level_name
+
+    return {
+        "language_skills": dump_language_skills(cleaned_languages),
+        "brandschutzhelfer": yesno(d.get("brandschutzhelfer")),
+        "deeskalation": yesno(d.get("deeskalation")),
+        "gssk": yesno(d.get("gssk")),
+        "fachkraft_ss": yesno(d.get("fachkraft_ss")),
+        "personenschutz": yesno(d.get("personenschutz")),
+        "waffensachkunde": yesno(d.get("waffensachkunde")),
+        "behoerdlich_studium": yesno(d.get("behoerdlich_studium")),
+        "fuehrerschein": yesno(d.get("fuehrerschein")),
+        "fuehrerschein_klassen": (d.get("fuehrerschein_klassen") or "").strip(),
+    }
+
 
 def normalize_s34a_art(value):
     if not value:
@@ -298,7 +350,17 @@ def init_db():
             stundensatz DOUBLE PRECISION,
             consent_given BOOLEAN DEFAULT FALSE,
             consent_name TEXT,
-            consent_date TEXT
+            consent_date TEXT,
+            language_skills TEXT,
+            brandschutzhelfer TEXT DEFAULT 'nein',
+            deeskalation TEXT DEFAULT 'nein',
+            gssk TEXT DEFAULT 'nein',
+            fachkraft_ss TEXT DEFAULT 'nein',
+            personenschutz TEXT DEFAULT 'nein',
+            waffensachkunde TEXT DEFAULT 'nein',
+            behoerdlich_studium TEXT DEFAULT 'nein',
+            fuehrerschein TEXT DEFAULT 'nein',
+            fuehrerschein_klassen TEXT
         );
         '''
     )
@@ -364,6 +426,16 @@ def init_db():
         ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
         ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
         ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
+        ("language_skills", "ALTER TABLE users ADD COLUMN language_skills TEXT"),
+        ("brandschutzhelfer", "ALTER TABLE users ADD COLUMN brandschutzhelfer TEXT DEFAULT 'nein'"),
+        ("deeskalation", "ALTER TABLE users ADD COLUMN deeskalation TEXT DEFAULT 'nein'"),
+        ("gssk", "ALTER TABLE users ADD COLUMN gssk TEXT DEFAULT 'nein'"),
+        ("fachkraft_ss", "ALTER TABLE users ADD COLUMN fachkraft_ss TEXT DEFAULT 'nein'"),
+        ("personenschutz", "ALTER TABLE users ADD COLUMN personenschutz TEXT DEFAULT 'nein'"),
+        ("waffensachkunde", "ALTER TABLE users ADD COLUMN waffensachkunde TEXT DEFAULT 'nein'"),
+        ("behoerdlich_studium", "ALTER TABLE users ADD COLUMN behoerdlich_studium TEXT DEFAULT 'nein'"),
+        ("fuehrerschein", "ALTER TABLE users ADD COLUMN fuehrerschein TEXT DEFAULT 'nein'"),
+        ("fuehrerschein_klassen", "ALTER TABLE users ADD COLUMN fuehrerschein_klassen TEXT"),
     ]:
         if not col_exists(db, "users", c):
             db.execute(ddl)
@@ -401,7 +473,7 @@ def init_db():
             '''
             INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ''',
             (
                 "AdminTest", "Test1234", "vorgesetzter",
@@ -538,6 +610,7 @@ def get_users():
     for u in users:
         if u.get("stundensatz") is None:
             u["stundensatz"] = ""
+        u["language_skills"] = parse_language_skills(u.get("language_skills"))
     return jsonify(users)
 
 
@@ -563,7 +636,6 @@ def users_public():
 
 @app.route("/users", methods=["POST"])
 def add_user():
-    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
@@ -573,20 +645,20 @@ def add_user():
         return jsonify({"error": "username ist erforderlich"}), 400
 
     db = get_db()
-
-    # stundensatz darf leer sein
     stundensatz = d.get("stundensatz")
     stundensatz = None if stundensatz in (None, "") else float(stundensatz)
 
     password = d.get("password") or ""
     email = (d.get("email") or "").strip()
     employee_name = f"{(d.get('vorname') or '').strip()} {(d.get('nachname') or '').strip()}".strip() or username
+    extra = normalize_user_payload(d)
 
     try:
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -604,6 +676,16 @@ def add_user():
                 d.get("bemerkung") or "",
                 False,
                 stundensatz,
+                extra["language_skills"],
+                extra["brandschutzhelfer"],
+                extra["deeskalation"],
+                extra["gssk"],
+                extra["fachkraft_ss"],
+                extra["personenschutz"],
+                extra["waffensachkunde"],
+                extra["behoerdlich_studium"],
+                extra["fuehrerschein"],
+                extra["fuehrerschein_klassen"],
             ),
         )
         db.commit()
@@ -624,11 +706,8 @@ def add_user():
     else:
         mail_error = "Keine E-Mail-Adresse hinterlegt."
 
-    return jsonify({
-        "status": "ok",
-        "mail_sent": mail_sent,
-        "mail_error": mail_error
-    })
+    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
+
 @app.route("/users/rename", methods=["POST"])
 def rename_user():
     # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
@@ -658,8 +737,10 @@ def rename_user():
         # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
+                consent_given,consent_name,consent_date)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -674,7 +755,22 @@ def rename_user():
                 old["steuernummer"] or "",
                 old["bsw"] or "nein",
                 old["sanitaeter"] or "nein",
-                old["stundensatz"]
+                old.get("bemerkung") or "",
+                bool(old.get("is_locked") or False),
+                old.get("stundensatz"),
+                old.get("language_skills") or dump_language_skills({}),
+                old.get("brandschutzhelfer") or "nein",
+                old.get("deeskalation") or "nein",
+                old.get("gssk") or "nein",
+                old.get("fachkraft_ss") or "nein",
+                old.get("personenschutz") or "nein",
+                old.get("waffensachkunde") or "nein",
+                old.get("behoerdlich_studium") or "nein",
+                old.get("fuehrerschein") or "nein",
+                old.get("fuehrerschein_klassen") or "",
+                bool(old.get("consent_given") or False),
+                old.get("consent_name") or "",
+                old.get("consent_date") or "",
             )
         )
 
@@ -707,7 +803,9 @@ def edit_user(username):
 
     updates = dict(u)
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
-              "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung"]:
+              "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung",
+              "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -725,16 +823,30 @@ def edit_user(username):
     if "stundensatz" in d:
         updates["stundensatz"] = None if d["stundensatz"] in ("", None) else float(d["stundensatz"])
 
+    if "language_skills" in d:
+        updates["language_skills"] = normalize_user_payload(d)["language_skills"]
+
+    extra_updates = normalize_user_payload(d)
+    for k in ["brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen"]:
+        if k in d:
+            updates[k] = extra_updates[k]
+
     db.execute(
         """UPDATE users SET
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
-           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s
+           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s,
+           language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
+           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
             updates["s34a"], updates["s34a_art"], updates["pschein"],
             updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"], updates.get("bemerkung") or "",
-            updates["stundensatz"], username
+            updates["stundensatz"], updates.get("language_skills") or dump_language_skills({}),
+            updates.get("brandschutzhelfer") or "nein", updates.get("deeskalation") or "nein", updates.get("gssk") or "nein", updates.get("fachkraft_ss") or "nein",
+            updates.get("personenschutz") or "nein", updates.get("waffensachkunde") or "nein", updates.get("behoerdlich_studium") or "nein",
+            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "", username
         )
     )
     db.commit()
@@ -777,15 +889,30 @@ def user_pdf(username):
     pdf.drawString(50, y, "Mitarbeiterdaten")
     y -= 30
 
+    language_skills = parse_language_skills(u.get("language_skills"))
+    language_text = ", ".join([f"{lang}: {level}" for lang, level in language_skills.items()]) or "-"
+    fuehrerschein_text = "Ja" if str(u.get("fuehrerschein") or "").lower()=="ja" else "Nein"
+    if fuehrerschein_text == "Ja" and (u.get("fuehrerschein_klassen") or "").strip():
+        fuehrerschein_text += f" ({(u.get('fuehrerschein_klassen') or '').strip()})"
+
     lines = [
         ("Name", f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username),
         ("Benutzername", username),
         ("Bemerkung", (u.get("bemerkung") or "").strip() or "-"),
+        ("Sprachen", language_text),
         ("§ 34a GewO", ("Ja" if str(u.get("s34a") or "").lower()=="ja" else "Nein") + (f" ({u.get('s34a_art')})" if str(u.get("s34a") or "").lower()=="ja" and (u.get("s34a_art") or "").strip() else "")),
         ("Bewacher ID", (u.get("bewach_id") or "").strip() or "-"),
         ("BSW", "Ja" if str(u.get("bsw") or "").lower()=="ja" else "Nein"),
         ("Sani", "Ja" if str(u.get("sanitaeter") or "").lower()=="ja" else "Nein"),
         ("P-Schein", "Ja" if str(u.get("pschein") or "").lower()=="ja" else "Nein"),
+        ("Brandschutzhelfer", "Ja" if str(u.get("brandschutzhelfer") or "").lower()=="ja" else "Nein"),
+        ("Deeskalation", "Ja" if str(u.get("deeskalation") or "").lower()=="ja" else "Nein"),
+        ("GSSK", "Ja" if str(u.get("gssk") or "").lower()=="ja" else "Nein"),
+        ("Fachkraft S&S", "Ja" if str(u.get("fachkraft_ss") or "").lower()=="ja" else "Nein"),
+        ("Personenschutz", "Ja" if str(u.get("personenschutz") or "").lower()=="ja" else "Nein"),
+        ("Waffensachkunde", "Ja" if str(u.get("waffensachkunde") or "").lower()=="ja" else "Nein"),
+        ("Behördlich/Studium", "Ja" if str(u.get("behoerdlich_studium") or "").lower()=="ja" else "Nein"),
+        ("Führerschein", fuehrerschein_text),
         ("SVS", (f"{float(u.get('stundensatz')):.2f} EUR/h" if u.get("stundensatz") not in (None, "") else "-")),
         ("Erklärung", "Ja" if bool(u.get("consent_given") or False) else "Nein"),
         ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
