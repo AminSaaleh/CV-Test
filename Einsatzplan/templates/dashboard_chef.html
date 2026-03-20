@@ -176,6 +176,12 @@
 .personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
 .personal-name-cell{text-align:left !important;white-space:nowrap;}
 .consent-check{font-size:20px;font-weight:700;}
+.qual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0;}
+.qual-card{border:1px solid #d6dbe3;border-radius:10px;padding:10px;background:#f8fbff;}
+.qual-card h5{margin:0 0 8px 0;font-size:14px;}
+.lang-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0;}
+.lang-item select{min-width:220px;display:none;}
+.section-title-lite{margin:14px 0 6px 0;font-weight:700;}
 
 </style>
 
@@ -1035,6 +1041,39 @@ body.modal-open{ touch-action: auto !important; }
         </select>
 
         <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
+      </div>
+
+
+      <div class="section-title-lite">Fremdsprachen</div>
+      <div class="qual-grid" id="add-language-skills">
+        <div class="qual-card">
+          <h5>Sprachen</h5>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Deutsch"> Deutsch</label><select id="add-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Englisch"> Englisch</label><select id="add-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Französisch"> Französisch</label><select id="add-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Spanisch"> Spanisch</label><select id="add-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Türkisch"> Türkisch</label><select id="add-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Arabisch"> Arabisch</label><select id="add-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+        </div>
+      </div>
+
+      <div class="section-title-lite">Zusätzliche Qualifikationen</div>
+      <div class="qual-grid">
+        <div class="qual-card">
+          <h5>Qualifikationen</h5>
+          <label><input type="checkbox" id="brandschutzhelfer"> Brandschutzhelfer</label><br>
+          <label><input type="checkbox" id="deeskalation"> Deeskalation</label><br>
+          <label><input type="checkbox" id="gssk"> GSSK</label><br>
+          <label><input type="checkbox" id="fachkraft_ss"> Fachkraft S&amp;S</label><br>
+          <label><input type="checkbox" id="personenschutz"> Personenschutz</label><br>
+          <label><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label><br>
+          <label><input type="checkbox" id="behoerdlich_studium"> Behördlich/Studium</label>
+        </div>
+        <div class="qual-card">
+          <h5>Führerschein</h5>
+          <label><input type="checkbox" id="fuehrerschein"> Führerschein vorhanden</label>
+          <input type="text" id="fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
+        </div>
       </div>
 
       <button type="submit" class="confirm">➕ Hinzufügen</button>
@@ -2361,7 +2400,53 @@ document.getElementById("planning").style.display="block";
       }
 
 
+
+    function collectLanguageSkills(prefix){
+      const result = {};
+      document.querySelectorAll(`input.lang-check[data-prefix="${prefix}"]`).forEach(cb => {
+        const lang = cb.dataset.lang;
+        const sel = document.getElementById(`${prefix}-lang-${lang}`);
+        if(cb.checked && sel && sel.value){
+          result[lang] = sel.value;
+        }
+      });
+      return result;
+    }
+
+    function setLanguageSkills(prefix, data){
+      const map = data || {};
+      document.querySelectorAll(`input.lang-check[data-prefix="${prefix}"]`).forEach(cb => {
+        const lang = cb.dataset.lang;
+        const sel = document.getElementById(`${prefix}-lang-${lang}`);
+        const val = map[lang] || "";
+        cb.checked = !!val;
+        if(sel){
+          sel.style.display = cb.checked ? 'inline-block' : 'none';
+          sel.value = val;
+        }
+      });
+    }
+
+    function bindQualificationUi(){
+      document.querySelectorAll('.lang-check').forEach(cb => {
+        cb.addEventListener('change', () => {
+          const sel = document.getElementById(`${cb.dataset.prefix}-lang-${cb.dataset.lang}`);
+          if(!sel) return;
+          sel.style.display = cb.checked ? 'inline-block' : 'none';
+          if(cb.checked && !sel.value) sel.value = 'Grundkenntnisse';
+          if(!cb.checked) sel.value = '';
+        });
+      });
+      [['fuehrerschein','fuehrerschein_klassen'],['edit-fuehrerschein','edit-fuehrerschein_klassen']].forEach(([a,b])=>{
+        const cb=document.getElementById(a); const inp=document.getElementById(b);
+        if(!cb || !inp) return;
+        const sync=()=>{inp.style.display=cb.checked?'block':'none'; if(!cb.checked) inp.value='';};
+        cb.addEventListener('change', sync); sync();
+      });
+    }
+
       // User hinzufügen
+      bindQualificationUi();
       if(!IS_PLANNER){
       document.getElementById("add-user-form").onsubmit=async e=>{
         e.preventDefault();
@@ -2380,7 +2465,17 @@ document.getElementById("planning").style.display="block";
           steuernummer: document.getElementById("steuernummer").value,
           bsw: document.getElementById("bsw").value,
           sanitaeter: document.getElementById("sanitaeter").value,
-          stundensatz: document.getElementById("stundensatz").value
+          stundensatz: document.getElementById("stundensatz").value,
+          language_skills: collectLanguageSkills('add'),
+          brandschutzhelfer: document.getElementById('brandschutzhelfer').checked ? 'ja' : 'nein',
+          deeskalation: document.getElementById('deeskalation').checked ? 'ja' : 'nein',
+          gssk: document.getElementById('gssk').checked ? 'ja' : 'nein',
+          fachkraft_ss: document.getElementById('fachkraft_ss').checked ? 'ja' : 'nein',
+          personenschutz: document.getElementById('personenschutz').checked ? 'ja' : 'nein',
+          waffensachkunde: document.getElementById('waffensachkunde').checked ? 'ja' : 'nein',
+          behoerdlich_studium: document.getElementById('behoerdlich_studium').checked ? 'ja' : 'nein',
+          fuehrerschein: document.getElementById('fuehrerschein').checked ? 'ja' : 'nein',
+          fuehrerschein_klassen: document.getElementById('fuehrerschein_klassen').value
         };
         const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
         const rAdd = await resAdd.json().catch(()=>({}));
@@ -2401,6 +2496,8 @@ document.getElementById("planning").style.display="block";
         alert(successMsg);
         loadUsers();
         e.target.reset();
+        setLanguageSkills('add', {});
+        const addFs=document.getElementById('fuehrerschein'); if(addFs){ addFs.checked=false; addFs.dispatchEvent(new Event('change')); }
       };
       }
     });
@@ -3145,6 +3242,17 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-bsw").value=user.bsw || "nein";
       document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
 
+      document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-gssk").checked=String(user.gssk || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fachkraft_ss").checked=String(user.fachkraft_ss || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-personenschutz").checked=String(user.personenschutz || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-waffensachkunde").checked=String(user.waffensachkunde || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
+      setLanguageSkills('edit', user.language_skills || {});
+      document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
       document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
       document.getElementById("editUserModal").style.display="flex";
     }
@@ -3189,7 +3297,17 @@ document.getElementById("confirmed-counter").textContent =
         steuernummer: document.getElementById("edit-steuernummer").value,
         bsw: document.getElementById("edit-bsw").value,
         sanitaeter: document.getElementById("edit-sanitaeter").value,
-        stundensatz:document.getElementById("edit-stundensatz").value
+        stundensatz:document.getElementById("edit-stundensatz").value,
+        language_skills: collectLanguageSkills('edit'),
+        brandschutzhelfer: document.getElementById('edit-brandschutzhelfer').checked ? 'ja' : 'nein',
+        deeskalation: document.getElementById('edit-deeskalation').checked ? 'ja' : 'nein',
+        gssk: document.getElementById('edit-gssk').checked ? 'ja' : 'nein',
+        fachkraft_ss: document.getElementById('edit-fachkraft_ss').checked ? 'ja' : 'nein',
+        personenschutz: document.getElementById('edit-personenschutz').checked ? 'ja' : 'nein',
+        waffensachkunde: document.getElementById('edit-waffensachkunde').checked ? 'ja' : 'nein',
+        behoerdlich_studium: document.getElementById('edit-behoerdlich_studium').checked ? 'ja' : 'nein',
+        fuehrerschein: document.getElementById('edit-fuehrerschein').checked ? 'ja' : 'nein',
+        fuehrerschein_klassen: document.getElementById('edit-fuehrerschein_klassen').value
       };
 
       const resSave = await fetch("/users/"+newUsernameUrl,{
