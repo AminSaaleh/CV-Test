@@ -6,8 +6,8 @@
 #   export SECRET_KEY="."
 #   python app.py
 #
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g, send_file
-import os, uuid, re, json, io
+from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g
+import os, uuid, re
 from datetime import datetime
 
 
@@ -58,7 +58,8 @@ def build_welcome_mail(employee_name: str, username: str, password: str) -> str:
     lines = [
         f"Hallo {employee_name},",
         "",
-        "herzlich willkommen beim Casutt Veranstaltungsservice!",
+        "herzlich willkommen beim",
+        "Casutt Veranstaltungsservice!",
         "",
         "Deine Zugangsdaten:",
         f"Benutzername: {username}",
@@ -127,8 +128,6 @@ def build_change_mail(employee_name: str,
 import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
@@ -278,51 +277,26 @@ def init_db():
     # NOTE: In Postgres ist "user" ein reserviertes Wort -> wir nutzen "users".
     db.execute(
         '''
-        
-CREATE TABLE IF NOT EXISTS users (
-    username TEXT PRIMARY KEY,
-    password TEXT NOT NULL,
-    role TEXT DEFAULT 'mitarbeiter',
-    vorname TEXT,
-    nachname TEXT,
-    email TEXT,
-    telefon TEXT,
-    geburtsdatum TEXT,
-    geburtsort TEXT,
-    staatsangehoerigkeit TEXT,
-    staatsnummer TEXT,
-    bkv_rv TEXT,
-    sv5n TEXT,
-    image_data TEXT,
-    image_name TEXT,
-    amtliches_dokument TEXT,
-    dokumentennummer TEXT,
-    ausstellungsdatum TEXT,
-    ausstellende_behoerde TEXT,
-    s34a TEXT,
-    s34a_art TEXT,
-    amt TEXT,
-    bewerber_id TEXT,
-    steuernummer TEXT,
-    bewach_id TEXT,
-    bsw TEXT,
-    fschein TEXT,
-    kati TEXT,
-    sanitaeter TEXT,
-    pschein TEXT,
-    stundensatz DOUBLE PRECISION,
-    bemerkung TEXT,
-    sonstige TEXT,
-    qualifications_json TEXT,
-    license_classes_json TEXT,
-    sprachen_json TEXT,
-    weitere_sprachen_json TEXT,
-    consent_given BOOLEAN DEFAULT FALSE,
-    consent_name TEXT,
-    consent_date TEXT,
-    is_locked BOOLEAN DEFAULT FALSE
-);
-'''
+        CREATE TABLE IF NOT EXISTS users (
+            username TEXT PRIMARY KEY,
+            password TEXT NOT NULL,
+            role TEXT DEFAULT 'mitarbeiter',
+            vorname TEXT,
+            nachname TEXT,
+            email TEXT,
+            s34a TEXT,
+            s34a_art TEXT,
+            pschein TEXT,
+            bewach_id TEXT,
+            steuernummer TEXT,
+            bsw TEXT,
+            sanitaeter TEXT,
+            stundensatz DOUBLE PRECISION,
+            consent_given BOOLEAN DEFAULT FALSE,
+            consent_name TEXT,
+            consent_date TEXT
+        );
+        '''
     )
 
     db.execute(
@@ -366,49 +340,24 @@ CREATE TABLE IF NOT EXISTS users (
     db.execute("CREATE INDEX IF NOT EXISTS idx_response_user  ON response(username);")
 
     # ---- Migrationen (falls Tabellen schon existieren, aber Spalten fehlen) ----
-
     # users
     for c, ddl in [
         ("email", "ALTER TABLE users ADD COLUMN email TEXT"),
-        ("telefon", "ALTER TABLE users ADD COLUMN telefon TEXT"),
-        ("geburtsdatum", "ALTER TABLE users ADD COLUMN geburtsdatum TEXT"),
-        ("geburtsort", "ALTER TABLE users ADD COLUMN geburtsort TEXT"),
-        ("staatsangehoerigkeit", "ALTER TABLE users ADD COLUMN staatsangehoerigkeit TEXT"),
-        ("staatsnummer", "ALTER TABLE users ADD COLUMN staatsnummer TEXT"),
-        ("bkv_rv", "ALTER TABLE users ADD COLUMN bkv_rv TEXT"),
-        ("sv5n", "ALTER TABLE users ADD COLUMN sv5n TEXT"),
-        ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
-        ("image_name", "ALTER TABLE users ADD COLUMN image_name TEXT"),
-        ("amtliches_dokument", "ALTER TABLE users ADD COLUMN amtliches_dokument TEXT"),
-        ("dokumentennummer", "ALTER TABLE users ADD COLUMN dokumentennummer TEXT"),
-        ("ausstellungsdatum", "ALTER TABLE users ADD COLUMN ausstellungsdatum TEXT"),
-        ("ausstellende_behoerde", "ALTER TABLE users ADD COLUMN ausstellende_behoerde TEXT"),
         ("bewach_id", "ALTER TABLE users ADD COLUMN bewach_id TEXT"),
         ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
-        ("amt", "ALTER TABLE users ADD COLUMN amt TEXT"),
-        ("bewerber_id", "ALTER TABLE users ADD COLUMN bewerber_id TEXT"),
         ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
-        ("fschein", "ALTER TABLE users ADD COLUMN fschein TEXT"),
-        ("kati", "ALTER TABLE users ADD COLUMN kati TEXT"),
         ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
-        ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
         ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
-        ("bemerkung", "ALTER TABLE users ADD COLUMN bemerkung TEXT"),
-        ("sonstige", "ALTER TABLE users ADD COLUMN sonstige TEXT"),
-        ("qualifications_json", "ALTER TABLE users ADD COLUMN qualifications_json TEXT"),
-        ("license_classes_json", "ALTER TABLE users ADD COLUMN license_classes_json TEXT"),
-        ("sprachen_json", "ALTER TABLE users ADD COLUMN sprachen_json TEXT"),
-        ("weitere_sprachen_json", "ALTER TABLE users ADD COLUMN weitere_sprachen_json TEXT"),
         ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
         ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
         ("consent_date", "ALTER TABLE users ADD COLUMN consent_date TEXT"),
         ("s34a", "ALTER TABLE users ADD COLUMN s34a TEXT"),
         ("s34a_art", "ALTER TABLE users ADD COLUMN s34a_art TEXT"),
+        ("pschein", "ALTER TABLE users ADD COLUMN pschein TEXT"),
         ("vorname", "ALTER TABLE users ADD COLUMN vorname TEXT"),
         ("nachname", "ALTER TABLE users ADD COLUMN nachname TEXT"),
         ("role", "ALTER TABLE users ADD COLUMN role TEXT DEFAULT 'mitarbeiter'"),
         ("password", "ALTER TABLE users ADD COLUMN password TEXT"),
-        ("is_locked", "ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE"),
     ]:
         if not col_exists(db, "users", c):
             db.execute(ddl)
@@ -463,186 +412,6 @@ CREATE TABLE IF NOT EXISTS users (
             ),
         )
         db.commit()
-
-
-USER_LIST_FIELDS = [
-    "username", "password", "role", "vorname", "nachname", "email", "telefon",
-    "geburtsdatum", "geburtsort", "staatsangehoerigkeit", "staatsnummer",
-    "bkv_rv", "sv5n", "image_data", "image_name",
-    "amtliches_dokument", "dokumentennummer", "ausstellungsdatum", "ausstellende_behoerde",
-    "s34a", "s34a_art", "amt", "bewerber_id", "steuernummer", "bewach_id",
-    "bsw", "fschein", "kati", "sanitaeter", "pschein", "stundensatz",
-    "bemerkung", "sonstige", "qualifications_json", "license_classes_json",
-    "sprachen_json", "weitere_sprachen_json", "consent_given", "consent_name",
-    "consent_date", "is_locked"
-]
-
-YES_NO_FIELDS = ["s34a", "bsw", "fschein", "kati", "sanitaeter", "pschein"]
-JSON_LIST_FIELDS = ["qualifications_json", "license_classes_json", "sprachen_json", "weitere_sprachen_json"]
-
-
-def json_dumps_safe(value):
-    try:
-        return json.dumps(value or [], ensure_ascii=False)
-    except Exception:
-        return "[]"
-
-
-def json_loads_safe(value):
-    if value in (None, ""):
-        return []
-    if isinstance(value, list):
-        return value
-    try:
-        parsed = json.loads(value)
-        return parsed if isinstance(parsed, list) else []
-    except Exception:
-        return []
-
-
-def normalize_yes_no(value, default="nein"):
-    v = str(value or "").strip().lower()
-    if v in ("1", "true", "yes", "ja", "y"):
-        return "ja"
-    if v in ("0", "false", "no", "nein", "n"):
-        return "nein"
-    return default
-
-
-def normalize_bool(value):
-    if isinstance(value, bool):
-        return value
-    return str(value or "").strip().lower() in ("1", "true", "yes", "ja", "y")
-
-
-def clean_str(value):
-    return str(value or "").strip()
-
-
-def enrich_user_record(row):
-    u = dict(row)
-    for f in JSON_LIST_FIELDS:
-        u[f] = json_loads_safe(u.get(f))
-    u["qualifications"] = u.get("qualifications_json", [])
-    u["license_classes"] = u.get("license_classes_json", [])
-    u["sprachen"] = u.get("sprachen_json", [])
-    u["weitere_sprachen"] = u.get("weitere_sprachen_json", [])
-    u["is_locked"] = bool(u.get("is_locked") or False)
-    u["consent_given"] = bool(u.get("consent_given") or False)
-    u["full_name"] = f"{clean_str(u.get('vorname'))} {clean_str(u.get('nachname'))}".strip()
-    return u
-
-
-def normalize_user_payload(d, existing=None):
-    existing = dict(existing or {})
-    payload = {k: existing.get(k) for k in USER_LIST_FIELDS}
-
-    scalar_fields = [
-        "username", "password", "role", "vorname", "nachname", "email", "telefon",
-        "geburtsdatum", "geburtsort", "staatsangehoerigkeit", "staatsnummer", "bkv_rv", "sv5n",
-        "image_data", "image_name", "amtliches_dokument", "dokumentennummer", "ausstellungsdatum",
-        "ausstellende_behoerde", "s34a_art", "amt", "bewerber_id", "steuernummer", "bewach_id",
-        "bemerkung", "sonstige"
-    ]
-    for f in scalar_fields:
-        if f in d:
-            payload[f] = clean_str(d.get(f))
-
-    if "stundensatz" in d:
-        payload["stundensatz"] = None if d.get("stundensatz") in (None, "") else float(d.get("stundensatz"))
-    elif existing and "stundensatz" in existing:
-        payload["stundensatz"] = existing.get("stundensatz")
-    else:
-        payload["stundensatz"] = None
-
-    payload["role"] = clean_str(payload.get("role") or "mitarbeiter") or "mitarbeiter"
-    payload["s34a_art"] = normalize_s34a_art(payload.get("s34a_art") or "")
-
-    for f in YES_NO_FIELDS:
-        if f in d:
-            payload[f] = normalize_yes_no(d.get(f))
-        elif existing:
-            payload[f] = normalize_yes_no(existing.get(f), default=existing.get(f) or "nein")
-        else:
-            payload[f] = "nein"
-
-    list_map = {
-        "qualifications_json": d.get("qualifications", existing.get("qualifications_json") if existing else []),
-        "license_classes_json": d.get("license_classes", existing.get("license_classes_json") if existing else []),
-        "sprachen_json": d.get("sprachen", existing.get("sprachen_json") if existing else []),
-        "weitere_sprachen_json": d.get("weitere_sprachen", existing.get("weitere_sprachen_json") if existing else []),
-    }
-    for field, value in list_map.items():
-        payload[field] = json_dumps_safe(value if isinstance(value, list) else json_loads_safe(value))
-
-    if "consent_given" in d:
-        payload["consent_given"] = normalize_bool(d.get("consent_given"))
-    else:
-        payload["consent_given"] = bool(existing.get("consent_given") or False)
-    payload["consent_name"] = clean_str(d.get("consent_name")) if "consent_name" in d else clean_str(existing.get("consent_name"))
-    payload["consent_date"] = clean_str(d.get("consent_date")) if "consent_date" in d else clean_str(existing.get("consent_date"))
-    payload["is_locked"] = normalize_bool(d.get("is_locked")) if "is_locked" in d else bool(existing.get("is_locked") or False)
-
-    return payload
-
-
-def validate_user_payload(payload, is_new=False):
-    required = ["vorname", "nachname", "username", "role"]
-    if is_new:
-        required.append("password")
-    for field in required:
-        if not clean_str(payload.get(field)):
-            return f"{field} ist erforderlich"
-    email = clean_str(payload.get("email"))
-    if email and not re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email):
-        return "Bitte eine gültige E-Mail-Adresse eingeben."
-    return None
-
-
-def build_user_pdf(user):
-    buf = io.BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    width, height = A4
-    y = height - 40
-
-    def line(text="", gap=16, bold=False):
-        nonlocal y
-        if y < 60:
-            c.showPage()
-            y = height - 40
-        c.setFont("Helvetica-Bold" if bold else "Helvetica", 10 if not bold else 12)
-        c.drawString(40, y, str(text)[:120])
-        y -= gap
-
-    c.setTitle(f"Personal_{user.get('username') or 'profil'}")
-    line("Personaldaten", bold=True, gap=22)
-    line(f"Name: {user.get('full_name') or '-'}")
-    line(f"Benutzername: {user.get('username') or '-'}")
-    line(f"Rolle: {user.get('role') or '-'}")
-    line(f"E-Mail: {user.get('email') or '-'}")
-    line(f"Telefon: {user.get('telefon') or '-'}")
-    line(f"Geburtsdatum / -ort: {user.get('geburtsdatum') or '-'} / {user.get('geburtsort') or '-'}")
-    line(f"Staatsangehörigkeit / Staatsnummer: {user.get('staatsangehoerigkeit') or '-'} / {user.get('staatsnummer') or '-'}")
-    line(f"BKV/RV: {user.get('bkv_rv') or '-'}")
-    line(f"SV-5/N: {user.get('sv5n') or '-'}")
-    line(f"Amtliches Dokument: {user.get('amtliches_dokument') or '-'}")
-    line(f"Dokumentennummer: {user.get('dokumentennummer') or '-'}")
-    line(f"Ausstellungsdatum / Behörde: {user.get('ausstellungsdatum') or '-'} / {user.get('ausstellende_behoerde') or '-'}")
-    line(f"§34a / Nachweis: {user.get('s34a') or '-'} {('(' + user.get('s34a_art') + ')') if user.get('s34a_art') else ''}")
-    line(f"Amt / Bewerber-ID: {user.get('amt') or '-'} / {user.get('bewerber_id') or '-'}")
-    line(f"BSW / F-Schein / KATI: {user.get('bsw') or '-'} / {user.get('fschein') or '-'} / {user.get('kati') or '-'}")
-    line(f"Sanitäter / P-Schein / SVG: {user.get('sanitaeter') or '-'} / {user.get('pschein') or '-'} / {user.get('sv5n') or '-'}")
-    line(f"Qualifikationen: {', '.join(user.get('qualifications') or []) or '-'}")
-    line(f"Führerscheinklassen: {', '.join(user.get('license_classes') or []) or '-'}")
-    line(f"Sprachen: {', '.join(user.get('sprachen') or []) or '-'}")
-    line(f"Weitere Sprachen: {', '.join(user.get('weitere_sprachen') or []) or '-'}")
-    line(f"Sonstige: {user.get('sonstige') or '-'}")
-    line(f"Bemerkung: {user.get('bemerkung') or '-'}")
-    line(f"Datenschutzerklärung: {'Ja' if user.get('consent_given') else 'Nein'}")
-    line(f"Status: {'Gesperrt' if user.get('is_locked') else 'Aktiv'}")
-    c.save()
-    buf.seek(0)
-    return buf
 
 
 def safe_init_db():
@@ -744,18 +513,18 @@ def consent_set():
     return jsonify({"status": "ok"})
 
 
-
 # ---------------- Users API ----------------
 @app.route("/users", methods=["GET"])
 def get_users():
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
         "SELECT * FROM users WHERE username NOT IN (%s,%s) ORDER BY nachname, vorname",
-        ("AdminTest", "TestAdmin")
+        ("AdminTest","TestAdmin")
     )
-    users = [enrich_user_record(r) for r in cur.fetchall()]
+    users = [row_to_dict(r) for r in cur.fetchall()]
     for u in users:
         if u.get("stundensatz") is None:
             u["stundensatz"] = ""
@@ -764,6 +533,10 @@ def get_users():
 
 @app.route("/users_public", methods=["GET"])
 def users_public():
+    """
+    Minimaler User-Export (nur Name) für Planung.
+    Erlaubt für eingeloggte Rollen inkl. Planer – ohne sensible Felder/Passwörter.
+    """
     if "username" not in session:
         return jsonify({"error": "Nicht eingeloggt"}), 403
 
@@ -780,39 +553,57 @@ def users_public():
 
 @app.route("/users", methods=["POST"])
 def add_user():
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
-    payload = normalize_user_payload(d)
-    err = validate_user_payload(payload, is_new=True)
-    if err:
-        return jsonify({"error": err}), 400
+    username = (d.get("username") or "").strip()
+    if not username:
+        return jsonify({"error": "username ist erforderlich"}), 400
 
     db = get_db()
-    if db.execute("SELECT 1 FROM users WHERE username=%s", (payload["username"],)).fetchone():
-        return jsonify({"error": "Benutzername existiert bereits."}), 400
 
-    columns = USER_LIST_FIELDS
-    values = [payload.get(c) for c in columns]
-    placeholders = ",".join(["%s"] * len(columns))
-    sql = f"INSERT INTO users ({','.join(columns)}) VALUES ({placeholders})"
+    # stundensatz darf leer sein
+    stundensatz = d.get("stundensatz")
+    stundensatz = None if stundensatz in (None, "") else float(stundensatz)
+
+    password = d.get("password") or ""
+    email = (d.get("email") or "").strip()
+    employee_name = f"{(d.get('vorname') or '').strip()} {(d.get('nachname') or '').strip()}".strip() or username
 
     try:
-        db.execute(sql, tuple(values))
+        db.execute(
+            """INSERT INTO users
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (
+                username,
+                password,
+                d.get("role") or "mitarbeiter",
+                d.get("vorname") or "",
+                d.get("nachname") or "",
+                email,
+                d.get("s34a") or "nein",
+                normalize_s34a_art(d.get("s34a_art") or ""),
+                d.get("pschein") or "nein",
+                d.get("bewach_id") or "",
+                d.get("steuernummer") or "",
+                d.get("bsw") or "nein",
+                d.get("sanitaeter") or "nein",
+                stundensatz,
+            ),
+        )
         db.commit()
     except Exception as e:
         db.rollback()
         return jsonify({"error": str(e)}), 500
 
-    email = clean_str(payload.get("email"))
-    employee_name = f"{clean_str(payload.get('vorname'))} {clean_str(payload.get('nachname'))}".strip() or payload["username"]
     mail_sent = False
     mail_error = ""
-    invite_link = "https://cv-planung.onrender.com"
     if email:
         subject = "Deine Zugangsdaten zum Portal"
-        body = build_welcome_mail(employee_name, payload["username"], payload["password"]) + f"\n\nEinladungslink: {invite_link}"
+        body = build_welcome_mail(employee_name, username, password)
         try:
             send_mail(email, subject, body)
             mail_sent = True
@@ -821,37 +612,63 @@ def add_user():
     else:
         mail_error = "Keine E-Mail-Adresse hinterlegt."
 
-    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
-
-
+    return jsonify({
+        "status": "ok",
+        "mail_sent": mail_sent,
+        "mail_error": mail_error
+    })
 @app.route("/users/rename", methods=["POST"])
 def rename_user():
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
-    old_username = clean_str(d.get("old_username"))
-    new_username = clean_str(d.get("new_username"))
+    old_username = (d.get("old_username") or "").strip()
+    new_username = (d.get("new_username") or "").strip()
+
     if not old_username or not new_username:
         return jsonify({"error": "old_username und new_username erforderlich"}), 400
 
     db = get_db()
+
     try:
         old = db.execute("SELECT * FROM users WHERE username=%s", (old_username,)).fetchone()
         if not old:
             return jsonify({"error": "Alter Benutzer nicht gefunden"}), 404
+
         if db.execute("SELECT 1 FROM users WHERE username=%s", (new_username,)).fetchone():
             return jsonify({"error": "Neuer Benutzername existiert schon"}), 400
 
-        payload = normalize_user_payload({}, old)
-        payload["username"] = new_username
-        columns = USER_LIST_FIELDS
-        values = [payload.get(c) for c in columns]
-        placeholders = ",".join(["%s"] * len(columns))
-        sql = f"INSERT INTO users ({','.join(columns)}) VALUES ({placeholders})"
-        db.execute(sql, tuple(values))
+        # Wichtig: In SQLite kann ein UPDATE des PK (username) scheitern,
+        # wenn es Foreign-Key-Referenzen gibt (response.username -> user.username),
+        # da im Schema kein ON UPDATE CASCADE definiert ist.
+        # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
+        db.execute(
+            """INSERT INTO users
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+            (
+                new_username,
+                old["password"],
+                old["role"] or "mitarbeiter",
+                old["vorname"] or "",
+                old["nachname"] or "",
+                (old.get("email") or "").strip(),
+                old["s34a"] or "nein",
+                normalize_s34a_art(old["s34a_art"] or ""),
+                old["pschein"] or "nein",
+                old["bewach_id"] or "",
+                old["steuernummer"] or "",
+                old["bsw"] or "nein",
+                old["sanitaeter"] or "nein",
+                old["stundensatz"]
+            )
+        )
+
         db.execute("UPDATE response SET username=%s WHERE username=%s", (new_username, old_username))
         db.execute("DELETE FROM users WHERE username=%s", (old_username,))
+
         db.commit()
         return jsonify({"status": "ok"})
     except IntegrityError as e:
@@ -862,33 +679,59 @@ def rename_user():
         return jsonify({"error": f"Serverfehler: {str(e)}"}), 500
 
 
+
 @app.route("/users/<username>", methods=["PUT"])
 def edit_user(username):
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     d = request.json or {}
     db = get_db()
-    current = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
-    if not current:
+
+    u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    payload = normalize_user_payload(d, current)
-    err = validate_user_payload(payload, is_new=False)
-    if err:
-        return jsonify({"error": err}), 400
+    updates = dict(u)
+    for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
+              "bewach_id", "steuernummer", "bsw", "sanitaeter"]:
+        if k in d:
+            # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
+            # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
+            if k == "s34a_art":
+                newv = normalize_s34a_art(d.get(k))
+                if str(newv or "").strip() == "":
+                    continue
+                updates[k] = newv
+            else:
+                updates[k] = d[k]
 
-    update_fields = [c for c in USER_LIST_FIELDS if c != "username"]
-    set_clause = ", ".join([f"{c}=%s" for c in update_fields])
-    values = [payload.get(c) for c in update_fields] + [username]
+    if "password" in d and d["password"] is not None:
+        updates["password"] = d["password"]
 
-    db.execute(f"UPDATE users SET {set_clause} WHERE username=%s", tuple(values))
+    if "stundensatz" in d:
+        updates["stundensatz"] = None if d["stundensatz"] in ("", None) else float(d["stundensatz"])
+
+    db.execute(
+        """UPDATE users SET
+           password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
+           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, stundensatz=%s
+           WHERE username=%s""",
+        (
+            updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
+            updates["s34a"], updates["s34a_art"], updates["pschein"],
+            updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"],
+            updates["stundensatz"], username
+        )
+    )
     db.commit()
     return jsonify({"status": "ok"})
 
 
 @app.route("/users/<username>", methods=["DELETE"])
 def delete_user(username):
+    # ✅ Sensible Personaldaten: nur Chef/Vorgesetzter (NICHT vorgesetzter_cp)
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
     db = get_db()
@@ -896,32 +739,6 @@ def delete_user(username):
     db.commit()
     return jsonify({"status": "ok"})
 
-
-@app.route("/users/<username>/lock", methods=["POST"])
-def lock_user(username):
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-    d = request.json or {}
-    db = get_db()
-    current = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
-    if not current:
-        return jsonify({"error": "Benutzer nicht gefunden"}), 404
-    locked = normalize_bool(d.get("locked")) if "locked" in d else (not bool(current.get("is_locked") or False))
-    db.execute("UPDATE users SET is_locked=%s WHERE username=%s", (locked, username))
-    db.commit()
-    return jsonify({"status": "ok", "is_locked": locked})
-
-
-@app.route("/users/<username>/pdf", methods=["GET"])
-def user_pdf(username):
-    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
-        return jsonify({"error": "Nicht erlaubt"}), 403
-    db = get_db()
-    u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
-    if not u:
-        return jsonify({"error": "Benutzer nicht gefunden"}), 404
-    pdf = build_user_pdf(enrich_user_record(u))
-    return send_file(pdf, mimetype="application/pdf", as_attachment=False, download_name=f"personal_{username}.pdf")
 
 # ---------------- Events API ----------------
 @app.route("/events", methods=["GET"])
