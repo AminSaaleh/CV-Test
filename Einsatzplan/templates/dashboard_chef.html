@@ -758,45 +758,6 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
-<style id="personal-view-upgrade">
-.personal-shell{display:flex;flex-direction:column;gap:18px;}
-.personal-card{background:#fff;border:1px solid #e5e7eb;border-radius:18px;padding:18px;box-shadow:0 10px 24px rgba(15,23,42,.05);}
-.personal-grid{display:grid;grid-template-columns:repeat(12,minmax(0,1fr));gap:12px;}
-.personal-grid .col-3{grid-column:span 3;}
-.personal-grid .col-4{grid-column:span 4;}
-.personal-grid .col-6{grid-column:span 6;}
-.personal-grid .col-8{grid-column:span 8;}
-.personal-grid .col-12{grid-column:span 12;}
-.personal-card h4{margin:0 0 12px 0;font-size:18px;}
-.personal-sub{margin:0 0 14px 0;color:#6b7280;font-size:13px;}
-.personal-grid label{display:block;font-size:13px;font-weight:700;margin-bottom:4px;}
-.personal-grid input,.personal-grid select,.personal-grid textarea{width:100%;box-sizing:border-box;}
-.personal-grid textarea{min-height:84px;resize:vertical;}
-.personal-check-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px 12px;}
-.personal-check-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #e5e7eb;border-radius:12px;background:#fafafa;}
-.personal-check-item input{width:auto !important;margin:0;}
-.personal-actions{display:flex;justify-content:flex-end;gap:12px;align-items:center;flex-wrap:wrap;}
-.personal-primary{padding:14px 22px;border:0;border-radius:14px;background:linear-gradient(180deg,#16a34a,#15803d);color:#fff;font-weight:800;cursor:pointer;}
-.personal-secondary{padding:10px 14px;border-radius:12px;border:1px solid #d1d5db;background:#fff;cursor:pointer;font-weight:700;}
-.personal-table th{background:linear-gradient(180deg,#f8fafc,#e5e7eb);}
-.personal-status{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:800;}
-.personal-status.ok{background:#e8f7ec;color:#166534;border:1px solid #86efac;}
-.personal-status.no{background:#fef2f2;color:#991b1b;border:1px solid #fca5a5;}
-.personal-mini-actions{display:flex;gap:8px;flex-wrap:wrap;}
-.personal-mini-actions button{padding:8px 10px;border-radius:10px;border:0;cursor:pointer;font-weight:700;}
-.personal-mini-actions .pdf{background:#dbeafe;}
-.personal-mini-actions .edit{background:#dcfce7;}
-.personal-mini-actions .delete{background:#fee2e2;}
-.personal-mini-actions .lock{background:#fef3c7;}
-.personal-avatar{display:flex;gap:12px;align-items:center;}
-.personal-avatar-preview{width:72px;height:72px;border-radius:16px;border:1px solid #d1d5db;background:#f3f4f6;object-fit:cover;display:block;}
-.personal-dynamic-list{display:flex;flex-direction:column;gap:8px;}
-.personal-dynamic-row{display:flex;gap:8px;align-items:center;}
-.personal-dynamic-row input{flex:1;}
-.personal-note{font-size:12px;color:#6b7280;}
-@media (max-width: 1100px){.personal-check-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.personal-grid .col-3,.personal-grid .col-4,.personal-grid .col-6,.personal-grid .col-8{grid-column:span 6;}}
-@media (max-width: 720px){.personal-grid .col-3,.personal-grid .col-4,.personal-grid .col-6,.personal-grid .col-8,.personal-grid .col-12{grid-column:span 12;}.personal-check-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
-</style>
 </head>
 <body>
   <nav>
@@ -999,122 +960,91 @@ body.modal-open{ touch-action: auto !important; }
   <div class="table-scroll">
 <div class="scroll-x">
 <div id="user-management" style="display:none;">
-    <div class="personal-shell">
-      <div class="personal-card">
-        <h3>Personal verwalten</h3>
-        <p class="personal-sub">Die Personal-Verwaltung wurde für die Ansicht „Personal“ erweitert und bündelt persönliche Angaben, zusätzliche Angaben, Qualifikationen und Sprachen in einer kompakten Verwaltungsansicht.</p>
+    <h3>Personal verwalten</h3>
 
-        <form id="add-user-form" class="user-form personal-form">
-          <div class="personal-card">
-            <h4>Persönliche Angaben</h4>
-            <div class="personal-grid">
-              <div class="col-3"><label for="vorname">Vorname</label><input type="text" id="vorname" required></div>
-              <div class="col-3"><label for="nachname">Nachname</label><input type="text" id="nachname" required></div>
-              <div class="col-3"><label for="new-username">Benutzername</label><input type="text" id="new-username" required></div>
-              <div class="col-3"><label for="new-password">Passwort</label><input type="password" id="new-password" required></div>
-              <div class="col-3"><label for="geburtsdatum">Geburtsdatum</label><input type="date" id="geburtsdatum"></div>
-              <div class="col-3"><label for="geburtsort">Geburtsort</label><input type="text" id="geburtsort"></div>
-              <div class="col-3"><label for="email">E-Mail-Adresse</label><input type="email" id="email" placeholder="optional"></div>
-              <div class="col-3"><label for="telefon">Telefon</label><input type="text" id="telefon" placeholder="optional"></div>
-              <div class="col-3"><label for="staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="staatsangehoerigkeit"></div>
-              <div class="col-3"><label for="staatsnummer">Staatsnummer</label><input type="text" id="staatsnummer"></div>
-              <div class="col-3"><label for="new-role">Rolle</label><select id="new-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="vorgesetzter_cp">Vorgesetzter CP</option><option value="planner_bbs">Planner BBS</option><option value="planer">Planer</option></select></div>
-              <div class="col-3"><label for="bkv_rv">BKV / RV</label><input type="text" id="bkv_rv"></div>
-              <div class="col-3"><label for="sv5n">SV-5 / N</label><input type="text" id="sv5n"></div>
-              <div class="col-6">
-                <label>Bild hochladen / Datei auswählen</label>
-                <div class="personal-avatar">
-                  <img id="personal-image-preview" class="personal-avatar-preview" alt="Vorschau">
-                  <div style="flex:1;">
-                    <input type="file" id="personal-image-file" accept="image/*">
-                    <div class="personal-note" id="personal-image-name">Noch keine Datei ausgewählt</div>
-                    <input type="hidden" id="personal-image-data">
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="personal-card">
-            <h4>Zusätzliche Angaben</h4>
-            <div class="personal-grid">
-              <div class="col-3"><label for="amtliches_dokument">Amtliches Dokument</label><select id="amtliches_dokument"><option value="">Bitte wählen</option><option>Personalausweis</option><option>Reisepass</option><option>Aufenthaltstitel</option><option>Führerschein</option></select></div>
-              <div class="col-3"><label for="dokumentennummer">Dokumentennummer</label><input type="text" id="dokumentennummer"></div>
-              <div class="col-3"><label for="ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="ausstellungsdatum"></div>
-              <div class="col-3"><label for="ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="ausstellende_behoerde"></div>
-              <div class="col-3"><label for="s34a">§ 34a GewO / Nachweis</label><select id="s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="s34a_art">Nachweis-Art</label><select id="s34a_art"><option value="">Bitte wählen</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div>
-              <div class="col-3"><label for="amt">Amt</label><select id="amt"><option value="">Bitte wählen</option><option>Polizei</option><option>Ordnungsamt</option><option>Behörde</option><option>Keine Angabe</option></select></div>
-              <div class="col-3"><label for="bewerber_id">Bewerber-ID</label><input type="text" id="bewerber_id"></div>
-              <div class="col-3"><label for="bemerkung">Bemerkung</label><input type="text" id="bemerkung"></div>
-            </div>
-          </div>
-
-          <div class="personal-card">
-            <h4>Zusätzliche Qualifikationen</h4>
-            <div class="personal-grid">
-              <div class="col-3"><label for="bsw">BSW</label><select id="bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="fschein">F-Schein</label><select id="fschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="kati">KATI / weitere Auswahl</label><select id="kati"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="pschein">P-Schein</label><select id="pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="sanitaeter">Sani</label><select id="sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div>
-              <div class="col-3"><label for="steuernummer">Staats-/Steuernummer</label><input type="text" id="steuernummer"></div>
-              <div class="col-3"><label for="bewach_id">BKV/Bewach-ID</label><input type="text" id="bewach_id"></div>
-              <div class="col-3"><label for="stundensatz">Stundensatz (€/h)</label><input type="number" id="stundensatz" step="0.01" min="0"></div>
-              <div class="col-12">
-                <label>Checkboxen / Qualifikationen</label>
-                <div class="personal-check-grid" id="qualification-grid-create">
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="GSSK">GSSK</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Waffensachkunde">Waffensachkunde</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Personenschutz">Personenschutz</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Sachkunde §34a">Sachkunde §34a</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Brandschutzhelfer">Brandschutzhelfer</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Betriebssanitäter">Betriebssanitäter</label>
-                  <label class="personal-check-item"><input type="checkbox" name="qualification" value="Rettungsschwimmer">Rettungsschwimmer</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <label>Führerscheinklassen</label>
-                <div class="personal-check-grid" id="license-grid-create">
-                  <label class="personal-check-item"><input type="checkbox" name="license_class" value="AM">AM</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A">A</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A1">A1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="A2">A2</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="B">B</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="BE">BE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C">C</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C1">C1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="CE">CE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="C1E">C1E</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D">D</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D1">D1</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="DE">DE</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="D1E">D1E</label><label class="personal-check-item"><input type="checkbox" name="license_class" value="T">T</label>
-                </div>
-              </div>
-              <div class="col-12"><label for="sonstige">Sonstige</label><textarea id="sonstige"></textarea></div>
-            </div>
-          </div>
-
-          <div class="personal-card">
-            <h4>Fremdsprachen</h4>
-            <div class="personal-grid">
-              <div class="col-12">
-                <div class="personal-check-grid" id="language-grid-create">
-                  <label class="personal-check-item"><input type="checkbox" name="language" value="Deutsch">Deutsch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Englisch">Englisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Französisch">Französisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Italienisch">Italienisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Spanisch">Spanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Portugiesisch">Portugiesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Polnisch">Polnisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Russisch">Russisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Türkisch">Türkisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Arabisch">Arabisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Hindi">Hindi</label><label class="personal-check-item"><input type="checkbox" name="language" value="Urdu">Urdu</label><label class="personal-check-item"><input type="checkbox" name="language" value="Albanisch">Albanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Bosnisch">Bosnisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Kroatisch">Kroatisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Serbisch">Serbisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Rumänisch">Rumänisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Bulgarisch">Bulgarisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Griechisch">Griechisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Niederländisch">Niederländisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Schwedisch">Schwedisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Norwegisch">Norwegisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Dänisch">Dänisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Thai">Thai</label><label class="personal-check-item"><input type="checkbox" name="language" value="Indonesisch">Indonesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Vietnamesisch">Vietnamesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Chinesisch">Chinesisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Japanisch">Japanisch</label><label class="personal-check-item"><input type="checkbox" name="language" value="Persisch">Persisch</label>
-                </div>
-              </div>
-              <div class="col-12">
-                <div class="personal-dynamic-list" id="additional-language-list"></div>
-                <button type="button" class="personal-secondary" id="add-language-btn">+ Sprache hinzufügen</button>
-              </div>
-            </div>
-          </div>
-
-          <div class="personal-actions">
-            <span class="personal-note">Alle Daten werden validiert, gespeichert und für Bearbeitung, Anzeige, PDF und Statusfunktionen verwendet.</span>
-            <button type="submit" class="personal-primary">Person anlegen &amp; Einladungslink senden</button>
-          </div>
-        </form>
+    <form id="add-user-form" class="user-form">
+      <div class="form-row">
+        <input type="text" id="vorname" placeholder="Vorname" required>
+        <input type="text" id="nachname" placeholder="Nachname" required>
       </div>
 
-      <div class="personal-card">
-        <h4>Personalliste</h4>
-        <table class="user-table personal-table">
-          <thead>
-            <tr><th>Name</th><th>Bemerkung</th><th>§ 34a GewO</th><th>Bewerber ID</th><th>BSW</th><th>Sani</th><th>P-Schein</th><th>SVG</th><th>Erklärung</th><th>Aktionen</th></tr>
-          </thead>
-          <tbody id="user-list"></tbody>
-        </table>
+      <div class="form-row">
+        <input type="email" id="email" placeholder="E-Mail (optional)">
       </div>
-    </div>
+
+      <div class="form-row">
+        <input type="text" id="new-username" placeholder="Benutzername" required>
+        <input type="password" id="new-password" placeholder="Passwort" required>
+      </div>
+
+      <div class="form-row">
+        <select id="new-role">
+          <option value="mitarbeiter">Mitarbeiter</option>
+          <option value="vorgesetzter">Vorgesetzter</option>
+            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
+            <option value="planner_bbs">Planner BBS</option>
+          <option value="planer">Planer</option>
+        
+        </select>
+
+        <select id="s34a">
+          <option value="nein">34a: Nein</option>
+          <option value="ja">34a: Ja</option>
+        </select>
+
+        <select id="s34a_art">
+          <option value="">-- Art auswählen --</option>
+          <option value="unterrichtung">Unterrichtung</option>
+          <option value="Sachkunde">Sachkunde</option>
+        </select>
+      </div>
+
+      <div class="form-row">
+        <input type="text" id="bewach_id" placeholder="Bewach-ID" required>
+        <input type="text" id="steuernummer" placeholder="Steuernummer" required>
+      </div>
+
+      <div class="form-row">
+        <select id="bsw">
+          <option value="nein">BSW: Nein</option>
+          <option value="ja">BSW: Ja</option>
+        </select>
+
+        <select id="sanitaeter">
+          <option value="nein">Sanitäter: Nein</option>
+          <option value="ja">Sanitäter: Ja</option>
+        </select>
+
+        <select id="pschein">
+          <option value="nein">P-Schein: Nein</option>
+          <option value="ja">P-Schein: Ja</option>
+        </select>
+
+        <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
+      </div>
+
+      <button type="submit" class="confirm">➕ Hinzufügen</button>
+    </form>
+
+    <h4>Personalliste</h4>
+    <table class="user-table">
+      <thead>
+        <tr>
+          <th>Benutzername</th>
+          <th>Name</th>
+          <th>E-Mail</th>
+          <th>34a</th>
+          <th>Bewach-ID</th>
+          <th>Steuernummer</th>
+          <th>BSW</th>
+          <th>Sanitäter</th>
+          <th>P-Schein</th>
+          <th>Stundensatz</th>
+          <th>Aktionen</th>
+        </tr>
+      </thead>
+      <tbody id="user-list"></tbody>
+    </table>
 </div>
   </div>
 
@@ -1317,40 +1247,80 @@ body.modal-open{ touch-action: auto !important; }
 
   <!-- Modal Benutzer bearbeiten -->
   <div class="modal" id="editUserModal">
-    <div class="modal-content" tabindex="-1" style="max-width:1100px;">
+    <div class="modal-content" tabindex="-1">
       <span class="close-btn" onclick="closeEditModal()">×</span>
       <h3>Mitarbeiter bearbeiten</h3>
-      <div class="personal-shell">
-        <div class="personal-card">
-          <h4>Persönliche Angaben</h4>
-          <div class="personal-grid">
-            <div class="col-3"><label for="edit-vorname">Vorname</label><input type="text" id="edit-vorname"></div><div class="col-3"><label for="edit-nachname">Nachname</label><input type="text" id="edit-nachname"></div><div class="col-3"><label for="edit-username">Benutzername</label><input type="text" id="edit-username"></div><div class="col-3"><label for="edit-password">Passwort</label><input type="password" id="edit-password"></div><div class="col-3"><label for="edit-geburtsdatum">Geburtsdatum</label><input type="date" id="edit-geburtsdatum"></div><div class="col-3"><label for="edit-geburtsort">Geburtsort</label><input type="text" id="edit-geburtsort"></div><div class="col-3"><label for="edit-email">E-Mail</label><input type="email" id="edit-email"></div><div class="col-3"><label for="edit-telefon">Telefon</label><input type="text" id="edit-telefon"></div><div class="col-3"><label for="edit-staatsangehoerigkeit">Staatsangehörigkeit</label><input type="text" id="edit-staatsangehoerigkeit"></div><div class="col-3"><label for="edit-staatsnummer">Staatsnummer</label><input type="text" id="edit-staatsnummer"></div><div class="col-3"><label for="edit-role">Rolle</label><select id="edit-role"><option value="mitarbeiter">Mitarbeiter</option><option value="vorgesetzter">Vorgesetzter</option><option value="planer">Planer</option><option value="planner_bbs">Planner BBS</option><option value="vorgesetzter_cp">Vorgesetzter CP</option></select></div><div class="col-3"><label for="edit-bkv_rv">BKV / RV</label><input type="text" id="edit-bkv_rv"></div><div class="col-3"><label for="edit-sv5n">SV-5 / N</label><input type="text" id="edit-sv5n"></div>
-            <div class="col-6"><label>Bild hochladen / Datei auswählen</label><div class="personal-avatar"><img id="edit-personal-image-preview" class="personal-avatar-preview" alt="Vorschau"><div style="flex:1;"><input type="file" id="edit-personal-image-file" accept="image/*"><div class="personal-note" id="edit-personal-image-name">Noch keine Datei ausgewählt</div><input type="hidden" id="edit-personal-image-data"></div></div></div>
-          </div>
-        </div>
-        <div class="personal-card">
-          <h4>Zusätzliche Angaben</h4>
-          <div class="personal-grid">
-            <div class="col-3"><label for="edit-amtliches_dokument">Amtliches Dokument</label><select id="edit-amtliches_dokument"><option value="">Bitte wählen</option><option>Personalausweis</option><option>Reisepass</option><option>Aufenthaltstitel</option><option>Führerschein</option></select></div><div class="col-3"><label for="edit-dokumentennummer">Dokumentennummer</label><input type="text" id="edit-dokumentennummer"></div><div class="col-3"><label for="edit-ausstellungsdatum">Ausstellungsdatum</label><input type="date" id="edit-ausstellungsdatum"></div><div class="col-3"><label for="edit-ausstellende_behoerde">Ausstellende Behörde</label><input type="text" id="edit-ausstellende_behoerde"></div><div class="col-3"><label for="edit-s34a">§ 34a GewO / Nachweis</label><select id="edit-s34a"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-s34a_art">Nachweis-Art</label><select id="edit-s34a_art"><option value="">Bitte wählen</option><option value="unterrichtung">Unterrichtung</option><option value="Sachkunde">Sachkunde</option></select></div><div class="col-3"><label for="edit-amt">Amt</label><select id="edit-amt"><option value="">Bitte wählen</option><option>Polizei</option><option>Ordnungsamt</option><option>Behörde</option><option>Keine Angabe</option></select></div><div class="col-3"><label for="edit-bewerber_id">Bewerber-ID</label><input type="text" id="edit-bewerber_id"></div><div class="col-3"><label for="edit-bemerkung">Bemerkung</label><input type="text" id="edit-bemerkung"></div>
-          </div>
-        </div>
-        <div class="personal-card">
-          <h4>Zusätzliche Qualifikationen</h4>
-          <div class="personal-grid">
-            <div class="col-3"><label for="edit-bsw">BSW</label><select id="edit-bsw"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-fschein">F-Schein</label><select id="edit-fschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-kati">KATI / weitere Auswahl</label><select id="edit-kati"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-pschein">P-Schein</label><select id="edit-pschein"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-sanitaeter">Sani</label><select id="edit-sanitaeter"><option value="nein">Nein</option><option value="ja">Ja</option></select></div><div class="col-3"><label for="edit-steuernummer">Staats-/Steuernummer</label><input type="text" id="edit-steuernummer"></div><div class="col-3"><label for="edit-bewach-id">BKV/Bewach-ID</label><input type="text" id="edit-bewach-id"></div><div class="col-3"><label for="edit-stundensatz">Stundensatz (€/h)</label><input type="number" id="edit-stundensatz" step="0.01" min="0"></div>
-            <div class="col-12"><label>Checkboxen / Qualifikationen</label><div class="personal-check-grid" id="qualification-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="GSSK">GSSK</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Waffensachkunde">Waffensachkunde</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Personenschutz">Personenschutz</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Sachkunde §34a">Sachkunde §34a</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Brandschutzhelfer">Brandschutzhelfer</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Betriebssanitäter">Betriebssanitäter</label><label class="personal-check-item"><input type="checkbox" name="edit-qualification" value="Rettungsschwimmer">Rettungsschwimmer</label></div></div>
-            <div class="col-12"><label>Führerscheinklassen</label><div class="personal-check-grid" id="license-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="AM">AM</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A">A</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A1">A1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="A2">A2</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="B">B</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="BE">BE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C">C</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C1">C1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="CE">CE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="C1E">C1E</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D">D</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D1">D1</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="DE">DE</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="D1E">D1E</label><label class="personal-check-item"><input type="checkbox" name="edit-license_class" value="T">T</label></div></div>
-            <div class="col-12"><label for="edit-sonstige">Sonstige</label><textarea id="edit-sonstige"></textarea></div>
-          </div>
-        </div>
-        <div class="personal-card">
-          <h4>Fremdsprachen</h4>
-          <div class="personal-grid">
-            <div class="col-12"><div class="personal-check-grid" id="language-grid-edit"><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Deutsch">Deutsch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Englisch">Englisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Französisch">Französisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Italienisch">Italienisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Spanisch">Spanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Portugiesisch">Portugiesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Polnisch">Polnisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Russisch">Russisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Türkisch">Türkisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Arabisch">Arabisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Hindi">Hindi</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Urdu">Urdu</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Albanisch">Albanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Bosnisch">Bosnisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Kroatisch">Kroatisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Serbisch">Serbisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Rumänisch">Rumänisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Bulgarisch">Bulgarisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Griechisch">Griechisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Niederländisch">Niederländisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Schwedisch">Schwedisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Norwegisch">Norwegisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Dänisch">Dänisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Thai">Thai</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Indonesisch">Indonesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Vietnamesisch">Vietnamesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Chinesisch">Chinesisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Japanisch">Japanisch</label><label class="personal-check-item"><input type="checkbox" name="edit-language" value="Persisch">Persisch</label></div></div>
-            <div class="col-12"><div class="personal-dynamic-list" id="edit-additional-language-list"></div><button type="button" class="personal-secondary" id="edit-add-language-btn">+ Sprache hinzufügen</button></div>
-          </div>
-        </div>
-        <div class="personal-actions"><button class="personal-primary" onclick="saveUserEdit()">💾 Speichern</button></div>
+
+      <label>Benutzername</label>
+      <input type="text" id="edit-username">
+
+      <label>Vorname</label>
+      <input type="text" id="edit-vorname">
+
+      <label>Nachname</label>
+      <input type="text" id="edit-nachname">
+
+      <label>E-Mail</label>
+      <input type="email" id="edit-email">
+
+      <label>Passwort</label>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <input type="password" id="edit-password">
+        <button type="button" onclick="togglePassword('edit-password')">👁️</button>
+      </div>
+
+      <label>Rolle</label>
+      <select id="edit-role">
+        <option value="mitarbeiter">Mitarbeiter</option>
+        <option value="vorgesetzter">Vorgesetzter</option>
+          <option value="planer">Planer</option>
+      
+            <option value="planner_bbs">Planner BBS</option>
+            <option value="vorgesetzter_cp">Vorgesetzter CP</option>
+        </select>
+
+      <label>34a</label>
+      <select id="edit-s34a">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>34a Art</label>
+      <select id="edit-s34a_art">
+        <option value="">--</option>
+        <option value="unterrichtung">Unterrichtung</option>
+        <option value="Sachkunde">Sachkunde</option>
+      </select>
+
+      <label>P-Schein</label>
+      <select id="edit-pschein">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Bewach-ID</label>
+      <input type="text" id="edit-bewach-id">
+
+      <label>Steuernummer</label>
+      <input type="text" id="edit-steuernummer">
+
+      <label>BSW</label>
+      <select id="edit-bsw">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Sanitäter</label>
+      <select id="edit-sanitaeter">
+        <option value="nein">Nein</option>
+        <option value="ja">Ja</option>
+      </select>
+
+      <label>Stundensatz (€/h)</label>
+      <input type="number" id="edit-stundensatz" step="0.01" min="0">
+
+      <div class="modal-actions">
+        <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
       </div>
     </div>
   </div>
@@ -2374,28 +2344,51 @@ document.getElementById("planning").style.display="block";
         }, 20000);
       }
 
+
       // User hinzufügen
-      function getCheckedValues(name){
-        return Array.from(document.querySelectorAll(`input[name="${name}"]:checked`)).map(el=>el.value);
+      if(!IS_PLANNER){
+      document.getElementById("add-user-form").onsubmit=async e=>{
+        e.preventDefault();
+        let data={
+          vorname:document.getElementById("vorname").value,
+          nachname:document.getElementById("nachname").value,
+          email:(document.getElementById("email").value || "").trim(),
+          username:document.getElementById("new-username").value,
+          password:document.getElementById("new-password").value,
+          role:document.getElementById("new-role").value,
+          s34a:document.getElementById("s34a").value,
+          s34a_art:document.getElementById("s34a_art").value,
+          pschein:document.getElementById("pschein").value,
+          bewach_id: document.getElementById("bewach_id").value,
+          steuernummer: document.getElementById("steuernummer").value,
+          bsw: document.getElementById("bsw").value,
+          sanitaeter: document.getElementById("sanitaeter").value,
+          stundensatz: document.getElementById("stundensatz").value
+        };
+        const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+        const rAdd = await resAdd.json().catch(()=>({}));
+        if(!resAdd.ok || rAdd.error){
+          alert(rAdd.error || "Hinzufügen fehlgeschlagen");
+          return;
+        }
+
+        let successMsg = "Mitarbeiter erfolgreich hinzugefügt.";
+        if(rAdd.mail_sent){
+          successMsg += " Die Zugangsdaten wurden per E-Mail versendet.";
+        } else if(rAdd.mail_error){
+          successMsg += ` Mail konnte nicht versendet werden: ${rAdd.mail_error}`;
+        } else {
+          successMsg += " Es wurde keine E-Mail versendet.";
+        }
+
+        alert(successMsg);
+        loadUsers();
+        e.target.reset();
+      };
       }
-      function setCheckedValues(name, values){
-        const wanted = new Set(values || []);
-        document.querySelectorAll(`input[name="${name}"]`).forEach(el=>{ el.checked = wanted.has(el.value); });
-      }
-      function setupDynamicLanguageList(containerId, buttonId){ const container=document.getElementById(containerId); const button=document.getElementById(buttonId); if(!container || !button || button.dataset.bound==='1') return; button.dataset.bound='1'; button.addEventListener('click', ()=> addDynamicLanguageField(containerId, '')); }
-      function addDynamicLanguageField(containerId, value=''){ const container=document.getElementById(containerId); if(!container) return; const row=document.createElement('div'); row.className='personal-dynamic-row'; row.innerHTML=`<input type="text" class="extra-language-input" placeholder="Weitere Sprache" value="${String(value||'').replace(/"/g,'&quot;')}"><button type="button" class="personal-secondary">Entfernen</button>`; row.querySelector('button').onclick=()=>row.remove(); container.appendChild(row); }
-      function getDynamicLanguageValues(containerId){ const c=document.getElementById(containerId); if(!c) return []; return Array.from(c.querySelectorAll('.extra-language-input')).map(el=>el.value.trim()).filter(Boolean); }
-      function setDynamicLanguageValues(containerId, values){ const c=document.getElementById(containerId); if(!c) return; c.innerHTML=''; (values || []).forEach(v=> addDynamicLanguageField(containerId, v)); }
-      function bindImageInput(fileId, dataId, previewId, nameId){ const fileInput=document.getElementById(fileId); if(!fileInput || fileInput.dataset.bound==='1') return; fileInput.dataset.bound='1'; fileInput.addEventListener('change', ()=>{ const file=fileInput.files && fileInput.files[0]; document.getElementById(nameId).textContent = file ? file.name : 'Noch keine Datei ausgewählt'; if(!file){ document.getElementById(dataId).value=''; document.getElementById(previewId).src=''; return; } const reader=new FileReader(); reader.onload=e=>{ document.getElementById(dataId).value=e.target.result || ''; document.getElementById(previewId).src=e.target.result || ''; }; reader.readAsDataURL(file); }); }
-      function userFormPayload(mode='create'){ const p=mode==='edit' ? 'edit-' : ''; const qualificationName=mode==='edit' ? 'edit-qualification' : 'qualification'; const licenseName=mode==='edit' ? 'edit-license_class' : 'license_class'; const languageName=mode==='edit' ? 'edit-language' : 'language'; const additionalContainer=mode==='edit' ? 'edit-additional-language-list' : 'additional-language-list'; return { vorname:document.getElementById(`${p}vorname`).value.trim(), nachname:document.getElementById(`${p}nachname`).value.trim(), username:document.getElementById(`${p}${mode==='edit' ? 'username' : 'new-username'}`).value.trim(), password:document.getElementById(`${p}${mode==='edit' ? 'password' : 'new-password'}`).value, geburtsdatum:document.getElementById(`${p}geburtsdatum`).value, geburtsort:document.getElementById(`${p}geburtsort`).value.trim(), email:document.getElementById(`${p}email`).value.trim(), telefon:document.getElementById(`${p}telefon`).value.trim(), staatsangehoerigkeit:document.getElementById(`${p}staatsangehoerigkeit`).value.trim(), staatsnummer:document.getElementById(`${p}staatsnummer`).value.trim(), role:document.getElementById(`${p}role`).value, bkv_rv:document.getElementById(`${p}bkv_rv`).value.trim(), sv5n:document.getElementById(`${p}sv5n`).value.trim(), image_data:document.getElementById(`${p}personal-image-data`).value, image_name:document.getElementById(`${p}personal-image-name`).textContent === 'Noch keine Datei ausgewählt' ? '' : document.getElementById(`${p}personal-image-name`).textContent, amtliches_dokument:document.getElementById(`${p}amtliches_dokument`).value, dokumentennummer:document.getElementById(`${p}dokumentennummer`).value.trim(), ausstellungsdatum:document.getElementById(`${p}ausstellungsdatum`).value, ausstellende_behoerde:document.getElementById(`${p}ausstellende_behoerde`).value.trim(), s34a:document.getElementById(`${p}s34a`).value, s34a_art:document.getElementById(`${p}s34a_art`).value, amt:document.getElementById(`${p}amt`).value, bewerber_id:document.getElementById(`${p}bewerber_id`).value.trim(), bemerkung:document.getElementById(`${p}bemerkung`).value.trim(), bsw:document.getElementById(`${p}bsw`).value, fschein:document.getElementById(`${p}fschein`).value, kati:document.getElementById(`${p}kati`).value, pschein:document.getElementById(`${p}pschein`).value, sanitaeter:document.getElementById(`${p}sanitaeter`).value, steuernummer:document.getElementById(`${p}steuernummer`).value.trim(), bewach_id:(document.getElementById(`${p}bewach-id`) || document.getElementById(`${p}bewach_id`)).value.trim(), stundensatz:document.getElementById(`${p}stundensatz`).value, qualifications:getCheckedValues(qualificationName), license_classes:getCheckedValues(licenseName), sprachen:getCheckedValues(languageName), weitere_sprachen:getDynamicLanguageValues(additionalContainer), sonstige:document.getElementById(`${p}sonstige`).value.trim() }; }
-      function validatePersonalPayload(payload, isEdit=false){ if(!payload.vorname || !payload.nachname || !payload.username) return 'Vorname, Nachname und Benutzername sind erforderlich.'; if(!isEdit && !payload.password) return 'Passwort ist erforderlich.'; if(payload.email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(payload.email)) return 'Bitte eine gültige E-Mail-Adresse eingeben.'; return ''; }
-      function formatBadge(v){ const yes=String(v||'').toLowerCase()==='ja'; return `<span class="personal-status ${yes ? 'ok' : 'no'}">${yes ? '✔' : '–'}</span>`; }
-      function formatConsentBadge(v){ return `<span class="personal-status ${v ? 'ok' : 'no'}">${v ? '✔ eingewilligt' : '✖ offen'}</span>`; }
-      bindImageInput('personal-image-file','personal-image-data','personal-image-preview','personal-image-name');
-      bindImageInput('edit-personal-image-file','edit-personal-image-data','edit-personal-image-preview','edit-personal-image-name');
-      setupDynamicLanguageList('additional-language-list','add-language-btn');
-      setupDynamicLanguageList('edit-additional-language-list','edit-add-language-btn');
-      if(!IS_PLANNER){ document.getElementById('add-user-form').onsubmit=async e=>{ e.preventDefault(); const data=userFormPayload('create'); const err=validatePersonalPayload(data,false); if(err){ alert(err); return; } const resAdd=await fetch('/users',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}); const rAdd=await resAdd.json().catch(()=>({})); if(!resAdd.ok || rAdd.error){ alert(rAdd.error || 'Anlegen fehlgeschlagen'); return; } let successMsg='Person erfolgreich angelegt.'; if(rAdd.mail_sent){ successMsg += ' Der Einladungslink wurde per E-Mail versendet.'; } else if(rAdd.mail_error){ successMsg += ` Mail konnte nicht versendet werden: ${rAdd.mail_error}`; } alert(successMsg); e.target.reset(); document.getElementById('personal-image-preview').src=''; document.getElementById('personal-image-name').textContent='Noch keine Datei ausgewählt'; document.getElementById('personal-image-data').value=''; setDynamicLanguageValues('additional-language-list', []); ['qualification','license_class','language'].forEach(name=> setCheckedValues(name, [])); await loadUsers(); }; }
+    });
+
+    
     // ===== Duplizieren (Kalender-Header) =====
     let dupSelectedDates = [];
     let dupSourceCategoryById = {}; // event_id -> 'CP'/'CV'
@@ -3020,48 +3013,178 @@ document.getElementById("confirmed-counter").textContent =
 
     // User Management
     async function loadUsers(){
-      let res=await fetch('/users');
+      let res=await fetch("/users");
       let users=await res.json();
-      users.sort((a,b)=> String((a.nachname||'') + (a.vorname||'')).localeCompare(String((b.nachname||'') + (b.vorname||'')), 'de'));
+
+      // ✅ Alphabetisch nach Benutzername (A–Z)
+      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
+
       usersList = users;
       usersCache = {};
-      users.forEach(u=>{ usersCache[u.username] = `${u.vorname || ''} ${u.nachname || ''}`.trim(); });
-      const list=document.getElementById('user-list');
-      list.innerHTML='';
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+
+      let list=document.getElementById("user-list");
+      list.innerHTML="";
       users.forEach(u=>{
-        const tr=document.createElement('tr');
-        const fullName = `${u.vorname || ''} ${u.nachname || ''}`.trim() || u.username;
-        tr.innerHTML = `
-          <td>${fullName}${u.is_locked ? ' <span class="personal-status no">gesperrt</span>' : ''}</td>
-          <td>${u.bemerkung || '-'}</td>
-          <td>${String(u.s34a||'').toLowerCase()==='ja' ? `Ja${u.s34a_art ? ` (${u.s34a_art})` : ''}` : 'Nein'}</td>
-          <td>${u.bewerber_id || '-'}</td>
-          <td>${formatBadge(u.bsw)}</td>
-          <td>${formatBadge(u.sanitaeter)}</td>
-          <td>${formatBadge(u.pschein)}</td>
-          <td>${u.sv5n || '-'}</td>
-          <td>${formatConsentBadge(!!u.consent_given)}</td>
-          <td><div class="personal-mini-actions"></div></td>
+        let tr=document.createElement("tr");
+        tr.innerHTML=`
+          <td><b>${u.username}</b></td>
+          <td>${u.vorname} ${u.nachname}</td>
+          <td>${u.email || "-"}</td>
+          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}</td>
+          <td>${u.bewach_id || "-"}</td>
+          <td>${u.steuernummer || "-"}</td>
+          <td>${capYesNo(u.bsw || "nein")}</td>
+          <td>${capYesNo(u.sanitaeter || "nein")}</td>
+          <td>${capYesNo(u.pschein || "nein")}</td>
+          <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
+          <td>
+            <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
+            <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
+          </td>
         `;
-        const actions = tr.querySelector('.personal-mini-actions');
-        const pdfBtn = document.createElement('button'); pdfBtn.className='pdf'; pdfBtn.textContent='PDF anzeigen'; pdfBtn.onclick=()=>window.open(`/users/${encodeURIComponent(u.username)}/pdf`, '_blank');
-        const editBtn = document.createElement('button'); editBtn.className='edit'; editBtn.textContent='Bearbeiten'; editBtn.onclick=()=>openEditModal(u);
-        const delBtn = document.createElement('button'); delBtn.className='delete'; delBtn.textContent='Löschen'; delBtn.onclick=()=>deleteUser(u.username);
-        const lockBtn = document.createElement('button'); lockBtn.className='lock'; lockBtn.textContent=u.is_locked ? 'Entsperren' : 'Sperren'; lockBtn.onclick=()=>toggleUserLock(u);
-        actions.append(pdfBtn, editBtn, delBtn, lockBtn);
         list.appendChild(tr);
       });
-      function updateReportSumRow(){ const monthHours=Array(12).fill(0); const monthCost=Array(12).fill(0); let totalHours=0; let totalCost=0; usersList.forEach(u=>{ const d=reportData[u.username]; if(!d) return; for(let mi=0; mi<12; mi++){ const md=d.months[mi]; monthHours[mi]+=Number(md.hours || 0); monthCost[mi]+=Number(md.cost || 0); } totalHours += Number(d.totalHours || 0); totalCost += Number(d.totalCost || 0); }); const ids=['rpt-sum-jan','rpt-sum-feb','rpt-sum-mar','rpt-sum-apr','rpt-sum-mai','rpt-sum-jun','rpt-sum-jul','rpt-sum-aug','rpt-sum-sep','rpt-sum-okt','rpt-sum-nov','rpt-sum-dez']; ids.forEach((id,i)=>{ const el=document.getElementById(id); if(!el) return; const h=monthHours[i]; const c=monthCost[i]; el.innerHTML = (!h && !c) ? `<span class="muted">-</span>` : `<div><b>${fmtNumDE(h,2)} h</b></div><div><span class="money-soft">${fmtNumDE(c,2)} €</span></div>`; }); const hEl=document.getElementById('rpt-sum-hours'); if(hEl) hEl.innerHTML=`<b>${fmtNumDE(totalHours,2)} h</b>`; const cEl=document.getElementById('rpt-sum-cost'); if(cEl) cEl.innerHTML=`<b>${fmtNumDE(totalCost,2)} €</b>`; }
+
+
+
+      // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
+      function updateReportSumRow(){
+        const monthHours = Array(12).fill(0);
+        const monthCost  = Array(12).fill(0);
+        let totalHours = 0;
+        let totalCost  = 0;
+
+        usersList.forEach(u=>{
+          const username = u.username;
+          const d = reportData[username];
+          if(!d) return;
+          for(let mi=0; mi<12; mi++){
+            const md = d.months[mi];
+            monthHours[mi] += Number(md.hours || 0);
+            monthCost[mi]  += Number(md.cost  || 0);
+          }
+          totalHours += Number(d.totalHours || 0);
+          totalCost  += Number(d.totalCost  || 0);
+        });
+
+        const ids = ["rpt-sum-jan","rpt-sum-feb","rpt-sum-mar","rpt-sum-apr","rpt-sum-mai","rpt-sum-jun",
+                     "rpt-sum-jul","rpt-sum-aug","rpt-sum-sep","rpt-sum-okt","rpt-sum-nov","rpt-sum-dez"];
+        ids.forEach((id,i)=>{
+          const el = document.getElementById(id);
+          if(!el) return;
+          const h = monthHours[i];
+          const c = monthCost[i];
+          if(!h && !c){
+            el.innerHTML = `<span class="muted">-</span>`;
+          } else {
+            el.innerHTML = `<div><b>${fmtNumDE(h,2)} h</b></div><div><span class="money-soft">${fmtNumDE(c,2)} €</span></div>`;
+          }
+        });
+
+        const hEl = document.getElementById("rpt-sum-hours");
+        if(hEl) hEl.innerHTML = `<b>${fmtNumDE(totalHours,2)} h</b>`;
+        const cEl = document.getElementById("rpt-sum-cost");
+        if(cEl) cEl.innerHTML = `<b>${fmtNumDE(totalCost,2)} €</b>`;
+      }
+
       updateReportSumRow();
     }
-    async function deleteUser(username){ const ok=confirm(`⚠️ Mitarbeiter "${username}" wirklich löschen?
 
-Dieser Vorgang kann nicht rückgängig gemacht werden!`); if(!ok) return; await fetch('/users/' + encodeURIComponent(username), { method:'DELETE' }); await loadUsers(); }
-    async function toggleUserLock(user){ const res=await fetch(`/users/${encodeURIComponent(user.username)}/lock`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({locked: !user.is_locked})}); const r=await res.json().catch(()=>({})); if(!res.ok || r.error){ alert(r.error || 'Status konnte nicht geändert werden.'); return; } await loadUsers(); }
-    function openEditModal(user){ currentEditUser=user.username; document.getElementById('edit-username').value=user.username || ''; document.getElementById('edit-vorname').value=user.vorname || ''; document.getElementById('edit-nachname').value=user.nachname || ''; document.getElementById('edit-password').value=user.password || ''; document.getElementById('edit-geburtsdatum').value=user.geburtsdatum || ''; document.getElementById('edit-geburtsort').value=user.geburtsort || ''; document.getElementById('edit-email').value=user.email || ''; document.getElementById('edit-telefon').value=user.telefon || ''; document.getElementById('edit-staatsangehoerigkeit').value=user.staatsangehoerigkeit || ''; document.getElementById('edit-staatsnummer').value=user.staatsnummer || ''; document.getElementById('edit-role').value=user.role || 'mitarbeiter'; document.getElementById('edit-bkv_rv').value=user.bkv_rv || ''; document.getElementById('edit-sv5n').value=user.sv5n || ''; document.getElementById('edit-amtliches_dokument').value=user.amtliches_dokument || ''; document.getElementById('edit-dokumentennummer').value=user.dokumentennummer || ''; document.getElementById('edit-ausstellungsdatum').value=user.ausstellungsdatum || ''; document.getElementById('edit-ausstellende_behoerde').value=user.ausstellende_behoerde || ''; document.getElementById('edit-s34a').value=user.s34a || 'nein'; document.getElementById('edit-s34a_art').value=user.s34a_art || ''; document.getElementById('edit-amt').value=user.amt || ''; document.getElementById('edit-bewerber_id').value=user.bewerber_id || ''; document.getElementById('edit-bemerkung').value=user.bemerkung || ''; document.getElementById('edit-bsw').value=user.bsw || 'nein'; document.getElementById('edit-fschein').value=user.fschein || 'nein'; document.getElementById('edit-kati').value=user.kati || 'nein'; document.getElementById('edit-pschein').value=user.pschein || 'nein'; document.getElementById('edit-sanitaeter').value=user.sanitaeter || 'nein'; document.getElementById('edit-steuernummer').value=user.steuernummer || ''; document.getElementById('edit-bewach-id').value=user.bewach_id || ''; document.getElementById('edit-stundensatz').value=(user.stundensatz ?? '') === '' ? '' : Number(user.stundensatz); document.getElementById('edit-sonstige').value=user.sonstige || ''; document.getElementById('edit-personal-image-data').value=user.image_data || ''; document.getElementById('edit-personal-image-name').textContent=user.image_name || 'Noch keine Datei ausgewählt'; document.getElementById('edit-personal-image-preview').src=user.image_data || ''; setCheckedValues('edit-qualification', user.qualifications || []); setCheckedValues('edit-license_class', user.license_classes || []); setCheckedValues('edit-language', user.sprachen || []); setDynamicLanguageValues('edit-additional-language-list', user.weitere_sprachen || []); document.getElementById('editUserModal').style.display='flex'; }
-    function closeEditModal(){ document.getElementById('editUserModal').style.display='none'; }
-    async function saveUserEdit(){ const oldUsername=currentEditUser; const data=userFormPayload('edit'); const err=validatePersonalPayload(data,true); if(err){ alert(err); return; } const newUsernameRaw=data.username; const newUsernameUrl=encodeURIComponent(newUsernameRaw); if(oldUsername !== newUsernameRaw){ const resRename=await fetch('/users/rename',{method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({old_username: oldUsername, new_username: newUsernameRaw})}); const rRename=await resRename.json().catch(()=>({error:'Ungültige Server-Antwort'})); if(!resRename.ok || rRename.error){ alert(rRename.error || 'Umbenennen fehlgeschlagen'); return; } currentEditUser=newUsernameRaw; } if(!data.password) delete data.password; const resSave=await fetch('/users/' + newUsernameUrl,{method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data)}); const rSave=await resSave.json().catch(()=>({})); if(!resSave.ok || rSave.error){ alert(rSave.error || 'Speichern fehlgeschlagen'); return; } closeEditModal(); await loadUsers(); if(typeof calendar !== 'undefined' && calendar) calendar.refetchEvents(); if(typeof planningCalendar !== 'undefined' && planningCalendar) planningCalendar.refetchEvents(); }
+    async function deleteUser(username){
+      const ok = confirm(
+        `⚠️ Mitarbeiter "${username}" wirklich löschen?\n\nDieser Vorgang kann nicht rückgängig gemacht werden!`
+      );
+      if(!ok) return;
 
+      await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
+      loadUsers();
+    }
+
+    function openEditModal(user){
+      document.getElementById("edit-username").value=user.username;
+      currentEditUser = user.username;
+
+      document.getElementById("edit-vorname").value=user.vorname || "";
+      document.getElementById("edit-nachname").value=user.nachname || "";
+      document.getElementById("edit-email").value=user.email || "";
+      document.getElementById("edit-password").value=user.password||"";
+      document.getElementById("edit-role").value=user.role || "mitarbeiter";
+      document.getElementById("edit-s34a").value=user.s34a || "nein";
+      document.getElementById("edit-s34a_art").value=user.s34a_art || "";
+      document.getElementById("edit-pschein").value=user.pschein || "nein";
+
+      document.getElementById("edit-bewach-id").value=user.bewach_id || "";
+      document.getElementById("edit-steuernummer").value=user.steuernummer || "";
+      document.getElementById("edit-bsw").value=user.bsw || "nein";
+      document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
+
+      document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
+      document.getElementById("editUserModal").style.display="flex";
+    }
+
+    function closeEditModal(){ document.getElementById("editUserModal").style.display="none"; }
+
+    async function saveUserEdit(){
+      const oldUsername = currentEditUser;
+      const newUsernameRaw = document.getElementById("edit-username").value.trim();
+      const newUsername = newUsernameRaw; // Anzeige
+      const newUsernameUrl = encodeURIComponent(newUsernameRaw); // ✅ für URL
+
+      if(!newUsernameRaw){ alert("Benutzername darf nicht leer sein."); return; }
+
+      // 1) ggf. umbenennen
+      if(oldUsername !== newUsernameRaw){
+        const resRename = await fetch("/users/rename", {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ old_username: oldUsername, new_username: newUsernameRaw })
+        });
+        const rRename = await resRename.json().catch(()=>({error:"Ungültige Server-Antwort"}));
+        if(!resRename.ok || rRename.error){
+          alert(rRename.error || "Umbenennen fehlgeschlagen");
+          return;
+        }
+        // ✅ wichtig: internen Edit-User aktualisieren
+        currentEditUser = newUsernameRaw;
+      }
+
+      // 2) Daten speichern
+      let data={
+        vorname:document.getElementById("edit-vorname").value,
+        nachname:document.getElementById("edit-nachname").value,
+        email:(document.getElementById("edit-email").value || "").trim(),
+        password:(document.getElementById("edit-password").value || "").trim() ? document.getElementById("edit-password").value : null,
+        role:document.getElementById("edit-role").value,
+        s34a:document.getElementById("edit-s34a").value,
+        s34a_art:document.getElementById("edit-s34a_art").value,
+        pschein:document.getElementById("edit-pschein").value,
+        bewach_id: document.getElementById("edit-bewach-id").value,
+        steuernummer: document.getElementById("edit-steuernummer").value,
+        bsw: document.getElementById("edit-bsw").value,
+        sanitaeter: document.getElementById("edit-sanitaeter").value,
+        stundensatz:document.getElementById("edit-stundensatz").value
+      };
+
+      const resSave = await fetch("/users/"+newUsernameUrl,{
+        method:"PUT", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(data)
+      });
+
+      const rSave = await resSave.json().catch(()=>({}));
+      if(!resSave.ok || rSave.error){
+        alert(rSave.error || "Speichern fehlgeschlagen");
+        return;
+      }
+
+      closeEditModal();
+
+      // ✅ sicher aktualisieren (Tabelle + Cache)
+      await loadUsers();
+
+      // optional: Kalender/Planung aktualisieren, falls Namen/Stundensatz geändert wurden
+      if(typeof calendar !== "undefined" && calendar) calendar.refetchEvents();
+      if(typeof planningCalendar !== "undefined" && planningCalendar) planningCalendar.refetchEvents();
+    }
 
     function togglePassword(id){
       let input=document.getElementById(id);
