@@ -167,6 +167,16 @@
   background: #f7f7f7;
 }
 
+/* Personal: gesperrte Accounts sichtbar markieren */
+.user-table tr.is-locked-row td{
+  background:#f3f4f6;
+  color:#6b7280;
+}
+.personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
+.personal-name-cell{text-align:left !important;white-space:nowrap;}
+.consent-check{font-size:20px;font-weight:700;}
+
 </style>
 
 <style>
@@ -973,6 +983,10 @@ body.modal-open{ touch-action: auto !important; }
       </div>
 
       <div class="form-row">
+        <input type="text" id="bemerkung" placeholder="Bemerkung (freier Text)">
+      </div>
+
+      <div class="form-row">
         <input type="text" id="new-username" placeholder="Benutzername" required>
         <input type="password" id="new-password" placeholder="Passwort" required>
       </div>
@@ -1030,16 +1044,15 @@ body.modal-open{ touch-action: auto !important; }
     <table class="user-table">
       <thead>
         <tr>
-          <th>Benutzername</th>
           <th>Name</th>
-          <th>E-Mail</th>
-          <th>34a</th>
-          <th>Bewach-ID</th>
-          <th>Steuernummer</th>
+          <th>Bemerkung</th>
+          <th>§ 34a GewO</th>
+          <th>Bewacher ID</th>
           <th>BSW</th>
-          <th>Sanitäter</th>
+          <th>Sani</th>
           <th>P-Schein</th>
-          <th>Stundensatz</th>
+          <th>SVS</th>
+          <th>Erklärung</th>
           <th>Aktionen</th>
         </tr>
       </thead>
@@ -1262,6 +1275,9 @@ body.modal-open{ touch-action: auto !important; }
 
       <label>E-Mail</label>
       <input type="email" id="edit-email">
+
+      <label>Bemerkung</label>
+      <input type="text" id="edit-bemerkung">
 
       <label>Passwort</label>
       <div style="display:flex;align-items:center;gap:8px;">
@@ -2353,6 +2369,7 @@ document.getElementById("planning").style.display="block";
           vorname:document.getElementById("vorname").value,
           nachname:document.getElementById("nachname").value,
           email:(document.getElementById("email").value || "").trim(),
+          bemerkung:(document.getElementById("bemerkung").value || "").trim(),
           username:document.getElementById("new-username").value,
           password:document.getElementById("new-password").value,
           role:document.getElementById("new-role").value,
@@ -3016,31 +3033,39 @@ document.getElementById("confirmed-counter").textContent =
       let res=await fetch("/users");
       let users=await res.json();
 
-      // ✅ Alphabetisch nach Benutzername (A–Z)
       users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
 
       usersList = users;
       usersCache = {};
-      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
       users.forEach(u=>{
         let tr=document.createElement("tr");
+        if(u.is_locked) tr.classList.add("is-locked-row");
+
+        const fullName = `${u.vorname || ""} ${u.nachname || ""}`.trim() || u.username;
+        const lockBtnLabel = u.is_locked ? '🔓 Entsperren' : '🚫 Sperren';
+        const s34aText = `${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}`;
+
         tr.innerHTML=`
-          <td><b>${u.username}</b></td>
-          <td>${u.vorname} ${u.nachname}</td>
-          <td>${u.email || "-"}</td>
-          <td>${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}</td>
-          <td>${u.bewach_id || "-"}</td>
-          <td>${u.steuernummer || "-"}</td>
-          <td>${capYesNo(u.bsw || "nein")}</td>
-          <td>${capYesNo(u.sanitaeter || "nein")}</td>
-          <td>${capYesNo(u.pschein || "nein")}</td>
+          <td class="personal-name-cell"><b>${escapeHtml(fullName)}</b><br><span class="muted">${escapeHtml(u.username)}</span></td>
+          <td class="personal-note-cell">${escapeHtml(u.bemerkung || '-')}</td>
+          <td>${escapeHtml(s34aText)}</td>
+          <td>${escapeHtml(u.bewach_id || '-')}</td>
+          <td>${escapeHtml(capYesNo(u.bsw || "nein"))}</td>
+          <td>${escapeHtml(capYesNo(u.sanitaeter || "nein"))}</td>
+          <td>${escapeHtml(capYesNo(u.pschein || "nein"))}</td>
           <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
+          <td>${consentIcon(!!u.consent_given)}</td>
           <td>
-            <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>✏️ Bearbeiten</button>
-            <button class="reject" onclick="deleteUser('${u.username}')">❌ Löschen</button>
+            <div class="personal-action-btns">
+              <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
+              <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>Bearbeiten</button>
+              <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
+              <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
+            </div>
           </td>
         `;
         list.appendChild(tr);
@@ -3108,6 +3133,7 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-vorname").value=user.vorname || "";
       document.getElementById("edit-nachname").value=user.nachname || "";
       document.getElementById("edit-email").value=user.email || "";
+      document.getElementById("edit-bemerkung").value=user.bemerkung || "";
       document.getElementById("edit-password").value=user.password||"";
       document.getElementById("edit-role").value=user.role || "mitarbeiter";
       document.getElementById("edit-s34a").value=user.s34a || "nein";
@@ -3153,6 +3179,7 @@ document.getElementById("confirmed-counter").textContent =
         vorname:document.getElementById("edit-vorname").value,
         nachname:document.getElementById("edit-nachname").value,
         email:(document.getElementById("edit-email").value || "").trim(),
+        bemerkung:(document.getElementById("edit-bemerkung").value || "").trim(),
         password:(document.getElementById("edit-password").value || "").trim() ? document.getElementById("edit-password").value : null,
         role:document.getElementById("edit-role").value,
         s34a:document.getElementById("edit-s34a").value,
@@ -3189,6 +3216,39 @@ document.getElementById("confirmed-counter").textContent =
     function togglePassword(id){
       let input=document.getElementById(id);
       input.type=input.type==="password"?"text":"password";
+    }
+
+    function consentIcon(val){
+      return val ? '<span class="consent-check">☑</span>' : '<span class="consent-check">☐</span>';
+    }
+
+    function escapeHtml(value){
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function downloadUserPdf(username){
+      window.open('/users/' + encodeURIComponent(username) + '/pdf', '_blank');
+    }
+
+    async function toggleUserLock(username){
+      const user = (usersList || []).find(x => x.username === username) || {};
+      const currentlyLocked = !!user.is_locked;
+      const actionText = currentlyLocked ? 'entsperren' : 'sperren';
+      const ok = confirm(`Mitarbeiteraccount "${username}" wirklich ${actionText}?`);
+      if(!ok) return;
+
+      const res = await fetch('/users/' + encodeURIComponent(username) + '/lock', { method:'POST' });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok || data.error){
+        alert(data.error || 'Aktion fehlgeschlagen');
+        return;
+      }
+      await loadUsers();
     }
 
     // ✅ Hilfsfunktion: Endzeit kann am nächsten Tag liegen (z.B. 22:00–06:00)
