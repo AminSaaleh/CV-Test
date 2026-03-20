@@ -7,7 +7,7 @@
 #   python app.py
 #
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g
-import os, uuid, re
+import os, uuid, re, io
 from datetime import datetime
 
 
@@ -128,6 +128,8 @@ def build_change_mail(employee_name: str,
 import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import A4
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
@@ -291,6 +293,8 @@ def init_db():
             steuernummer TEXT,
             bsw TEXT,
             sanitaeter TEXT,
+            bemerkung TEXT,
+            is_locked BOOLEAN DEFAULT FALSE,
             stundensatz DOUBLE PRECISION,
             consent_given BOOLEAN DEFAULT FALSE,
             consent_name TEXT,
@@ -347,6 +351,8 @@ def init_db():
         ("steuernummer", "ALTER TABLE users ADD COLUMN steuernummer TEXT"),
         ("bsw", "ALTER TABLE users ADD COLUMN bsw TEXT"),
         ("sanitaeter", "ALTER TABLE users ADD COLUMN sanitaeter TEXT"),
+        ("bemerkung", "ALTER TABLE users ADD COLUMN bemerkung TEXT"),
+        ("is_locked", "ALTER TABLE users ADD COLUMN is_locked BOOLEAN DEFAULT FALSE"),
         ("stundensatz", "ALTER TABLE users ADD COLUMN stundensatz DOUBLE PRECISION"),
         ("consent_given", "ALTER TABLE users ADD COLUMN consent_given BOOLEAN DEFAULT FALSE"),
         ("consent_name", "ALTER TABLE users ADD COLUMN consent_name TEXT"),
@@ -394,7 +400,7 @@ def init_db():
         db.execute(
             '''
             INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
             ''',
             (
@@ -408,6 +414,8 @@ def init_db():
                 "ST-000",    # steuernummer
                 "nein",      # bsw
                 "nein",      # sanitaeter
+                "",          # bemerkung
+                False,       # is_locked
                 0.0,
             ),
         )
@@ -444,6 +452,8 @@ def login():
         u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
 
         if u and u.get("password") == password:
+            if bool(u.get("is_locked") or False):
+                return render_template("login.html", error="Account ist gesperrt")
             session["username"] = username
             session["role"] = u.get("role") or "mitarbeiter"
             return redirect(url_for("dashboard"))
@@ -544,7 +554,7 @@ def users_public():
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
-        "SELECT username, vorname, nachname FROM users WHERE username NOT IN (%s,%s) ORDER BY nachname, vorname",
+        "SELECT username, vorname, nachname FROM users WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE ORDER BY nachname, vorname",
         ("AdminTest", "TestAdmin")
     )
     users = [row_to_dict(r) for r in cur.fetchall()]
@@ -575,7 +585,7 @@ def add_user():
     try:
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
@@ -591,6 +601,8 @@ def add_user():
                 d.get("steuernummer") or "",
                 d.get("bsw") or "nein",
                 d.get("sanitaeter") or "nein",
+                d.get("bemerkung") or "",
+                False,
                 stundensatz,
             ),
         )
@@ -646,7 +658,7 @@ def rename_user():
         # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,stundensatz)
+               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz)
                VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
@@ -695,7 +707,7 @@ def edit_user(username):
 
     updates = dict(u)
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
-              "bewach_id", "steuernummer", "bsw", "sanitaeter"]:
+              "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -716,17 +728,84 @@ def edit_user(username):
     db.execute(
         """UPDATE users SET
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
-           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, stundensatz=%s
+           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
             updates["s34a"], updates["s34a_art"], updates["pschein"],
-            updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"],
+            updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"], updates.get("bemerkung") or "",
             updates["stundensatz"], username
         )
     )
     db.commit()
     return jsonify({"status": "ok"})
+
+
+@app.route("/users/<username>/lock", methods=["POST"])
+def toggle_user_lock(username):
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    db = get_db()
+    u = db.execute("SELECT username, COALESCE(is_locked, FALSE) AS is_locked FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+
+    new_state = not bool(u.get("is_locked") or False)
+    db.execute("UPDATE users SET is_locked=%s WHERE username=%s", (new_state, username))
+    db.commit()
+    return jsonify({"status": "ok", "is_locked": new_state})
+
+
+@app.route("/users/<username>/pdf", methods=["GET"])
+def user_pdf(username):
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    db = get_db()
+    u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    if not u:
+        return jsonify({"error": "Benutzer nicht gefunden"}), 404
+
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+
+    y = height - 60
+    pdf.setTitle(f"Mitarbeiter_{username}")
+    pdf.setFont("Helvetica-Bold", 18)
+    pdf.drawString(50, y, "Mitarbeiterdaten")
+    y -= 30
+
+    lines = [
+        ("Name", f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username),
+        ("Benutzername", username),
+        ("Bemerkung", (u.get("bemerkung") or "").strip() or "-"),
+        ("§ 34a GewO", ("Ja" if str(u.get("s34a") or "").lower()=="ja" else "Nein") + (f" ({u.get('s34a_art')})" if str(u.get("s34a") or "").lower()=="ja" and (u.get("s34a_art") or "").strip() else "")),
+        ("Bewacher ID", (u.get("bewach_id") or "").strip() or "-"),
+        ("BSW", "Ja" if str(u.get("bsw") or "").lower()=="ja" else "Nein"),
+        ("Sani", "Ja" if str(u.get("sanitaeter") or "").lower()=="ja" else "Nein"),
+        ("P-Schein", "Ja" if str(u.get("pschein") or "").lower()=="ja" else "Nein"),
+        ("SVS", (f"{float(u.get('stundensatz')):.2f} EUR/h" if u.get("stundensatz") not in (None, "") else "-")),
+        ("Erklärung", "Ja" if bool(u.get("consent_given") or False) else "Nein"),
+        ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
+    ]
+
+    pdf.setFont("Helvetica", 12)
+    for label, value in lines:
+        pdf.setFont("Helvetica-Bold", 12)
+        pdf.drawString(50, y, f"{label}:")
+        pdf.setFont("Helvetica", 12)
+        pdf.drawString(180, y, str(value))
+        y -= 24
+        if y < 80:
+            pdf.showPage()
+            y = height - 60
+
+    pdf.save()
+    buffer.seek(0)
+    from flask import send_file
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}.pdf")
 
 
 @app.route("/users/<username>", methods=["DELETE"])
