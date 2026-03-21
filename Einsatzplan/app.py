@@ -130,6 +130,9 @@ import psycopg2.extras
 from psycopg2 import IntegrityError
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.utils import ImageReader
+from reportlab.pdfbase.pdfmetrics import stringWidth
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "geheimes_passwort")
@@ -240,6 +243,16 @@ def dump_language_skills(value):
     return json.dumps(value or {}, ensure_ascii=False)
 
 
+
+
+def clean_image_data(value):
+    value = (value or "").strip()
+    if not value:
+        return ""
+    if value.startswith("data:image/") and ";base64," in value:
+        return value
+    return ""
+
 def normalize_user_payload(d):
     language_skills = d.get("language_skills") or {}
     if isinstance(language_skills, str):
@@ -263,6 +276,7 @@ def normalize_user_payload(d):
         "behoerdlich_studium": yesno(d.get("behoerdlich_studium")),
         "fuehrerschein": yesno(d.get("fuehrerschein")),
         "fuehrerschein_klassen": (d.get("fuehrerschein_klassen") or "").strip(),
+        "image_data": clean_image_data(d.get("image_data")),
     }
 
 
@@ -360,7 +374,8 @@ def init_db():
             waffensachkunde TEXT DEFAULT 'nein',
             behoerdlich_studium TEXT DEFAULT 'nein',
             fuehrerschein TEXT DEFAULT 'nein',
-            fuehrerschein_klassen TEXT
+            fuehrerschein_klassen TEXT,
+            image_data TEXT
         );
         '''
     )
@@ -436,6 +451,7 @@ def init_db():
         ("behoerdlich_studium", "ALTER TABLE users ADD COLUMN behoerdlich_studium TEXT DEFAULT 'nein'"),
         ("fuehrerschein", "ALTER TABLE users ADD COLUMN fuehrerschein TEXT DEFAULT 'nein'"),
         ("fuehrerschein_klassen", "ALTER TABLE users ADD COLUMN fuehrerschein_klassen TEXT"),
+        ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
     ]:
         if not col_exists(db, "users", c):
             db.execute(ddl)
@@ -657,8 +673,8 @@ def add_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -686,6 +702,7 @@ def add_user():
                 extra["behoerdlich_studium"],
                 extra["fuehrerschein"],
                 extra["fuehrerschein_klassen"],
+                extra["image_data"],
             ),
         )
         db.commit()
@@ -738,9 +755,9 @@ def rename_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,
                 consent_given,consent_name,consent_date)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -768,6 +785,7 @@ def rename_user():
                 old.get("behoerdlich_studium") or "nein",
                 old.get("fuehrerschein") or "nein",
                 old.get("fuehrerschein_klassen") or "",
+                old.get("image_data") or "",
                 bool(old.get("consent_given") or False),
                 old.get("consent_name") or "",
                 old.get("consent_date") or "",
@@ -805,7 +823,7 @@ def edit_user(username):
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
               "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung",
               "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -826,9 +844,12 @@ def edit_user(username):
     if "language_skills" in d:
         updates["language_skills"] = normalize_user_payload(d)["language_skills"]
 
+    if "image_data" in d:
+        updates["image_data"] = clean_image_data(d.get("image_data"))
+
     extra_updates = normalize_user_payload(d)
     for k in ["brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
         if k in d:
             updates[k] = extra_updates[k]
 
@@ -837,7 +858,7 @@ def edit_user(username):
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
            bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s,
            language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
-           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s
+           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s, image_data=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
@@ -846,7 +867,7 @@ def edit_user(username):
             updates["stundensatz"], updates.get("language_skills") or dump_language_skills({}),
             updates.get("brandschutzhelfer") or "nein", updates.get("deeskalation") or "nein", updates.get("gssk") or "nein", updates.get("fachkraft_ss") or "nein",
             updates.get("personenschutz") or "nein", updates.get("waffensachkunde") or "nein", updates.get("behoerdlich_studium") or "nein",
-            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "", username
+            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "", clean_image_data(updates.get("image_data")), username
         )
     )
     db.commit()
@@ -879,59 +900,188 @@ def user_pdf(username):
     if not u:
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
-    buffer = io.BytesIO()
-    pdf = canvas.Canvas(buffer, pagesize=A4)
-    width, height = A4
+    from flask import send_file
+    import base64
 
-    y = height - 60
-    pdf.setTitle(f"Mitarbeiter_{username}")
-    pdf.setFont("Helvetica-Bold", 18)
-    pdf.drawString(50, y, "Mitarbeiterdaten")
-    y -= 30
+    def yn(value):
+        return "Ja" if str(value or "").strip().lower() == "ja" else "Nein"
+
+    def draw_wrapped(c, text, x, y, max_width, line_height=14, font_name="Helvetica", font_size=10, color=colors.black):
+        c.setFont(font_name, font_size)
+        c.setFillColor(color)
+        words = str(text or "-").split()
+        if not words:
+            c.drawString(x, y, "-")
+            return y - line_height
+        line = ""
+        for word in words:
+            test = word if not line else f"{line} {word}"
+            if stringWidth(test, font_name, font_size) <= max_width:
+                line = test
+            else:
+                c.drawString(x, y, line)
+                y -= line_height
+                line = word
+        if line:
+            c.drawString(x, y, line)
+            y -= line_height
+        return y
+
+    def draw_kv_box(c, x, y_top, w, title, items, accent=colors.HexColor("#d9e9ff")):
+        label_w = 110
+        line_h = 16
+        inner_y = y_top - 34
+        content_y = inner_y
+        c.setFont("Helvetica-Bold", 14)
+        for label, value in items:
+            c.setFillColor(colors.HexColor("#23324d"))
+            c.drawString(x + 14, content_y, f"{label}:")
+            content_y = draw_wrapped(c, value, x + 14 + label_w, content_y, w - label_w - 28, line_height=line_h, font_name="Helvetica", font_size=11)
+            content_y -= 4
+        height_box = max(98, y_top - content_y + 12)
+        c.setFillColor(colors.white)
+        c.setStrokeColor(colors.HexColor("#d8dee8"))
+        c.roundRect(x, y_top - height_box, w, height_box, 12, stroke=1, fill=1)
+        c.setFillColor(accent)
+        c.roundRect(x, y_top - 28, w, 28, 12, stroke=0, fill=1)
+        c.rect(x, y_top - 28, w, 14, stroke=0, fill=1)
+        c.setFillColor(colors.HexColor("#0f172a"))
+        c.setFont("Helvetica-Bold", 13)
+        c.drawString(x + 14, y_top - 18, title)
+        c.setFillColor(colors.black)
+        content_y = y_top - 48
+        for label, value in items:
+            c.setFont("Helvetica-Bold", 11)
+            c.setFillColor(colors.HexColor("#23324d"))
+            c.drawString(x + 14, content_y, f"{label}:")
+            content_y = draw_wrapped(c, value, x + 14 + label_w, content_y, w - label_w - 28, line_height=line_h, font_name="Helvetica", font_size=11)
+            content_y -= 4
+        return y_top - height_box
 
     language_skills = parse_language_skills(u.get("language_skills"))
     language_text = ", ".join([f"{lang}: {level}" for lang, level in language_skills.items()]) or "-"
-    fuehrerschein_text = "Ja" if str(u.get("fuehrerschein") or "").lower()=="ja" else "Nein"
+    fuehrerschein_text = yn(u.get("fuehrerschein"))
     if fuehrerschein_text == "Ja" and (u.get("fuehrerschein_klassen") or "").strip():
-        fuehrerschein_text += f" ({(u.get('fuehrerschein_klassen') or '').strip()})"
+        fuehrerschein_text += f" – Klasse {(u.get('fuehrerschein_klassen') or '').strip()}"
 
-    lines = [
-        ("Name", f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username),
-        ("Benutzername", username),
-        ("Bemerkung", (u.get("bemerkung") or "").strip() or "-"),
-        ("Sprachen", language_text),
-        ("§ 34a GewO", ("Ja" if str(u.get("s34a") or "").lower()=="ja" else "Nein") + (f" ({u.get('s34a_art')})" if str(u.get("s34a") or "").lower()=="ja" and (u.get("s34a_art") or "").strip() else "")),
-        ("Bewacher ID", (u.get("bewach_id") or "").strip() or "-"),
-        ("BSW", "Ja" if str(u.get("bsw") or "").lower()=="ja" else "Nein"),
-        ("Sani", "Ja" if str(u.get("sanitaeter") or "").lower()=="ja" else "Nein"),
-        ("P-Schein", "Ja" if str(u.get("pschein") or "").lower()=="ja" else "Nein"),
-        ("Brandschutzhelfer", "Ja" if str(u.get("brandschutzhelfer") or "").lower()=="ja" else "Nein"),
-        ("Deeskalation", "Ja" if str(u.get("deeskalation") or "").lower()=="ja" else "Nein"),
-        ("GSSK", "Ja" if str(u.get("gssk") or "").lower()=="ja" else "Nein"),
-        ("Fachkraft S&S", "Ja" if str(u.get("fachkraft_ss") or "").lower()=="ja" else "Nein"),
-        ("Personenschutz", "Ja" if str(u.get("personenschutz") or "").lower()=="ja" else "Nein"),
-        ("Waffensachkunde", "Ja" if str(u.get("waffensachkunde") or "").lower()=="ja" else "Nein"),
-        ("Behördlich/Studium", "Ja" if str(u.get("behoerdlich_studium") or "").lower()=="ja" else "Nein"),
-        ("Führerschein", fuehrerschein_text),
-        ("SVS", (f"{float(u.get('stundensatz')):.2f} EUR/h" if u.get("stundensatz") not in (None, "") else "-")),
-        ("Erklärung", "Ja" if bool(u.get("consent_given") or False) else "Nein"),
-        ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
+    all_qualifications = [
+        ("Sanitätsdienst", yn(u.get("sanitaeter"))),
+        ("Brandschutzhelfer", yn(u.get("brandschutzhelfer"))),
+        ("Deeskalation", yn(u.get("deeskalation"))),
+        ("GSSK", yn(u.get("gssk"))),
+        ("Fachkraft S&S", yn(u.get("fachkraft_ss"))),
+        ("Personenschutz", yn(u.get("personenschutz"))),
+        ("Waffensachkunde", yn(u.get("waffensachkunde"))),
+        ("Behördlich/Studium", yn(u.get("behoerdlich_studium"))),
+        ("BSW", yn(u.get("bsw"))),
+        ("P-Schein", yn(u.get("pschein"))),
     ]
+    visible_qualifications = [(k, v) for k, v in all_qualifications if v == "Ja"]
+    if not visible_qualifications:
+        visible_qualifications = [("Qualifikationen", "Keine zusätzlichen Qualifikationen hinterlegt")]
 
-    pdf.setFont("Helvetica", 12)
-    for label, value in lines:
+    buffer = io.BytesIO()
+    pdf = canvas.Canvas(buffer, pagesize=A4)
+    width, height = A4
+    margin = 42
+
+    pdf.setTitle(f"Mitarbeiter_{username}")
+    pdf.setAuthor("CV Planung")
+    pdf.setFillColor(colors.HexColor("#08152e"))
+    pdf.roundRect(margin, height - 85, width - 2 * margin, 48, 14, stroke=0, fill=1)
+    pdf.setFillColor(colors.white)
+    pdf.setFont("Helvetica-Bold", 20)
+    pdf.drawString(margin + 18, height - 58, "Mitarbeiterprofil")
+    pdf.setFont("Helvetica", 10)
+    pdf.drawString(margin + 18, height - 74, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
+
+    card_y_top = height - 120
+    left_w = width * 0.58
+    right_x = margin + left_w + 18
+    right_w = width - margin - right_x
+    card_h = 120
+
+    pdf.setFillColor(colors.white)
+    pdf.setStrokeColor(colors.HexColor("#d8dee8"))
+    pdf.roundRect(margin, card_y_top - card_h, left_w, card_h, 16, stroke=1, fill=1)
+    pdf.setFillColor(colors.HexColor("#0f172a"))
+    pdf.setFont("Helvetica-Bold", 19)
+    full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
+    pdf.drawString(margin + 18, card_y_top - 28, full_name)
+    pdf.setFont("Helvetica", 11)
+    summary_lines = [
+        f"Benutzername: {username}",
+        f"E-Mail: {(u.get('email') or '').strip() or '-'}",
+        f"Bemerkung: {(u.get('bemerkung') or '').strip() or '-'}",
+        f"Datenschutz: {'Ja' if bool(u.get('consent_given') or False) else 'Nein'}",
+    ]
+    line_y = card_y_top - 50
+    for line in summary_lines:
+        pdf.setFillColor(colors.HexColor("#334155"))
+        pdf.drawString(margin + 18, line_y, line)
+        line_y -= 16
+
+    image_x = right_x
+    image_y = card_y_top - card_h
+    pdf.setFillColor(colors.white)
+    pdf.setStrokeColor(colors.HexColor("#d8dee8"))
+    pdf.roundRect(image_x, image_y, right_w, card_h, 16, stroke=1, fill=1)
+    img_value = (u.get("image_data") or "").strip()
+    drawn_image = False
+    if img_value.startswith("data:image/") and ";base64," in img_value:
+        try:
+            raw = base64.b64decode(img_value.split(",", 1)[1])
+            reader = ImageReader(io.BytesIO(raw))
+            iw, ih = reader.getSize()
+            max_w = right_w - 20
+            max_h = card_h - 20
+            scale = min(max_w / iw, max_h / ih)
+            draw_w = iw * scale
+            draw_h = ih * scale
+            draw_x = image_x + (right_w - draw_w) / 2
+            draw_y = image_y + (card_h - draw_h) / 2
+            pdf.drawImage(reader, draw_x, draw_y, draw_w, draw_h, preserveAspectRatio=True, mask='auto')
+            drawn_image = True
+        except Exception:
+            drawn_image = False
+    if not drawn_image:
+        pdf.setFillColor(colors.HexColor("#eef2f7"))
+        pdf.roundRect(image_x + 16, image_y + 16, right_w - 32, card_h - 32, 10, stroke=0, fill=1)
+        pdf.setFillColor(colors.HexColor("#64748b"))
         pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(50, y, f"{label}:")
-        pdf.setFont("Helvetica", 12)
-        pdf.drawString(180, y, str(value))
-        y -= 24
-        if y < 80:
-            pdf.showPage()
-            y = height - 60
+        pdf.drawCentredString(image_x + right_w / 2, image_y + card_h / 2 + 6, "Kein Bild")
+        pdf.setFont("Helvetica", 10)
+        pdf.drawCentredString(image_x + right_w / 2, image_y + card_h / 2 - 10, "Kein Bild hinterlegt")
+
+    box_top = card_y_top - card_h - 18
+    left_box_w = (width - 2 * margin - 14) / 2
+    right_box_x = margin + left_box_w + 14
+
+    left_bottom = draw_kv_box(pdf, margin, box_top, left_box_w, "Basisdaten", [
+        ("§ 34a GewO", yn(u.get("s34a")) + (f" ({u.get('s34a_art')})" if yn(u.get("s34a")) == "Ja" and (u.get("s34a_art") or "").strip() else "")),
+        ("Bewacher-ID", (u.get("bewach_id") or "").strip() or "-"),
+        ("BSW", yn(u.get("bsw"))),
+        ("P-Schein", yn(u.get("pschein"))),
+        ("Führerschein", fuehrerschein_text),
+        ("SVS", f"{float(u.get('stundensatz')):.2f} €/h" if u.get("stundensatz") not in (None, "") else "-"),
+    ], accent=colors.HexColor("#e8efff"))
+
+    right_bottom = draw_kv_box(pdf, right_box_x, box_top, left_box_w, "Qualifikationen", visible_qualifications, accent=colors.HexColor("#eef8f0"))
+
+    lower_top = min(left_bottom, right_bottom) - 18
+    lower_bottom = draw_kv_box(pdf, margin, lower_top, width - 2 * margin, "Fremdsprachen & Hinweise", [
+        ("Sprachen", language_text),
+        ("Sonstige Hinweise", (u.get("bemerkung") or "").strip() or "-"),
+        ("Erklärung", "Datenschutz-Selbsterklärung liegt vor" if bool(u.get("consent_given") or False) else "Datenschutz-Selbsterklärung fehlt"),
+        ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
+    ], accent=colors.HexColor("#e9f8ef"))
+
+    pdf.setFont("Helvetica", 9)
+    pdf.setFillColor(colors.HexColor("#64748b"))
+    pdf.drawRightString(width - margin, 20, f"Export für {full_name}")
 
     pdf.save()
     buffer.seek(0)
-    from flask import send_file
     return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}.pdf")
 
 
