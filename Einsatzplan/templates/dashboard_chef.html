@@ -182,6 +182,12 @@
 .lang-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0;}
 .lang-item select{min-width:220px;display:none;}
 .section-title-lite{margin:14px 0 6px 0;font-weight:700;}
+.image-upload-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0;}
+.image-preview-box{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;min-height:160px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden;}
+.image-preview-box img{max-width:100%;max-height:220px;border-radius:10px;display:block;}
+.image-preview-placeholder{color:#64748b;font-size:13px;text-align:center;}
+.lang-columns{columns:2;column-gap:18px;}
+.lang-columns .lang-item{break-inside:avoid;}
 
 </style>
 
@@ -1048,13 +1054,36 @@ body.modal-open{ touch-action: auto !important; }
       <div class="qual-grid" id="add-language-skills">
         <div class="qual-card">
           <h5>Sprachen</h5>
+          <div class="lang-columns">
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Deutsch"> Deutsch</label><select id="add-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Englisch"> Englisch</label><select id="add-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Französisch"> Französisch</label><select id="add-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Spanisch"> Spanisch</label><select id="add-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Türkisch"> Türkisch</label><select id="add-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Arabisch"> Arabisch</label><select id="add-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Italienisch"> Italienisch</label><select id="add-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Russisch"> Russisch</label><select id="add-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Polnisch"> Polnisch</label><select id="add-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Rumänisch"> Rumänisch</label><select id="add-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Ukrainisch"> Ukrainisch</label><select id="add-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Kurdisch"> Kurdisch</label><select id="add-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Persisch"> Persisch</label><select id="add-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Portugiesisch"> Portugiesisch</label><select id="add-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Niederländisch"> Niederländisch</label><select id="add-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Albanisch"> Albanisch</label><select id="add-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          </div>
         </div>
+      </div>
+
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="image-upload" accept="image/*">
+          <input type="hidden" id="image_data">
+          <div class="muted" style="margin-top:6px;">Bild wird direkt mit dem Mitarbeiter gespeichert.</div>
+        </div>
+        <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
+      </div>
       </div>
 
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
@@ -1373,6 +1402,42 @@ body.modal-open{ touch-action: auto !important; }
 
       <label>Stundensatz (€/h)</label>
       <input type="number" id="edit-stundensatz" step="0.01" min="0">
+
+      <div class="section-title-lite">Fremdsprachen</div>
+      <div class="qual-grid" id="edit-language-skills">
+        <div class="qual-card">
+          <h5>Sprachen</h5>
+          <div class="lang-columns">
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Deutsch"> Deutsch</label><select id="edit-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Englisch"> Englisch</label><select id="edit-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Französisch"> Französisch</label><select id="edit-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Spanisch"> Spanisch</label><select id="edit-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Türkisch"> Türkisch</label><select id="edit-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Arabisch"> Arabisch</label><select id="edit-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Italienisch"> Italienisch</label><select id="edit-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Russisch"> Russisch</label><select id="edit-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Polnisch"> Polnisch</label><select id="edit-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Rumänisch"> Rumänisch</label><select id="edit-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Ukrainisch"> Ukrainisch</label><select id="edit-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Kurdisch"> Kurdisch</label><select id="edit-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Persisch"> Persisch</label><select id="edit-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Portugiesisch"> Portugiesisch</label><select id="edit-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Niederländisch"> Niederländisch</label><select id="edit-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Albanisch"> Albanisch</label><select id="edit-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="edit-image-upload" accept="image/*">
+          <input type="hidden" id="edit-image_data">
+          <div class="muted" style="margin-top:6px;">Vorhandenes Bild kann ersetzt oder entfernt werden.</div>
+          <button type="button" class="reject" style="margin-top:8px;" onclick="clearImagePreview('edit')">Bild entfernen</button>
+        </div>
+        <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
+      </div>
 
       <div class="modal-actions">
         <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
@@ -2427,6 +2492,41 @@ document.getElementById("planning").style.display="block";
       });
     }
 
+
+
+    function renderImagePreview(prefix, value){
+      const box = document.getElementById(prefix === 'edit' ? 'edit-image-preview-box' : 'image-preview-box');
+      const hidden = document.getElementById(prefix === 'edit' ? 'edit-image_data' : 'image_data');
+      if(!box || !hidden) return;
+      hidden.value = value || '';
+      if(value){
+        box.innerHTML = `<img src="${value}" alt="Mitarbeiterbild">`;
+      } else {
+        box.innerHTML = '<div class="image-preview-placeholder">Noch kein Bild hinterlegt</div>';
+      }
+    }
+
+    function clearImagePreview(prefix){
+      renderImagePreview(prefix, '');
+      const fileInput = document.getElementById(prefix === 'edit' ? 'edit-image-upload' : 'image-upload');
+      if(fileInput) fileInput.value = '';
+    }
+
+    function bindImageUpload(inputId, prefix){
+      const input = document.getElementById(inputId);
+      if(!input) return;
+      input.addEventListener('change', () => {
+        const file = input.files && input.files[0];
+        if(!file){
+          if(prefix !== 'edit') clearImagePreview(prefix);
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = () => renderImagePreview(prefix, String(reader.result || ''));
+        reader.readAsDataURL(file);
+      });
+    }
+
     function bindQualificationUi(){
       document.querySelectorAll('.lang-check').forEach(cb => {
         cb.addEventListener('change', () => {
@@ -2447,6 +2547,8 @@ document.getElementById("planning").style.display="block";
 
       // User hinzufügen
       bindQualificationUi();
+      bindImageUpload('image-upload', 'add');
+      bindImageUpload('edit-image-upload', 'edit');
       if(!IS_PLANNER){
       document.getElementById("add-user-form").onsubmit=async e=>{
         e.preventDefault();
@@ -2475,7 +2577,8 @@ document.getElementById("planning").style.display="block";
           waffensachkunde: document.getElementById('waffensachkunde').checked ? 'ja' : 'nein',
           behoerdlich_studium: document.getElementById('behoerdlich_studium').checked ? 'ja' : 'nein',
           fuehrerschein: document.getElementById('fuehrerschein').checked ? 'ja' : 'nein',
-          fuehrerschein_klassen: document.getElementById('fuehrerschein_klassen').value
+          fuehrerschein_klassen: document.getElementById('fuehrerschein_klassen').value,
+          image_data: document.getElementById('image_data').value
         };
         const resAdd = await fetch("/users",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
         const rAdd = await resAdd.json().catch(()=>({}));
@@ -2494,10 +2597,11 @@ document.getElementById("planning").style.display="block";
         }
 
         alert(successMsg);
-        loadUsers();
+        await loadUsers();
         e.target.reset();
         setLanguageSkills('add', {});
         const addFs=document.getElementById('fuehrerschein'); if(addFs){ addFs.checked=false; addFs.dispatchEvent(new Event('change')); }
+        clearImagePreview('add');
       };
       }
     });
@@ -3253,6 +3357,7 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
       setLanguageSkills('edit', user.language_skills || {});
       document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
+      renderImagePreview('edit', user.image_data || "");
       document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
       document.getElementById("editUserModal").style.display="flex";
     }
@@ -3307,7 +3412,8 @@ document.getElementById("confirmed-counter").textContent =
         waffensachkunde: document.getElementById('edit-waffensachkunde').checked ? 'ja' : 'nein',
         behoerdlich_studium: document.getElementById('edit-behoerdlich_studium').checked ? 'ja' : 'nein',
         fuehrerschein: document.getElementById('edit-fuehrerschein').checked ? 'ja' : 'nein',
-        fuehrerschein_klassen: document.getElementById('edit-fuehrerschein_klassen').value
+        fuehrerschein_klassen: document.getElementById('edit-fuehrerschein_klassen').value,
+        image_data: document.getElementById('edit-image_data').value
       };
 
       const resSave = await fetch("/users/"+newUsernameUrl,{
