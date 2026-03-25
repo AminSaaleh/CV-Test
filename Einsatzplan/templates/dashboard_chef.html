@@ -175,6 +175,9 @@
 .personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
 .personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
 .personal-name-cell{text-align:left !important;white-space:nowrap;}
+#user-management{max-width:1700px;margin:0 auto;font-size:15px;}
+#user-management .user-table th,#user-management .user-table td{padding:10px 12px;}
+#editUserModal .modal-content{width:min(1100px,96vw);}
 .consent-check{font-size:20px;font-weight:700;}
 .qual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0;}
 .qual-card{border:1px solid #d6dbe3;border-radius:10px;padding:10px;background:#f8fbff;}
@@ -1454,6 +1457,25 @@ body.modal-open{ touch-action: auto !important; }
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Niederländisch"> Niederländisch</label><select id="edit-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Albanisch"> Albanisch</label><select id="edit-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           </div>
+        </div>
+      </div>
+
+      <div class="section-title-lite">Zusätzliche Qualifikationen</div>
+      <div class="qual-grid">
+        <div class="qual-card">
+          <h5>Qualifikationen</h5>
+          <label><input type="checkbox" id="edit-brandschutzhelfer"> Brandschutzhelfer</label><br>
+          <label><input type="checkbox" id="edit-deeskalation"> Deeskalation</label><br>
+          <label><input type="checkbox" id="edit-gssk"> GSSK</label><br>
+          <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft S&amp;S</label><br>
+          <label><input type="checkbox" id="edit-personenschutz"> Personenschutz</label><br>
+          <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde</label><br>
+          <label><input type="checkbox" id="edit-behoerdlich_studium"> Behördlich/Studium</label>
+        </div>
+        <div class="qual-card">
+          <h5>Führerschein</h5>
+          <label><input type="checkbox" id="edit-fuehrerschein"> Führerschein vorhanden</label>
+          <input type="text" id="edit-fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
         </div>
       </div>
 
