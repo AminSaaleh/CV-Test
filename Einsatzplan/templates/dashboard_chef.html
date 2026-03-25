@@ -1084,7 +1084,6 @@ body.modal-open{ touch-action: auto !important; }
         </div>
         <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
       </div>
-      </div>
 
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
       <div class="qual-grid">
@@ -3263,7 +3262,7 @@ document.getElementById("confirmed-counter").textContent =
           <td>
             <div class="personal-action-btns">
               <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button class="confirm" onclick='openEditModal(${JSON.stringify(u)})'>Bearbeiten</button>
+              <button class="confirm" onclick="openEditModalByUsername('${safeUsername}')">Bearbeiten</button>
               <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
               <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
@@ -3325,6 +3324,16 @@ document.getElementById("confirmed-counter").textContent =
 
       await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
+    }
+
+    function openEditModalByUsername(usernameEncoded){
+      const username = decodeURIComponent(usernameEncoded || "");
+      const user = (usersList || []).find(u => u.username === username);
+      if(!user){
+        alert("Benutzer nicht gefunden.");
+        return;
+      }
+      openEditModal(user);
     }
 
     function openEditModal(user){
