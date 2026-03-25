@@ -189,6 +189,21 @@
 .lang-columns{columns:2;column-gap:18px;}
 .lang-columns .lang-item{break-inside:avoid;}
 
+/* Persönliche Ansicht etwas größer und luftiger */
+#user-management{max-width:1700px;margin:0 auto;padding-bottom:24px;}
+#user-management h3{font-size:28px;margin-bottom:14px;}
+#user-management h4{font-size:22px;margin:18px 0 10px 0;}
+#user-management .user-form input,
+#user-management .user-form select,
+#user-management .user-form button{font-size:15px;padding:12px 14px;}
+#user-management .user-table th,
+#user-management .user-table td{font-size:15px;padding:10px 12px;}
+#editUserModal .modal-content{width:min(1120px,96vw) !important;max-width:1120px !important;padding:22px 24px !important;}
+#editUserModal label{font-size:15px;font-weight:600;}
+#editUserModal input,
+#editUserModal select,
+#editUserModal button{font-size:15px;}
+
 </style>
 
 <style>
@@ -3285,7 +3300,7 @@ document.getElementById("confirmed-counter").textContent =
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
-      users.forEach(u=>{
+      usersList.forEach(u=>{
         let tr=document.createElement("tr");
         if(u.is_locked) tr.classList.add("is-locked-row");
 
@@ -3306,7 +3321,7 @@ document.getElementById("confirmed-counter").textContent =
           <td>
             <div class="personal-action-btns">
               <button type="button" class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button type="button" class="confirm js-edit-user-button" data-username="${encodeURIComponent(u.username)}">Bearbeiten</button>
+              <button type="button" class="confirm js-edit-user-button" data-username="${encodeURIComponent(u.username)}" onclick="openEditModalByUsername(this.dataset.username)">Bearbeiten</button>
               <button type="button" class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
               <button type="button" class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
@@ -3370,42 +3385,70 @@ document.getElementById("confirmed-counter").textContent =
       loadUsers();
     }
 
-    function openEditModal(user){
-      document.getElementById("edit-username").value=user.username;
-      currentEditUser = user.username;
-
-      document.getElementById("edit-vorname").value=user.vorname || "";
-      document.getElementById("edit-nachname").value=user.nachname || "";
-      document.getElementById("edit-email").value=user.email || "";
-      document.getElementById("edit-bemerkung").value=user.bemerkung || "";
-      document.getElementById("edit-password").value=user.password||"";
-      document.getElementById("edit-role").value=user.role || "mitarbeiter";
-      document.getElementById("edit-s34a").value=user.s34a || "nein";
-      document.getElementById("edit-s34a_art").value=user.s34a_art || "";
-      document.getElementById("edit-pschein").value=user.pschein || "nein";
-
-      document.getElementById("edit-bewach-id").value=user.bewach_id || "";
-      document.getElementById("edit-steuernummer").value=user.steuernummer || "";
-      document.getElementById("edit-bsw").value=user.bsw || "nein";
-      document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
-
-      document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-gssk").checked=String(user.gssk || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-fachkraft_ss").checked=String(user.fachkraft_ss || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-personenschutz").checked=String(user.personenschutz || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-waffensachkunde").checked=String(user.waffensachkunde || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
-      document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
-      setLanguageSkills('edit', user.language_skills || {});
-      document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
-      renderImagePreview('edit', user.image_data || "");
-      document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
-      document.getElementById("editUserModal").style.display="flex";
+    function showModalById(id){
+      const modal = document.getElementById(id);
+      if(!modal) return;
+      modal.style.display = "flex";
+      document.body.classList.add("modal-open");
+      requestAnimationFrame(()=>{
+        try{ modal.scrollTop = 0; }catch(_){}
+        try{ const c = modal.querySelector('.modal-content'); if(c){ c.scrollTop = 0; c.focus && c.focus(); } }catch(_){}
+      });
     }
 
-    function closeEditModal(){ document.getElementById("editUserModal").style.display="none"; }
+    function openEditModal(user){
+      try{
+        if(!user || !user.username){
+          alert("Benutzerdaten konnten nicht geladen werden.");
+          return;
+        }
+
+        document.getElementById("edit-username").value=user.username || "";
+        currentEditUser = user.username;
+
+        document.getElementById("edit-vorname").value=user.vorname || "";
+        document.getElementById("edit-nachname").value=user.nachname || "";
+        document.getElementById("edit-email").value=user.email || "";
+        document.getElementById("edit-bemerkung").value=user.bemerkung || "";
+        document.getElementById("edit-password").value=user.password||"";
+        document.getElementById("edit-role").value=user.role || "mitarbeiter";
+        document.getElementById("edit-s34a").value=user.s34a || "nein";
+        document.getElementById("edit-s34a_art").value=user.s34a_art || "";
+        document.getElementById("edit-pschein").value=user.pschein || "nein";
+
+        document.getElementById("edit-bewach-id").value=user.bewach_id || "";
+        document.getElementById("edit-steuernummer").value=user.steuernummer || "";
+        document.getElementById("edit-bsw").value=user.bsw || "nein";
+        document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
+
+        document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-gssk").checked=String(user.gssk || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-fachkraft_ss").checked=String(user.fachkraft_ss || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-personenschutz").checked=String(user.personenschutz || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-waffensachkunde").checked=String(user.waffensachkunde || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
+        document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
+        setLanguageSkills('edit', user.language_skills || {});
+        document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
+        renderImagePreview('edit', user.image_data || "");
+        document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
+
+        showModalById("editUserModal");
+      }catch(err){
+        console.error('openEditModal failed', err);
+        alert('Bearbeiten konnte nicht geöffnet werden. Bitte Seite neu laden und erneut versuchen.');
+      }
+    }
+
+    function closeEditModal(){
+      const modal = document.getElementById("editUserModal");
+      if(modal) modal.style.display="none";
+      if(!document.querySelector('.modal[style*="display: flex"], .modal[style*="display:flex"]')){
+        document.body.classList.remove("modal-open");
+      }
+    }
 
     async function saveUserEdit(){
       const oldUsername = currentEditUser;
