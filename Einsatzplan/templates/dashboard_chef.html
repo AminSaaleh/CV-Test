@@ -175,9 +175,6 @@
 .personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
 .personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
 .personal-name-cell{text-align:left !important;white-space:nowrap;}
-#user-management{max-width:1700px;margin:0 auto;font-size:15px;}
-#user-management .user-table th,#user-management .user-table td{padding:10px 12px;}
-#editUserModal .modal-content{width:min(1100px,96vw);}
 .consent-check{font-size:20px;font-weight:700;}
 .qual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0;}
 .qual-card{border:1px solid #d6dbe3;border-radius:10px;padding:10px;background:#f8fbff;}
@@ -191,21 +188,6 @@
 .image-preview-placeholder{color:#64748b;font-size:13px;text-align:center;}
 .lang-columns{columns:2;column-gap:18px;}
 .lang-columns .lang-item{break-inside:avoid;}
-
-/* Persönliche Ansicht etwas größer und luftiger */
-#user-management{max-width:1700px;margin:0 auto;padding-bottom:24px;}
-#user-management h3{font-size:28px;margin-bottom:14px;}
-#user-management h4{font-size:22px;margin:18px 0 10px 0;}
-#user-management .user-form input,
-#user-management .user-form select,
-#user-management .user-form button{font-size:15px;padding:12px 14px;}
-#user-management .user-table th,
-#user-management .user-table td{font-size:15px;padding:10px 12px;}
-#editUserModal .modal-content{width:min(1120px,96vw) !important;max-width:1120px !important;padding:22px 24px !important;}
-#editUserModal label{font-size:15px;font-weight:600;}
-#editUserModal input,
-#editUserModal select,
-#editUserModal button{font-size:15px;}
 
 </style>
 
@@ -1068,18 +1050,6 @@ body.modal-open{ touch-action: auto !important; }
       </div>
 
 
-      <div class="section-title-lite">Mitarbeiterbild</div>
-      <div class="image-upload-grid">
-        <div>
-          <input type="file" id="image-upload" accept="image/*">
-          <input type="hidden" id="image_data">
-          <div class="muted" style="margin-top:6px;">Bild wird direkt mit dem Mitarbeiter gespeichert.</div>
-        </div>
-        <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
-      </div>
-
-      
-
       <div class="section-title-lite">Fremdsprachen</div>
       <div class="qual-grid" id="add-language-skills">
         <div class="qual-card">
@@ -1103,6 +1073,17 @@ body.modal-open{ touch-action: auto !important; }
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Albanisch"> Albanisch</label><select id="add-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           </div>
         </div>
+      </div>
+
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="image-upload" accept="image/*">
+          <input type="hidden" id="image_data">
+          <div class="muted" style="margin-top:6px;">Bild wird direkt mit dem Mitarbeiter gespeichert.</div>
+        </div>
+        <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
+      </div>
       </div>
 
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
@@ -1347,7 +1328,7 @@ body.modal-open{ touch-action: auto !important; }
 
   <!-- Modal Benutzer bearbeiten -->
   <div class="modal" id="editUserModal">
-    <div class="modal-content" tabindex="-1">
+    <div class="modal-content" tabindex="-1" style="width:min(1000px,96vw);max-height:92vh;overflow:auto;">
       <span class="close-btn" onclick="closeEditModal()">×</span>
       <h3>Mitarbeiter bearbeiten</h3>
 
@@ -1422,19 +1403,6 @@ body.modal-open{ touch-action: auto !important; }
       <label>Stundensatz (€/h)</label>
       <input type="number" id="edit-stundensatz" step="0.01" min="0">
 
-      <div class="section-title-lite">Mitarbeiterbild</div>
-      <div class="image-upload-grid">
-        <div>
-          <input type="file" id="edit-image-upload" accept="image/*">
-          <input type="hidden" id="edit-image_data">
-          <div class="muted" style="margin-top:6px;">Vorhandenes Bild kann ersetzt oder entfernt werden.</div>
-          <button type="button" class="reject" style="margin-top:8px;" onclick="clearImagePreview('edit')">Bild entfernen</button>
-        </div>
-        <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
-      </div>
-
-      
-
       <div class="section-title-lite">Fremdsprachen</div>
       <div class="qual-grid" id="edit-language-skills">
         <div class="qual-card">
@@ -1460,6 +1428,18 @@ body.modal-open{ touch-action: auto !important; }
         </div>
       </div>
 
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="edit-image-upload" accept="image/*">
+          <input type="hidden" id="edit-image_data">
+          <div class="muted" style="margin-top:6px;">Vorhandenes Bild kann ersetzt oder entfernt werden.</div>
+          <button type="button" class="reject" style="margin-top:8px;" onclick="clearImagePreview('edit')">Bild entfernen</button>
+        </div>
+        <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
+      </div>
+
+
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
       <div class="qual-grid">
         <div class="qual-card">
@@ -1480,7 +1460,7 @@ body.modal-open{ touch-action: auto !important; }
       </div>
 
       <div class="modal-actions">
-        <button type="button" class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
+        <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
       </div>
     </div>
   </div>
@@ -1790,29 +1770,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     let usersCache = {};
     let usersList = [];
     let currentEditUser = null;
-
-    function getUserDisplayName(u){
-      return `${String(u?.vorname || '').trim()} ${String(u?.nachname || '').trim()}`.trim() || String(u?.username || '').trim();
-    }
-
-    function sortUsersSpecial(list){
-      const arr = Array.isArray(list) ? [...list] : [];
-      arr.sort((a,b)=>{
-        const aIsKevin = String(a?.vorname || '').trim().toLowerCase() === 'kevin' && String(a?.nachname || '').trim().toLowerCase() === 'casutt';
-        const bIsKevin = String(b?.vorname || '').trim().toLowerCase() === 'kevin' && String(b?.nachname || '').trim().toLowerCase() === 'casutt';
-        if(aIsKevin && !bIsKevin) return -1;
-        if(!aIsKevin && bIsKevin) return 1;
-
-        const firstCmp = String(a?.vorname || '').localeCompare(String(b?.vorname || ''), 'de', { sensitivity:'base', numeric:true });
-        if(firstCmp !== 0) return firstCmp;
-
-        const lastCmp = String(a?.nachname || '').localeCompare(String(b?.nachname || ''), 'de', { sensitivity:'base', numeric:true });
-        if(lastCmp !== 0) return lastCmp;
-
-        return String(a?.username || '').localeCompare(String(b?.username || ''), 'de', { sensitivity:'base', numeric:true });
-      });
-      return arr;
-    }
 
     function setActiveTab(activeId){
       const ids = ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"];
@@ -2575,25 +2532,6 @@ document.getElementById("planning").style.display="block";
       if(fileInput) fileInput.value = '';
     }
 
-    function openEditModalByUsername(usernameEncoded){
-      const username = decodeURIComponent(usernameEncoded || '');
-      const user = usersList.find(u => String(u.username || '') === username);
-      if(!user){
-        alert('Benutzer nicht gefunden.');
-        return;
-      }
-      openEditModal(user);
-    }
-
-    document.addEventListener('click', function(e){
-      const editBtn = e.target.closest('.js-edit-user-button');
-      if(!editBtn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      openEditModalByUsername(editBtn.dataset.username || '');
-    });
-
-
     function bindImageUpload(inputId, prefix){
       const input = document.getElementById(inputId);
       if(!input) return;
@@ -3268,7 +3206,7 @@ document.getElementById("confirmed-counter").textContent =
       const replacementSelect = document.getElementById("replacement-user");
       replacementSelect.innerHTML = "";
 
-      const candidates = sortUsersSpecial(usersList);
+      const candidates = usersList;
 
       candidates.forEach(u=>{
         const opt=document.createElement("option");
@@ -3316,13 +3254,15 @@ document.getElementById("confirmed-counter").textContent =
       let res=await fetch("/users");
       let users=await res.json();
 
-      usersList = sortUsersSpecial(users);
+      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
+
+      usersList = users;
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
-      usersList.forEach(u=>{
+      users.forEach(u=>{
         let tr=document.createElement("tr");
         if(u.is_locked) tr.classList.add("is-locked-row");
 
@@ -3342,10 +3282,10 @@ document.getElementById("confirmed-counter").textContent =
           <td>${consentIcon(!!u.consent_given)}</td>
           <td>
             <div class="personal-action-btns">
-              <button type="button" class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button type="button" class="confirm js-edit-user-button" data-username="${encodeURIComponent(u.username)}" onclick="openEditModalByUsername(this.dataset.username)">Bearbeiten</button>
-              <button type="button" class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
-              <button type="button" class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
+              <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
+              <button class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
+              <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
+              <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
           </td>
         `;
@@ -3407,70 +3347,58 @@ document.getElementById("confirmed-counter").textContent =
       loadUsers();
     }
 
-    function showModalById(id){
-      const modal = document.getElementById(id);
-      if(!modal) return;
-      modal.style.display = "flex";
-      document.body.classList.add("modal-open");
-      requestAnimationFrame(()=>{
-        try{ modal.scrollTop = 0; }catch(_){}
-        try{ const c = modal.querySelector('.modal-content'); if(c){ c.scrollTop = 0; c.focus && c.focus(); } }catch(_){}
-      });
+    
+    function openEditModalByUsername(usernameEncoded){
+      try {
+        const username = decodeURIComponent(usernameEncoded || "");
+        const user = (usersList || []).find(u => String(u.username) === String(username));
+        if(!user){
+          alert("Benutzer nicht gefunden. Bitte Seite neu laden und erneut versuchen.");
+          return;
+        }
+        openEditModal(user);
+      } catch(err){
+        console.error("Bearbeiten konnte nicht geöffnet werden:", err);
+        alert("Bearbeiten konnte nicht geöffnet werden. Bitte Seite neu laden und erneut versuchen.");
+      }
     }
 
     function openEditModal(user){
-      try{
-        if(!user || !user.username){
-          alert("Benutzerdaten konnten nicht geladen werden.");
-          return;
-        }
+      document.getElementById("edit-username").value=user.username;
+      currentEditUser = user.username;
 
-        document.getElementById("edit-username").value=user.username || "";
-        currentEditUser = user.username;
+      document.getElementById("edit-vorname").value=user.vorname || "";
+      document.getElementById("edit-nachname").value=user.nachname || "";
+      document.getElementById("edit-email").value=user.email || "";
+      document.getElementById("edit-bemerkung").value=user.bemerkung || "";
+      document.getElementById("edit-password").value=user.password||"";
+      document.getElementById("edit-role").value=user.role || "mitarbeiter";
+      document.getElementById("edit-s34a").value=user.s34a || "nein";
+      document.getElementById("edit-s34a_art").value=user.s34a_art || "";
+      document.getElementById("edit-pschein").value=user.pschein || "nein";
 
-        document.getElementById("edit-vorname").value=user.vorname || "";
-        document.getElementById("edit-nachname").value=user.nachname || "";
-        document.getElementById("edit-email").value=user.email || "";
-        document.getElementById("edit-bemerkung").value=user.bemerkung || "";
-        document.getElementById("edit-password").value=user.password||"";
-        document.getElementById("edit-role").value=user.role || "mitarbeiter";
-        document.getElementById("edit-s34a").value=user.s34a || "nein";
-        document.getElementById("edit-s34a_art").value=user.s34a_art || "";
-        document.getElementById("edit-pschein").value=user.pschein || "nein";
+      document.getElementById("edit-bewach-id").value=user.bewach_id || "";
+      document.getElementById("edit-steuernummer").value=user.steuernummer || "";
+      document.getElementById("edit-bsw").value=user.bsw || "nein";
+      document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
 
-        document.getElementById("edit-bewach-id").value=user.bewach_id || "";
-        document.getElementById("edit-steuernummer").value=user.steuernummer || "";
-        document.getElementById("edit-bsw").value=user.bsw || "nein";
-        document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
-
-        document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-gssk").checked=String(user.gssk || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-fachkraft_ss").checked=String(user.fachkraft_ss || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-personenschutz").checked=String(user.personenschutz || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-waffensachkunde").checked=String(user.waffensachkunde || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
-        document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
-        setLanguageSkills('edit', user.language_skills || {});
-        document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
-        renderImagePreview('edit', user.image_data || "");
-        document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
-
-        showModalById("editUserModal");
-      }catch(err){
-        console.error('openEditModal failed', err);
-        alert('Bearbeiten konnte nicht geöffnet werden. Bitte Seite neu laden und erneut versuchen.');
-      }
+      document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-gssk").checked=String(user.gssk || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fachkraft_ss").checked=String(user.fachkraft_ss || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-personenschutz").checked=String(user.personenschutz || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-waffensachkunde").checked=String(user.waffensachkunde || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
+      document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
+      setLanguageSkills('edit', user.language_skills || {});
+      document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
+      renderImagePreview('edit', user.image_data || "");
+      document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
+      document.getElementById("editUserModal").style.display="flex";
     }
 
-    function closeEditModal(){
-      const modal = document.getElementById("editUserModal");
-      if(modal) modal.style.display="none";
-      if(!document.querySelector('.modal[style*="display: flex"], .modal[style*="display:flex"]')){
-        document.body.classList.remove("modal-open");
-      }
-    }
+    function closeEditModal(){ document.getElementById("editUserModal").style.display="none"; }
 
     async function saveUserEdit(){
       const oldUsername = currentEditUser;
@@ -3616,10 +3544,10 @@ document.getElementById("confirmed-counter").textContent =
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
-      usersList = sortUsersSpecial(await ures.json());
+      usersList = await ures.json();
       const uMap = userByUsername();
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
+      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
 
       // Jahr
       const yRaw = (document.getElementById("report-year")?.value || "").trim();
@@ -3829,9 +3757,9 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
-      usersList = sortUsersSpecial(await ures.json());
+      usersList = await ures.json();
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
+      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
 
       // Jahr
       const yRaw = (document.getElementById("counter-year")?.value || "").trim();
