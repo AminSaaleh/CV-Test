@@ -1050,6 +1050,18 @@ body.modal-open{ touch-action: auto !important; }
       </div>
 
 
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="image-upload" accept="image/*">
+          <input type="hidden" id="image_data">
+          <div class="muted" style="margin-top:6px;">Bild wird direkt mit dem Mitarbeiter gespeichert.</div>
+        </div>
+        <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
+      </div>
+
+      
+
       <div class="section-title-lite">Fremdsprachen</div>
       <div class="qual-grid" id="add-language-skills">
         <div class="qual-card">
@@ -1073,16 +1085,6 @@ body.modal-open{ touch-action: auto !important; }
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Albanisch"> Albanisch</label><select id="add-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           </div>
         </div>
-      </div>
-
-      <div class="section-title-lite">Mitarbeiterbild</div>
-      <div class="image-upload-grid">
-        <div>
-          <input type="file" id="image-upload" accept="image/*">
-          <input type="hidden" id="image_data">
-          <div class="muted" style="margin-top:6px;">Bild wird direkt mit dem Mitarbeiter gespeichert.</div>
-        </div>
-        <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
       </div>
 
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
@@ -1402,6 +1404,19 @@ body.modal-open{ touch-action: auto !important; }
       <label>Stundensatz (€/h)</label>
       <input type="number" id="edit-stundensatz" step="0.01" min="0">
 
+      <div class="section-title-lite">Mitarbeiterbild</div>
+      <div class="image-upload-grid">
+        <div>
+          <input type="file" id="edit-image-upload" accept="image/*">
+          <input type="hidden" id="edit-image_data">
+          <div class="muted" style="margin-top:6px;">Vorhandenes Bild kann ersetzt oder entfernt werden.</div>
+          <button type="button" class="reject" style="margin-top:8px;" onclick="clearImagePreview('edit')">Bild entfernen</button>
+        </div>
+        <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
+      </div>
+
+      
+
       <div class="section-title-lite">Fremdsprachen</div>
       <div class="qual-grid" id="edit-language-skills">
         <div class="qual-card">
@@ -1427,19 +1442,8 @@ body.modal-open{ touch-action: auto !important; }
         </div>
       </div>
 
-      <div class="section-title-lite">Mitarbeiterbild</div>
-      <div class="image-upload-grid">
-        <div>
-          <input type="file" id="edit-image-upload" accept="image/*">
-          <input type="hidden" id="edit-image_data">
-          <div class="muted" style="margin-top:6px;">Vorhandenes Bild kann ersetzt oder entfernt werden.</div>
-          <button type="button" class="reject" style="margin-top:8px;" onclick="clearImagePreview('edit')">Bild entfernen</button>
-        </div>
-        <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
-      </div>
-
       <div class="modal-actions">
-        <button class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
+        <button type="button" class="confirm" onclick="saveUserEdit()">💾 Speichern</button>
       </div>
     </div>
   </div>
@@ -2521,6 +2525,15 @@ document.getElementById("planning").style.display="block";
       openEditModal(user);
     }
 
+    document.addEventListener('click', function(e){
+      const editBtn = e.target.closest('.js-edit-user-button');
+      if(!editBtn) return;
+      e.preventDefault();
+      e.stopPropagation();
+      openEditModalByUsername(editBtn.dataset.username || '');
+    });
+
+
     function bindImageUpload(inputId, prefix){
       const input = document.getElementById(inputId);
       if(!input) return;
@@ -3271,10 +3284,10 @@ document.getElementById("confirmed-counter").textContent =
           <td>${consentIcon(!!u.consent_given)}</td>
           <td>
             <div class="personal-action-btns">
-              <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
-              <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
-              <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
+              <button type="button" class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
+              <button type="button" class="confirm js-edit-user-button" data-username="${encodeURIComponent(u.username)}">Bearbeiten</button>
+              <button type="button" class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
+              <button type="button" class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
           </td>
         `;
