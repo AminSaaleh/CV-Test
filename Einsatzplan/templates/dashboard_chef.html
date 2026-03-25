@@ -1754,6 +1754,29 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     let usersList = [];
     let currentEditUser = null;
 
+    function getUserDisplayName(u){
+      return `${String(u?.vorname || '').trim()} ${String(u?.nachname || '').trim()}`.trim() || String(u?.username || '').trim();
+    }
+
+    function sortUsersSpecial(list){
+      const arr = Array.isArray(list) ? [...list] : [];
+      arr.sort((a,b)=>{
+        const aIsKevin = String(a?.vorname || '').trim().toLowerCase() === 'kevin' && String(a?.nachname || '').trim().toLowerCase() === 'casutt';
+        const bIsKevin = String(b?.vorname || '').trim().toLowerCase() === 'kevin' && String(b?.nachname || '').trim().toLowerCase() === 'casutt';
+        if(aIsKevin && !bIsKevin) return -1;
+        if(!aIsKevin && bIsKevin) return 1;
+
+        const firstCmp = String(a?.vorname || '').localeCompare(String(b?.vorname || ''), 'de', { sensitivity:'base', numeric:true });
+        if(firstCmp !== 0) return firstCmp;
+
+        const lastCmp = String(a?.nachname || '').localeCompare(String(b?.nachname || ''), 'de', { sensitivity:'base', numeric:true });
+        if(lastCmp !== 0) return lastCmp;
+
+        return String(a?.username || '').localeCompare(String(b?.username || ''), 'de', { sensitivity:'base', numeric:true });
+      });
+      return arr;
+    }
+
     function setActiveTab(activeId){
       const ids = ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"];
       ids.forEach(id=>{
@@ -3208,7 +3231,7 @@ document.getElementById("confirmed-counter").textContent =
       const replacementSelect = document.getElementById("replacement-user");
       replacementSelect.innerHTML = "";
 
-      const candidates = usersList;
+      const candidates = sortUsersSpecial(usersList);
 
       candidates.forEach(u=>{
         const opt=document.createElement("option");
@@ -3256,11 +3279,9 @@ document.getElementById("confirmed-counter").textContent =
       let res=await fetch("/users");
       let users=await res.json();
 
-      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
-
-      usersList = users;
+      usersList = sortUsersSpecial(users);
       usersCache = {};
-      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
+      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
@@ -3530,10 +3551,10 @@ document.getElementById("confirmed-counter").textContent =
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
-      usersList = await ures.json();
+      usersList = sortUsersSpecial(await ures.json());
       const uMap = userByUsername();
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
 
       // Jahr
       const yRaw = (document.getElementById("report-year")?.value || "").trim();
@@ -3743,9 +3764,9 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
-      usersList = await ures.json();
+      usersList = sortUsersSpecial(await ures.json());
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+      usersList.forEach(u=>{ usersCache[u.username] = getUserDisplayName(u); });
 
       // Jahr
       const yRaw = (document.getElementById("counter-year")?.value || "").trim();
