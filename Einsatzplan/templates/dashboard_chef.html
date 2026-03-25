@@ -2511,6 +2511,16 @@ document.getElementById("planning").style.display="block";
       if(fileInput) fileInput.value = '';
     }
 
+    function openEditModalByUsername(usernameEncoded){
+      const username = decodeURIComponent(usernameEncoded || '');
+      const user = usersList.find(u => String(u.username || '') === username);
+      if(!user){
+        alert('Benutzer nicht gefunden.');
+        return;
+      }
+      openEditModal(user);
+    }
+
     function bindImageUpload(inputId, prefix){
       const input = document.getElementById(inputId);
       if(!input) return;
@@ -3262,7 +3272,7 @@ document.getElementById("confirmed-counter").textContent =
           <td>
             <div class="personal-action-btns">
               <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button class="confirm" onclick="openEditModalByUsername('${safeUsername}')">Bearbeiten</button>
+              <button class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
               <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
               <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
@@ -3324,16 +3334,6 @@ document.getElementById("confirmed-counter").textContent =
 
       await fetch("/users/" + encodeURIComponent(username), { method: "DELETE" });
       loadUsers();
-    }
-
-    function openEditModalByUsername(usernameEncoded){
-      const username = decodeURIComponent(usernameEncoded || "");
-      const user = (usersList || []).find(u => u.username === username);
-      if(!user){
-        alert("Benutzer nicht gefunden.");
-        return;
-      }
-      openEditModal(user);
     }
 
     function openEditModal(user){
