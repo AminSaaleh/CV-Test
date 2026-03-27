@@ -782,11 +782,16 @@ body.modal-open{ touch-action: auto !important; }
 
 
 <script>
-// Sicherheits-Fallbacks
+// Kleine Sicherheits-Fallbacks
 window.usersList = Array.isArray(window.usersList) ? window.usersList : [];
 window.usersCache = window.usersCache || {};
 window.reportData = window.reportData || {};
 window.currentEditUser = window.currentEditUser || null;
+
+// Falls Funktionen später nicht global landen, hier neutrale Platzhalter.
+// Die echten Definitionen im Hauptscript überschreiben das wieder.
+window.setLanguageSkills = window.setLanguageSkills || function(){};
+window.renderImagePreview = window.renderImagePreview || function(){};
 </script>
 
 </head>
@@ -2002,6 +2007,10 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
         let users = await resUsers.json();
         usersList = users;
         users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+        window.usersList = usersList;
+        window.usersCache = usersCache;
+        window.usersList = usersList;
+        window.usersCache = usersCache;
       } else {
         let resUsers = await fetch("/users_public");
         let users = await resUsers.json();
@@ -2534,6 +2543,7 @@ document.getElementById("planning").style.display="block";
         box.innerHTML = '<div class="image-preview-placeholder">Noch kein Bild hinterlegt</div>';
       }
     }
+    window.renderImagePreview = renderImagePreview;
 
     function clearImagePreview(prefix){
       renderImagePreview(prefix, '');
@@ -3268,8 +3278,6 @@ document.getElementById("confirmed-counter").textContent =
       usersList = users;
       usersCache = {};
       users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
-      window.usersList = usersList;
-      window.usersCache = usersCache;
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
@@ -3294,7 +3302,7 @@ document.getElementById("confirmed-counter").textContent =
           <td>
             <div class="personal-action-btns">
               <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button type="button" class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
+              <button class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
               <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
               <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
@@ -3364,11 +3372,11 @@ document.getElementById("confirmed-counter").textContent =
         const username = decodeURIComponent(usernameEncoded || "");
         console.log("Bearbeiten angeklickt:", username);
 
-        if(!Array.isArray(window.usersList) || window.usersList.length === 0){
+        if(!Array.isArray(usersList) || usersList.length === 0){
           await loadUsers();
         }
 
-        let user = (window.usersList || usersList || []).find(u => String(u.username) === String(username));
+        let user = (usersList || []).find(u => String(u.username) === String(username));
 
         if(!user){
           const res = await fetch("/users", { cache: "no-store" });
@@ -3389,13 +3397,6 @@ document.getElementById("confirmed-counter").textContent =
         }
 
         openEditModal(user);
-
-        const modal = document.getElementById("editUserModal");
-        if(modal){
-          modal.style.display = "flex";
-          const firstInput = document.getElementById("edit-username");
-          if(firstInput) setTimeout(() => firstInput.focus(), 50);
-        }
       } catch(err){
         console.error("Bearbeiten konnte nicht geöffnet werden:", err);
         alert("Bearbeiten konnte nicht geöffnet werden. Details stehen in der Browser-Konsole (F12).");
@@ -3432,7 +3433,7 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
       window.setLanguageSkills('edit', user.language_skills || {});
       document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
-      renderImagePreview('edit', user.image_data || "");
+      window.renderImagePreview('edit', user.image_data || "");
       document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
       document.getElementById("editUserModal").style.display="flex";
     }
