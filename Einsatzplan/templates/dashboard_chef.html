@@ -780,6 +780,15 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
+
+<script>
+// Sicherheits-Fallbacks
+window.usersList = Array.isArray(window.usersList) ? window.usersList : [];
+window.usersCache = window.usersCache || {};
+window.reportData = window.reportData || {};
+window.currentEditUser = window.currentEditUser || null;
+</script>
+
 </head>
 <body>
   <nav>
@@ -2510,6 +2519,7 @@ document.getElementById("planning").style.display="block";
         }
       });
     }
+    window.setLanguageSkills = setLanguageSkills;
 
 
 
@@ -3258,6 +3268,8 @@ document.getElementById("confirmed-counter").textContent =
       usersList = users;
       usersCache = {};
       users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
+      window.usersList = usersList;
+      window.usersCache = usersCache;
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
@@ -3302,7 +3314,7 @@ document.getElementById("confirmed-counter").textContent =
 
         usersList.forEach(u=>{
           const username = u.username;
-          const d = reportData[username];
+          const d = (window.reportData || reportData || {})[username];
           if(!d) return;
           for(let mi=0; mi<12; mi++){
             const md = d.months[mi];
@@ -3352,14 +3364,12 @@ document.getElementById("confirmed-counter").textContent =
         const username = decodeURIComponent(usernameEncoded || "");
         console.log("Bearbeiten angeklickt:", username);
 
-        // Falls die Liste leer oder veraltet ist: frisch laden
-        if(!Array.isArray(usersList) || usersList.length === 0){
+        if(!Array.isArray(window.usersList) || window.usersList.length === 0){
           await loadUsers();
         }
 
-        let user = (usersList || []).find(u => String(u.username) === String(username));
+        let user = (window.usersList || usersList || []).find(u => String(u.username) === String(username));
 
-        // Fallback: noch einmal direkt vom Server laden
         if(!user){
           const res = await fetch("/users", { cache: "no-store" });
           const users = await res.json();
@@ -3367,6 +3377,8 @@ document.getElementById("confirmed-counter").textContent =
             usersList = users;
             usersCache = {};
             users.forEach(u => { usersCache[u.username] = `${u.vorname || ""} ${u.nachname || ""}`.trim(); });
+            window.usersList = usersList;
+            window.usersCache = usersCache;
             user = users.find(u => String(u.username) === String(username));
           }
         }
@@ -3418,7 +3430,7 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-behoerdlich_studium").checked=String(user.behoerdlich_studium || 'nein').toLowerCase()==='ja';
       document.getElementById("edit-fuehrerschein").checked=String(user.fuehrerschein || 'nein').toLowerCase()==='ja';
       document.getElementById("edit-fuehrerschein_klassen").value=user.fuehrerschein_klassen || "";
-      setLanguageSkills('edit', user.language_skills || {});
+      window.setLanguageSkills('edit', user.language_skills || {});
       document.getElementById("edit-fuehrerschein").dispatchEvent(new Event('change'));
       renderImagePreview('edit', user.image_data || "");
       document.getElementById("edit-stundensatz").value=(user.stundensatz ?? "") === "" ? "" : Number(user.stundensatz);
@@ -3589,6 +3601,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
 
       // username -> { months: [{hours,cost,details:[]}], totalHours, totalCost }
       let reportData = {};
+      window.reportData = reportData;
 
       function ensureUser(username){
         if(!reportData[username]){
