@@ -602,6 +602,20 @@
 }
 </style>
 
+
+<style>
+  .board-wrap{margin:18px 0 8px;}
+  .board-list{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .board-item{border:1px solid #e6e6e6;border-radius:12px;padding:14px 14px;background:#fcfcfc;box-shadow:0 4px 14px rgba(0,0,0,.04);}
+  .board-item-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:13px;color:#555;}
+  .board-item-text{white-space:pre-wrap;line-height:1.55;font-size:14px;color:#111;}
+  .board-empty{border:1px dashed #d8d8d8;border-radius:12px;padding:14px;background:#fafafa;color:#666;}
+  .contract-box{max-height:460px;overflow:auto;border:1px solid #e2e2e2;border-radius:12px;padding:16px;background:#fff;line-height:1.6;}
+  .contract-box h3{margin:0 0 12px 0;font-size:18px;}
+  .contract-box h4{margin:14px 0 6px 0;font-size:15px;}
+  .consent-check input{transform:translateY(1px);}
+</style>
+
 </head>
 <body>
   <nav>
@@ -634,29 +648,68 @@
 
       <hr class="home-sep">
 
-      <h2 class="home-subtitle">Einwilligung zur Datenverarbeitung</h2>
+      <div class="board-wrap">
+        <h2 class="home-subtitle">📢 Informationen / Schwarzes Brett</h2>
+        <p class="home-text">Hier siehst du wichtige Hinweise vom Vorgesetzten. Beiträge können nur vom Vorgesetzten bzw. Vorgesetzten CP gepflegt werden.</p>
+        <div id="board-list" class="board-list">
+          <div class="board-empty">Lade Informationen…</div>
+        </div>
+      </div>
+
+      <hr class="home-sep">
+
+      <h2 class="home-subtitle">Subunternehmervereinbarung & Datenschutz</h2>
       <p class="home-consent-text">
-        Ich willige ein, dass meine im Formular angegebenen personenbezogenen Daten (z. B. Foto, Name, Kontaktdaten, Qualifikationen und einsatzrelevante Informationen) von Kevin Casutt zum Zweck der Anmeldung, Personalverwaltung, Einsatzplanung und Kommunikation verarbeitet werden. Soweit dies für die Durchführung eines Auftrags erforderlich ist, dürfen meine einsatzrelevanten Daten (z. B. Foto, Name, Qualifikation, Einsatzdaten) an den jeweiligen Kunden weitergegeben werden. Die Verarbeitung erfolgt gemäß Art. 6 Abs. 1 lit. a DSGVO. Meine Einwilligung kann ich jederzeit mit Wirkung für die Zukunft widerrufen.
+        Bitte lies die folgende Vereinbarung vollständig durch. Erst nach deiner Bestätigung werden Kalender, Termine und Report freigeschaltet.
       </p>
+
+      <div class="contract-box">
+        <h3>Informationen / Subunternehmervereinbarung</h3>
+        <p><b>zwischen</b><br>Kevin Casutt<br>– nachfolgend „Auftraggeber“ –<br><br>und<br>[Vorname Nachname]<br>– nachfolgend „Subunternehmer“ –</p>
+        <h4>Vertragsgegenstand</h4>
+        <p>1. Der Auftraggeber vermittelt Aufträge an Vorname Nachname.<br>2. Der Subunternehmer verpflichtet sich, die ihm/ihr übertragenen Leistungen eigenverantwortlich, fachgerecht und nach den vereinbarten Anforderungen auszuführen.<br>3. Art, Umfang, Ort und Zeitpunkt der jeweiligen Leistungserbringung können/werden individuell in separaten Einzelaufträgen oder in den Projektvereinbarungen geregelt.</p>
+        <h4>Selbstständigkeit des Subunternehmers</h4>
+        <p>1. Der Subunternehmer erbringt seine Leistungen als selbstständiger Unternehmer, eigenverantwortlich und wird nicht in die Organisation des Auftraggebers eingegliedert.<br>2. Es wird ausdrücklich kein Arbeitsverhältnis begründet.<br>3. Der Auftragnehmer unterliegt grundsätzlich keinen festen Arbeitszeiten. Es werden lediglich projektbezogene Zielvorgaben vereinbart.<br>4. Der Subunternehmer ist selbst verantwortlich für die Gewerbeanmeldung, Steuererklärung, Sozialversicherungsbeiträge und trägt das unternehmerische Risiko selbst.<br>5. Ein Anspruch auf Urlaub, Entgeltfortzahlung im Krankheitsfall oder sonstige arbeitsrechtliche Leistungen besteht nicht. Steuern, Abgaben und Sozialversicherungsbeiträge führt der Auftragnehmer selbst ab.<br>6. Der Subunternehmer verwendet grundsätzlich eigene Arbeitsmittel, tritt eigenständig am Markt auf und ist berechtigt, auch für weitere Auftraggeber tätig zu sein.<br>7. Diese Regelungen dienen der Klarstellung der selbstständigen Tätigkeit.</p>
+        <h4>Auftragsvergabe & Leistungserbringung</h4>
+        <p>1. Die Beauftragung des Subunternehmers erfolgt ausschließlich projekt- bzw. auftragsbezogen. Ein Anspruch auf die Vergabe weiterer Aufträge besteht nicht.<br>2. Ein Auftrag gilt erst dann als verbindlich vergeben, wenn dieser vom Auftraggeber ausdrücklich bestätigt wurde und die entsprechende Beauftragung bzw. Freigabe durch den Endkunden vorliegt. Bis zu diesem Zeitpunkt besteht für den Auftraggeber keine Verpflichtung zur Vergabe des Auftrags und für den Subunternehmer keine Verpflichtung zur Leistungserbringung.<br>3. Der Subunternehmer verpflichtet sich bei Auftragsübernahme zur ordnungsgemäßen und fristgerechten Durchführung der übernommenen Aufträge.<br>4. Gesetzliche Vorschriften sowie branchenübliche Standards sind einzuhalten.<br>5. Der Einsatz weiterer Subunternehmer ist nicht zulässig.</p>
+        <h4>Vergütung</h4>
+        <p>1. Die Vergütung erfolgt individuell sowie projekt- oder leistungsbezogen gegen Rechnungsstellung.<br>2. Rechnungen sind vom Subunternehmer ordnungsgemäß zu stellen.<br>3. Die Zahlungsfrist beträgt 14 Tage nach Rechnungseingang, sofern nichts anderes vereinbart wurde.</p>
+        <h4>Haftung und Versicherung</h4>
+        <p>1. Der Subunternehmer haftet für Schäden, die durch schuldhafte Pflichtverletzungen entstehen.<br>2. Der Subunternehmer verpflichtet sich, eine Betriebshaftpflichtversicherung zu unterhalten und diese auf Verlangen nachzuweisen.</p>
+        <h4>Geheimhaltung</h4>
+        <p>1. Der Subunternehmer verpflichtet sich, alle im Rahmen der Zusammenarbeit erhaltenen Informationen vertraulich zu behandeln.<br>2. Dies gilt insbesondere für Kundendaten, Preisstrukturen / SVS und Geschäftsabläufe.<br>3. Diese Verpflichtung gilt auch nach Beendigung des Vertragsverhältnisses.</p>
+        <h4>Kundenschutz</h4>
+        <p>1. Der Subunternehmer verpflichtet sich, sämtliche Kunden, Auftraggeber oder Geschäftspartner, die ihm im Rahmen der Zusammenarbeit mit dem Auftraggeber bekannt werden, als geschützte Kunden des Auftraggebers zu behandeln.<br>2. Dem Subunternehmer ist es untersagt, während der Dauer dieses Vertrages sowie für einen Zeitraum von 24 Monaten nach Beendigung der Zusammenarbeit, unmittelbar oder mittelbar geschäftliche Beziehungen zu diesen Kunden aufzunehmen oder Leistungen für diese zu erbringen, sofern keine schriftliche Zustimmung des Auftraggebers vorliegt.<br>3. Als Kunden gelten insbesondere alle Unternehmen oder Personen, die durch den Auftraggeber vermittelt wurden oder deren Kontaktdaten oder Projekte dem Subunternehmer durch den Auftraggeber bekannt wurden.<br>4. Für jeden schuldhaften Verstoß gegen diese Kundenschutzvereinbarung verpflichtet sich der Subunternehmer zur Zahlung einer Vertragsstrafe in Höhe von 10.000 €. Weitergehende Schadensersatzansprüche bleiben hiervon unberührt.</p>
+        <h4>Vertragsdauer und Kündigung</h4>
+        <p>1. Der Vertrag beginnt mit der digitalen Zustimmung und Zeichnung am jeweiligen Bestätigungsdatum und läuft auf unbestimmte Zeit.<br>2. Der Vertrag kann von beiden Parteien mit einer Frist von 30 Tagen zum Monatsende schriftlich gekündigt werden.<br>3. Das Recht zur fristlosen Kündigung aus wichtigem Grund bleibt unberührt.</p>
+        <h4>Datenschutz</h4>
+        <p>Ich willige ein, dass meine im Formular angegebenen personenbezogenen Daten (z. B. Foto, Name, Kontaktdaten, Qualifikationen und einsatzrelevante Informationen) von Kevin Casutt zum Zweck der Anmeldung, Personalverwaltung, Einsatzplanung und Kommunikation verarbeitet werden. Soweit dies für die Durchführung eines Auftrags erforderlich ist, dürfen meine einsatzrelevanten Daten (z. B. Foto, Name, Qualifikation, Einsatzdaten) an den jeweiligen Kunden weitergegeben werden. Die Verarbeitung erfolgt gemäß Art. 6 Abs. 1 lit. a DSGVO. Meine Einwilligung kann ich jederzeit mit Wirkung für die Zukunft widerrufen.</p>
+        <h4>Schlussbestimmungen</h4>
+        <p>1. Änderungen und Ergänzungen dieses Vertrages bedürfen der Schriftform.<br>2. Sollte eine Bestimmung dieses Vertrages unwirksam sein oder werden, bleibt die Wirksamkeit der übrigen Bestimmungen unberührt.<br>3. Es gilt das Recht der Bundesrepublik Deutschland.<br>4. Gerichtsstand ist der Sitz des Auftraggebers, soweit gesetzlich zulässig.</p>
+        <p><b>Auftraggeber:</b><br>Kevin Casutt, 27.03.2026.</p>
+      </div>
 
       <div id="consent-form" class="consent-form">
         <div class="consent-row">
           <label class="consent-check">
             <input type="checkbox" id="consent-yes">
-            <span>Ich,</span>
+            <span>Ich bestätige die Subunternehmervereinbarung einschließlich Datenschutz.</span>
           </label>
+        </div>
+
+        <div class="consent-row">
+          <label for="consent-name"><b>Name:</b></label>
           <input type="text" id="consent-name" placeholder="Vorname Nachname">
-          <span>, willige ein.</span>
         </div>
 
         <div class="consent-row">
           <label for="consent-date"><b>Datum:</b></label>
           <input type="date" id="consent-date" disabled>
-          <button type="button" class="confirm" id="consent-save" disabled>✅ Einwilligung speichern</button>
+          <button type="button" class="confirm" id="consent-save" disabled>✅ Vereinbarung bestätigen</button>
         </div>
 
         <div class="muted" style="margin-top:8px;">
-          Hinweis: Solange du nicht eingewilligt hast, bleiben die anderen Reiter gesperrt.
+          Hinweis: Solange du nicht bestätigt hast, bleiben die anderen Reiter gesperrt.
         </div>
       </div>
 
@@ -935,6 +988,21 @@
   return `${m[3]}.${m[2]}.${m[1]}`;
 }
 
+function escapeHtml(value){
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function formatDateTimeBoard(value){
+  const d = new Date(value);
+  if(isNaN(d)) return String(value || "");
+  return d.toLocaleString('de-DE', { dateStyle:'short', timeStyle:'short' });
+}
+
 document.addEventListener("DOMContentLoaded", function() {
       const today = new Date().toISOString().slice(0,10);
       const d = document.querySelector("input[type=date]");
@@ -1023,7 +1091,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if(form) form.style.display = "none";
             if(done){
               done.style.display = "block";
-              done.textContent = `Ich, ${data.name || data.full_name || "Vorname Nachname"}, willige der Datenverarbeitung ein.
+              done.textContent = `Ich, ${data.name || data.full_name || "Vorname Nachname"}, habe die Subunternehmervereinbarung einschließlich Datenschutz bestätigt.
 Datum: ${formatDateDE(data.date || "")}.`;
             }
             setLocked(false);
@@ -1068,7 +1136,7 @@ Datum: ${formatDateDE(data.date || "")}.`;
           if(form) form.style.display = "none";
           if(done){
             done.style.display = "block";
-            done.textContent = `Ich, ${name}, willige der Datenverarbeitung ein.
+            done.textContent = `Ich, ${name}, habe die Subunternehmervereinbarung einschließlich Datenschutz bestätigt.
 Datum: ${formatDateDE(date)}.`;
           }
           setLocked(false);
@@ -1082,6 +1150,32 @@ Datum: ${formatDateDE(date)}.`;
 
       // Beim Laden: Einwilligung prüfen
       loadConsent();
+
+      async function loadBoard(){
+        const list = document.getElementById("board-list");
+        if(!list) return;
+        try{
+          const res = await fetch("/board?ts="+Date.now());
+          const data = await res.json();
+          if(!res.ok){ throw new Error(data.error || "Board konnte nicht geladen werden."); }
+          if(!Array.isArray(data) || data.length === 0){
+            list.innerHTML = `<div class="board-empty">Aktuell gibt es keine Einträge.</div>`;
+            return;
+          }
+          list.innerHTML = data.map(item => `
+            <div class="board-item">
+              <div class="board-item-head">
+                <strong>${escapeHtml(item.created_by || "Vorgesetzter")}</strong>
+                <span>${escapeHtml(formatDateTimeBoard(item.created_at || ""))}</span>
+              </div>
+              <div class="board-item-text">${escapeHtml(item.content || "")}</div>
+            </div>`).join("");
+        }catch(err){
+          list.innerHTML = `<div class="board-empty">Board konnte nicht geladen werden.</div>`;
+        }
+      }
+
+      loadBoard();
 
 
             document.getElementById("tab-calendar").onclick = (e)=>{
@@ -1105,12 +1199,14 @@ Datum: ${formatDateDE(date)}.`;
 
             document.getElementById("tab-termine").onclick = e=>{
         e.preventDefault();
+        if(document.getElementById("tab-termine").classList.contains("locked")) return;
         setActiveTab("ter");
         loadTermine();
       };
 
             document.getElementById("tab-report").onclick = e=>{
         e.preventDefault();
+        if(document.getElementById("tab-report").classList.contains("locked")) return;
         setActiveTab("rep");
         let now=new Date();
         document.getElementById("report-month").value =
