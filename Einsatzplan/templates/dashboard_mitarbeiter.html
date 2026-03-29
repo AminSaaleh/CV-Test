@@ -665,9 +665,9 @@
 
       <div class="contract-box">
         <h3>Informationen / Subunternehmervereinbarung</h3>
-        <p><b>zwischen</b><br>Kevin Casutt<br>– nachfolgend „Auftraggeber“ –<br><br>und<br>[Vorname Nachname]<br>– nachfolgend „Subunternehmer“ –</p>
+        <p><b>zwischen</b><br>Kevin Casutt<br>– nachfolgend „Auftraggeber“ –<br><br>und<br><span class="employee-full-name">{{ full_name or user }}</span><br>– nachfolgend „Subunternehmer“ –</p>
         <h4>Vertragsgegenstand</h4>
-        <p>1. Der Auftraggeber vermittelt Aufträge an Vorname Nachname.<br>2. Der Subunternehmer verpflichtet sich, die ihm/ihr übertragenen Leistungen eigenverantwortlich, fachgerecht und nach den vereinbarten Anforderungen auszuführen.<br>3. Art, Umfang, Ort und Zeitpunkt der jeweiligen Leistungserbringung können/werden individuell in separaten Einzelaufträgen oder in den Projektvereinbarungen geregelt.</p>
+        <p>1. Der Auftraggeber vermittelt Aufträge an <span class="employee-full-name">{{ full_name or user }}</span>.<br>2. Der Subunternehmer verpflichtet sich, die ihm/ihr übertragenen Leistungen eigenverantwortlich, fachgerecht und nach den vereinbarten Anforderungen auszuführen.<br>3. Art, Umfang, Ort und Zeitpunkt der jeweiligen Leistungserbringung können/werden individuell in separaten Einzelaufträgen oder in den Projektvereinbarungen geregelt.</p>
         <h4>Selbstständigkeit des Subunternehmers</h4>
         <p>1. Der Subunternehmer erbringt seine Leistungen als selbstständiger Unternehmer, eigenverantwortlich und wird nicht in die Organisation des Auftraggebers eingegliedert.<br>2. Es wird ausdrücklich kein Arbeitsverhältnis begründet.<br>3. Der Auftragnehmer unterliegt grundsätzlich keinen festen Arbeitszeiten. Es werden lediglich projektbezogene Zielvorgaben vereinbart.<br>4. Der Subunternehmer ist selbst verantwortlich für die Gewerbeanmeldung, Steuererklärung, Sozialversicherungsbeiträge und trägt das unternehmerische Risiko selbst.<br>5. Ein Anspruch auf Urlaub, Entgeltfortzahlung im Krankheitsfall oder sonstige arbeitsrechtliche Leistungen besteht nicht. Steuern, Abgaben und Sozialversicherungsbeiträge führt der Auftragnehmer selbst ab.<br>6. Der Subunternehmer verwendet grundsätzlich eigene Arbeitsmittel, tritt eigenständig am Markt auf und ist berechtigt, auch für weitere Auftraggeber tätig zu sein.<br>7. Diese Regelungen dienen der Klarstellung der selbstständigen Tätigkeit.</p>
         <h4>Auftragsvergabe & Leistungserbringung</h4>
@@ -699,7 +699,7 @@
 
         <div class="consent-row">
           <label for="consent-name"><b>Name:</b></label>
-          <input type="text" id="consent-name" placeholder="Vorname Nachname">
+          <input type="text" id="consent-name" placeholder="Vorname Nachname" readonly value="{{ full_name or "" }}">
         </div>
 
         <div class="consent-row">
@@ -1003,6 +1003,13 @@ function formatDateTimeBoard(value){
   return d.toLocaleString('de-DE', { dateStyle:'short', timeStyle:'short' });
 }
 
+function applyEmployeeName(fullName){
+  const name = String(fullName || "{{ full_name or user }}").trim();
+  document.querySelectorAll('.employee-full-name').forEach(el => { el.textContent = name || "{{ user }}"; });
+  const input = document.getElementById('consent-name');
+  if(input){ input.value = name || "{{ user }}"; }
+}
+
 document.addEventListener("DOMContentLoaded", function() {
       const today = new Date().toISOString().slice(0,10);
       const d = document.querySelector("input[type=date]");
@@ -1067,6 +1074,7 @@ document.addEventListener("DOMContentLoaded", function() {
           const res = await fetch("/consent_status?ts="+Date.now());
           const data = await res.json();
           const given = !!data.given;
+          applyEmployeeName((data.full_name || "{{ full_name or user }}").trim());
 
           // Datum setzen (heute)
           const dateEl = document.getElementById("consent-date");
@@ -1095,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", function() {
 Datum: ${formatDateDE(data.date || "")}.`;
             }
             setLocked(false);
+            applyEmployeeName((data.full_name || data.name || "{{ full_name or user }}").trim());
           }else{
             setLocked(true);
           }
@@ -1148,7 +1157,8 @@ Datum: ${formatDateDE(date)}.`;
       // Starttab immer verfügbar
       tabs.home?.addEventListener("click", (e)=>{ e.preventDefault(); setActiveTab("home"); });
 
-      // Beim Laden: Einwilligung prüfen
+      // Beim Laden: Namen vorbelegen + Einwilligung prüfen
+      applyEmployeeName("{{ full_name or user }}");
       loadConsent();
 
       async function loadBoard(){
@@ -1187,9 +1197,7 @@ Datum: ${formatDateDE(date)}.`;
         try{ window.scrollTo({top:0,left:0,behavior:"instant"}); }catch(_){ window.scrollTo(0,0); }
         // ✅ FullCalendar: nach Einblenden neu berechnen
         setTimeout(()=>{
-          try{ calendar.render(); }catch(e){}
-          try{ calendar.updateSize(); }catch(e){}
-          try{ calendar.refetchEvents(); }catch(e){}
+          ensureCalendarVisibleAndLoaded();
           try{
             const sc = document.querySelector("#calendar .fc-scroller");
             if(sc) sc.scrollTop = 0;
@@ -1446,7 +1454,19 @@ tYear.addEventListener("change", loadTermine);
         }
       });
 
-      calendar.render();
+      let calendarRendered = false;
+      function ensureCalendarVisibleAndLoaded(){
+        try{
+          if(!calendarRendered){
+            calendar.render();
+            calendarRendered = true;
+          }
+          calendar.updateSize();
+          calendar.refetchEvents();
+        }catch(e){
+          console.error("Kalender konnte nicht geladen werden", e);
+        }
+      }
 
             document.getElementById("btn-zusagen").onclick = () => sendResponse("zugesagt");
       document.getElementById("btn-withdraw").onclick = () => withdrawResponse();
@@ -1489,7 +1509,7 @@ tYear.addEventListener("change", loadTermine);
       if(!res.ok || r.error){ alert(r.error || "Aktion fehlgeschlagen"); }
 
       closeRespondModal();
-      calendar.refetchEvents();
+      if(typeof ensureCalendarVisibleAndLoaded === "function") ensureCalendarVisibleAndLoaded();
     }
 
     async function withdrawResponse(){
@@ -1502,7 +1522,7 @@ tYear.addEventListener("change", loadTermine);
       if(!res.ok || r.error){ alert(r.error || "Zurückziehen fehlgeschlagen"); }
 
       closeRespondModal();
-      calendar.refetchEvents();
+      if(typeof ensureCalendarVisibleAndLoaded === "function") ensureCalendarVisibleAndLoaded();
     }
 
     
