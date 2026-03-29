@@ -796,8 +796,8 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 
 
 <style>
-  .home-wrap{padding:22px 14px 40px;display:flex;justify-content:center;}
-  .home-card{width:min(1100px,100%);background:#fff;border:1px solid #e6e6e6;border-radius:18px;padding:24px 20px;box-shadow:0 10px 28px rgba(0,0,0,.06);}
+  .home-wrap{padding:0;display:block;min-height:calc(100vh - 64px);width:100%;}
+  .home-card{width:100%;max-width:none;min-height:calc(100vh - 64px);background:#fff;border:0;border-radius:0;padding:28px 22px 42px;box-shadow:none;box-sizing:border-box;}
   .home-title{font-size:24px;margin:0 0 8px;text-align:center;}
   .home-text{font-size:15px;line-height:1.6;margin:8px 0;}
   .home-subtitle{font-size:18px;margin:18px 0 8px;}
@@ -812,6 +812,8 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   .board-editor-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;}
   .board-editor button{padding:10px 14px;border-radius:10px;border:0;background:#111;color:#fff;font-weight:700;cursor:pointer;}
   .board-note{font-size:13px;color:#666;}
+  .board-item-actions{display:flex;justify-content:flex-end;margin-top:10px;}
+  .board-delete-btn{padding:8px 12px;border-radius:10px;border:1px solid #d33;background:#fff;color:#b00020;font-weight:700;cursor:pointer;}
 </style>
 
 </head>
@@ -2078,6 +2080,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
               <span>${escapeHtmlBoard(formatBoardDateTime(item.created_at || ''))}</span>
             </div>
             <div class="board-item-text">${escapeHtmlBoard(item.content || '')}</div>
+            ${CAN_EDIT_BOARD ? `<div class="board-item-actions"><button type="button" class="board-delete-btn" onclick="deleteBoardPost(${Number(item.id || 0)})">🗑️ Löschen</button></div>` : ''}
           </div>`).join('');
       }catch(e){
         list.innerHTML = '<div class="board-empty">Board konnte nicht geladen werden.</div>';
