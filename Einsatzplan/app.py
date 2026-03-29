@@ -402,6 +402,17 @@ def init_db():
 
     db.execute(
         '''
+        CREATE TABLE IF NOT EXISTS board_posts (
+            id SERIAL PRIMARY KEY,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL,
+            created_by TEXT NOT NULL
+        );
+        '''
+    )
+
+    db.execute(
+        '''
         CREATE TABLE IF NOT EXISTS response (
             id SERIAL PRIMARY KEY,
             event_id TEXT NOT NULL REFERENCES event(id) ON DELETE CASCADE,
@@ -606,6 +617,45 @@ def consent_set():
     db.execute(
         "UPDATE users SET consent_given=TRUE, consent_name=%s, consent_date=%s WHERE username=%s",
         (name, date, session.get("username")),
+    )
+    db.commit()
+    return jsonify({"status": "ok"})
+
+
+# ---------------- Board / Startseite ----------------
+@app.route("/board", methods=["GET"])
+def get_board_posts():
+    if "username" not in session:
+        return jsonify({"error": "Nicht eingeloggt"}), 403
+
+    db = get_db()
+    cur = db.execute(
+        "SELECT id, content, created_at, created_by FROM board_posts ORDER BY id DESC LIMIT 50"
+    )
+    return jsonify([row_to_dict(r) for r in cur.fetchall()])
+
+
+@app.route("/board", methods=["POST"])
+def add_board_post():
+    if "username" not in session:
+        return jsonify({"error": "Nicht eingeloggt"}), 403
+
+    role = normalize_role(session.get("role") or "")
+    if role not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    d = request.json or {}
+    content = (d.get("content") or "").strip()
+    if not content:
+        return jsonify({"error": "Bitte einen Text eingeben."}), 400
+
+    if len(content) > 5000:
+        return jsonify({"error": "Der Beitrag ist zu lang."}), 400
+
+    db = get_db()
+    db.execute(
+        "INSERT INTO board_posts (content, created_at, created_by) VALUES (%s, %s, %s)",
+        (content, datetime.now().isoformat(timespec="seconds"), session.get("username")),
     )
     db.commit()
     return jsonify({"status": "ok"})
