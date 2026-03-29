@@ -328,6 +328,21 @@ def get_user_consent(db, username: str) -> dict:
     return {"given": given, "name": name, "date": date, "full_name": full_name}
 
 
+
+def get_session_user_full_name() -> str:
+    if "username" not in session:
+        return ""
+    try:
+        u = get_db().execute(
+            "SELECT vorname, nachname FROM users WHERE username=%s",
+            (session.get("username"),),
+        ).fetchone()
+        if not u:
+            return ""
+        return f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip()
+    except Exception:
+        return ""
+
 def employee_requires_consent() -> bool:
     """True if current session is a 'mitarbeiter' and consent is missing."""
     if session.get("role") != "mitarbeiter":
@@ -567,12 +582,13 @@ def dashboard():
         return redirect(url_for("login"))
 
     role = normalize_role(session.get("role") or "mitarbeiter")
+    full_name = get_session_user_full_name()
 
     # Chef-Dashboard auch für Planer (UI beschränkt Planer auf den Planung-Reiter)
     if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-        return render_template("dashboard_chef.html", user=session["username"], role=role)
+        return render_template("dashboard_chef.html", user=session["username"], role=role, full_name=full_name)
 
-    return render_template("dashboard_mitarbeiter.html", user=session["username"], role=role)
+    return render_template("dashboard_mitarbeiter.html", user=session["username"], role=role, full_name=full_name)
 
 
 @app.route("/logout")
@@ -658,6 +674,25 @@ def add_board_post():
         (content, datetime.now().isoformat(timespec="seconds"), session.get("username")),
     )
     db.commit()
+    return jsonify({"status": "ok"})
+
+
+
+
+@app.route("/board/<int:post_id>", methods=["DELETE"])
+def delete_board_post(post_id):
+    if "username" not in session:
+        return jsonify({"error": "Nicht eingeloggt"}), 403
+
+    role = normalize_role(session.get("role") or "")
+    if role not in ["chef", "vorgesetzter", "vorgesetzter_cp"]:
+        return jsonify({"error": "Nicht erlaubt"}), 403
+
+    db = get_db()
+    cur = db.execute("DELETE FROM board_posts WHERE id=%s", (post_id,))
+    db.commit()
+    if cur.rowcount == 0:
+        return jsonify({"error": "Beitrag nicht gefunden"}), 404
     return jsonify({"status": "ok"})
 
 
