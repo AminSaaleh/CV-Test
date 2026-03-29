@@ -2163,11 +2163,19 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
         document.getElementById("calendar").style.display="block";
         document.getElementById("planning").style.display="none";
         hideTermine();
-document.getElementById("user-management").style.display="none";
+        document.getElementById("user-management").style.display="none";
         document.getElementById("report").style.display="none";
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-calendar");
-        window.location.reload();
+        setTimeout(()=>{
+          try{ if(calendar){ calendar.render(); } }catch(_e){}
+          try{ if(calendar){ calendar.updateSize(); } }catch(_e){}
+          try{ if(calendar){ calendar.refetchEvents(); } }catch(_e){}
+          try{
+            const sc = document.querySelector('#calendar .fc-scroller');
+            if(sc) sc.scrollTop = 0;
+          }catch(_e){}
+        }, 0);
       };
 
       // 🗓️ Meine Termine (Chef)
