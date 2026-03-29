@@ -816,6 +816,20 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   .board-delete-btn{padding:8px 12px;border-radius:10px;border:1px solid #d33;background:#fff;color:#b00020;font-weight:700;cursor:pointer;}
 </style>
 
+
+<style id="calendar-hard-fix">
+/* ✅ Chef-Kalender vollständig anzeigen */
+#calendar-wrap{width:100%;}
+#calendar{min-height:780px; width:100%;}
+#calendar .fc-view-harness{min-height:680px !important;}
+#calendar .fc-scrollgrid,
+#calendar .fc-scrollgrid table,
+#calendar .fc-col-header,
+#calendar .fc-daygrid-body,
+#calendar .fc-scrollgrid-sync-table{width:100% !important;}
+#calendar .fc-daygrid-body-natural .fc-daygrid-day-events{margin-bottom:2px;}
+</style>
+
 </head>
 <body>
   <nav>
@@ -838,7 +852,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <a href="/logout">Logout</a>
     </div>
   </nav>
-
   <div id="home" class="home-wrap">
     <div class="home-card">
       <h1 class="home-title">Startseite / Informationen</h1>
@@ -865,7 +878,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   </div>
 
   <!-- Kalender -->
-  <div class="scroll-x calendar-scroll">
+  <div class="scroll-x calendar-scroll" id="calendar-wrap" style="display:none;">
 <div id="calendar"></div>
   </div>
 
@@ -1690,6 +1703,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   </script>
   <script>
     const ROLE = "{{ role|default('chef') }}";
+    const CAN_EDIT_BOARD = ['chef','vorgesetzter','vorgesetzter_cp'].includes(String(ROLE).trim().toLowerCase().replace('vorgesetzter cp','vorgesetzter_cp'));
     const IS_PLANNER = (String(ROLE).toLowerCase() === 'planer' || String(ROLE).toLowerCase() === 'planner_bbs');
     // ✅ Mobile helper: ensure taps open immediately (iOS/Safari sometimes delays click inside scroll containers)
     function bindImmediateTap(el, handler){
@@ -2147,7 +2161,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       document.getElementById("tab-home").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="block";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
         document.getElementById("planning").style.display="none";
         document.getElementById("user-management").style.display="none";
@@ -2160,7 +2174,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       document.getElementById("tab-calendar").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="block";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="block";
         document.getElementById("planning").style.display="none";
         hideTermine();
         document.getElementById("user-management").style.display="none";
@@ -2168,21 +2182,23 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
         document.getElementById("counter").style.display="none";
         setActiveTab("tab-calendar");
         setTimeout(()=>{
+          try{ if(calendar){ calendar.changeView('dayGridMonth'); } }catch(_e){}
           try{ if(calendar){ calendar.render(); } }catch(_e){}
           try{ if(calendar){ calendar.updateSize(); } }catch(_e){}
           try{ if(calendar){ calendar.refetchEvents(); } }catch(_e){}
+          try{ window.dispatchEvent(new Event('resize')); }catch(_e){}
           try{
             const sc = document.querySelector('#calendar .fc-scroller');
             if(sc) sc.scrollTop = 0;
           }catch(_e){}
-        }, 0);
+        }, 30);
       };
 
       // 🗓️ Meine Termine (Chef)
       document.getElementById("tab-termine").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         document.getElementById("termine").style.display="block";
         document.getElementById("planning").style.display="none";
 document.getElementById("user-management").style.display="none";
@@ -2200,7 +2216,7 @@ document.getElementById("user-management").style.display="none";
           document.getElementById("tab-users").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
         hideTermine();
@@ -2214,7 +2230,7 @@ document.getElementById("user-management").style.display="block";
       document.getElementById("tab-report").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
         hideTermine();
@@ -2234,7 +2250,7 @@ document.getElementById("user-management").style.display="none";
       document.getElementById("tab-counter").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
         hideTermine();
@@ -2251,7 +2267,7 @@ document.getElementById("user-management").style.display="none";
       document.getElementById("tab-planning").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="block";
         document.getElementById("user-management").style.display="none";
@@ -2267,7 +2283,7 @@ document.getElementById("planning").style.display="block";
         // Nur Planung sichtbar
         setActiveTab("tab-planning");
         document.getElementById("home").style.display="none";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="block";
         document.getElementById("user-management").style.display="none";
@@ -2278,7 +2294,7 @@ document.getElementById("planning").style.display="block";
       } else {
         setActiveTab("tab-home");
         document.getElementById("home").style.display="block";
-        document.getElementById("calendar").style.display="none";
+        const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none";
         hideTermine();
         document.getElementById("planning").style.display="none";
         document.getElementById("user-management").style.display="none";
@@ -2288,6 +2304,7 @@ document.getElementById("planning").style.display="block";
       }
 
       document.getElementById('board-save')?.addEventListener('click', saveBoardPost);
+      loadBoardPosts();
 
       // Kalender
       if(!IS_PLANNER){
@@ -2402,6 +2419,7 @@ document.getElementById("planning").style.display="block";
       });
       calendar.render();
       window.calendar = calendar;
+      try{ const cw=document.getElementById("calendar-wrap"); if(cw) cw.style.display="none"; }catch(_e){}
       }
 
       // ===== Planung-Kalender =====
