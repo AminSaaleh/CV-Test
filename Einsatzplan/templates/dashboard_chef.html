@@ -794,6 +794,26 @@ window.setLanguageSkills = window.setLanguageSkills || function(){};
 window.renderImagePreview = window.renderImagePreview || function(){};
 </script>
 
+
+<style>
+  .home-wrap{padding:22px 14px 40px;display:flex;justify-content:center;}
+  .home-card{width:min(1100px,100%);background:#fff;border:1px solid #e6e6e6;border-radius:18px;padding:24px 20px;box-shadow:0 10px 28px rgba(0,0,0,.06);}
+  .home-title{font-size:24px;margin:0 0 8px;text-align:center;}
+  .home-text{font-size:15px;line-height:1.6;margin:8px 0;}
+  .home-subtitle{font-size:18px;margin:18px 0 8px;}
+  .home-sep{border:0;border-top:1px solid #ececec;margin:18px 0;}
+  .board-list{display:flex;flex-direction:column;gap:12px;margin-top:12px;}
+  .board-item{border:1px solid #e6e6e6;border-radius:12px;padding:14px;background:#fcfcfc;}
+  .board-item-head{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:13px;color:#555;}
+  .board-item-text{white-space:pre-wrap;line-height:1.55;font-size:14px;color:#111;}
+  .board-empty{border:1px dashed #d8d8d8;border-radius:12px;padding:14px;background:#fafafa;color:#666;}
+  .board-editor{margin-top:14px;border:1px solid #e6e6e6;border-radius:14px;padding:14px;background:#fafafa;}
+  .board-editor textarea{width:100%;min-height:120px;border:1px solid #d9d9d9;border-radius:12px;padding:12px;font:inherit;resize:vertical;box-sizing:border-box;}
+  .board-editor-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;margin-top:12px;}
+  .board-editor button{padding:10px 14px;border-radius:10px;border:0;background:#111;color:#fff;font-weight:700;cursor:pointer;}
+  .board-note{font-size:13px;color:#666;}
+</style>
+
 </head>
 <body>
   <nav>
@@ -802,7 +822,8 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 {% if _role == "planer" or _role == "planner_bbs" %}
       <a href="#" id="tab-planning" class="active">🗂️ Planung</a>
 {% else %}
-      <a href="#" id="tab-calendar" class="active">📅 Kalender</a>
+      <a href="#" id="tab-home" class="active">🏠 Start</a>
+      <a href="#" id="tab-calendar">📅 Kalender</a>
             <a href="#" id="tab-termine">🗓️ Meine Termine</a>
 <a href="#" id="tab-planning">🗂️ Planung</a>
       <a href="#" id="tab-users">👥 Personal</a>
@@ -815,6 +836,31 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <a href="/logout">Logout</a>
     </div>
   </nav>
+
+  <div id="home" class="home-wrap">
+    <div class="home-card">
+      <h1 class="home-title">Startseite / Informationen</h1>
+      <p class="home-text">Hier können Vorgesetzter, Vorgesetzter CP und Chef wichtige Informationen für alle Mitarbeiter eintragen. Mitarbeiter sehen die Beiträge auf ihrer Startseite und müssen dort zusätzlich die Vereinbarung bestätigen.</p>
+
+      <hr class="home-sep">
+
+      <h2 class="home-subtitle">📢 Board für Mitarbeiter</h2>
+      <p class="board-note">Bearbeitbar nur für Vorgesetzter, Vorgesetzter CP und Chef.</p>
+      <div id="board-list" class="board-list">
+        <div class="board-empty">Lade Informationen…</div>
+      </div>
+
+      {% if role in ["chef", "vorgesetzter", "vorgesetzter_cp"] %}
+      <div class="board-editor">
+        <label for="board-content"><b>Neuen Beitrag schreiben</b></label>
+        <textarea id="board-content" placeholder="z. B. neue Infos, Arbeitsanweisungen, Hinweise für Einsätze..."></textarea>
+        <div class="board-editor-actions">
+          <button type="button" id="board-save">Beitrag veröffentlichen</button>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
 
   <!-- Kalender -->
   <div class="scroll-x calendar-scroll">
@@ -1785,7 +1831,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     let currentEditUser = null;
 
     function setActiveTab(activeId){
-      const ids = ["tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"];
+      const ids = ["tab-home","tab-calendar","tab-termine","tab-planning","tab-users","tab-report","tab-counter"];
       ids.forEach(id=>{
         const el = document.getElementById(id);
         if(!el) return;
@@ -1999,6 +2045,67 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     if(ctrType){ ctrType.value = (ctrType.value || "CV"); if(!ctrType.value) ctrType.value="CV"; ctrType.addEventListener("change", loadCounter); ctrType.addEventListener("change", ()=>{ if(typeof syncCatButtons==="function") syncCatButtons("counter-cat-toggle","counter-type"); if(typeof applyGoldHeaders==="function") applyGoldHeaders(); }); }
 
 
+    function escapeHtmlBoard(value){
+      return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+    }
+
+    function formatBoardDateTime(value){
+      const d = new Date(value);
+      if(isNaN(d)) return String(value || "");
+      return d.toLocaleString('de-DE', { dateStyle:'short', timeStyle:'short' });
+    }
+
+    async function loadBoardPosts(){
+      const list = document.getElementById('board-list');
+      if(!list) return;
+      try{
+        const res = await fetch('/board?ts=' + Date.now());
+        const data = await res.json();
+        if(!res.ok) throw new Error(data.error || 'Board konnte nicht geladen werden.');
+        if(!Array.isArray(data) || data.length === 0){
+          list.innerHTML = '<div class="board-empty">Aktuell gibt es keine Einträge.</div>';
+          return;
+        }
+        list.innerHTML = data.map(item => `
+          <div class="board-item">
+            <div class="board-item-head">
+              <strong>${escapeHtmlBoard(item.created_by || 'Vorgesetzter')}</strong>
+              <span>${escapeHtmlBoard(formatBoardDateTime(item.created_at || ''))}</span>
+            </div>
+            <div class="board-item-text">${escapeHtmlBoard(item.content || '')}</div>
+          </div>`).join('');
+      }catch(e){
+        list.innerHTML = '<div class="board-empty">Board konnte nicht geladen werden.</div>';
+      }
+    }
+
+    async function saveBoardPost(){
+      const ta = document.getElementById('board-content');
+      if(!ta) return;
+      const content = String(ta.value || '').trim();
+      if(!content){
+        alert('Bitte einen Text eingeben.');
+        return;
+      }
+      const res = await fetch('/board', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ content })
+      });
+      const data = await res.json().catch(()=>({}));
+      if(!res.ok || data.error){
+        alert(data.error || 'Beitrag konnte nicht gespeichert werden.');
+        return;
+      }
+      ta.value = '';
+      loadBoardPosts();
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
@@ -2034,8 +2141,22 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
 
       // Tabs
       if(!IS_PLANNER){
+      document.getElementById("tab-home").onclick = e=>{
+        e.preventDefault();
+        document.getElementById("home").style.display="block";
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+        document.getElementById("planning").style.display="none";
+        document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        setActiveTab("tab-home");
+        loadBoardPosts();
+      };
+
       document.getElementById("tab-calendar").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="block";
         document.getElementById("planning").style.display="none";
         hideTermine();
@@ -2049,6 +2170,7 @@ document.getElementById("user-management").style.display="none";
       // 🗓️ Meine Termine (Chef)
       document.getElementById("tab-termine").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         document.getElementById("termine").style.display="block";
         document.getElementById("planning").style.display="none";
@@ -2066,6 +2188,7 @@ document.getElementById("user-management").style.display="none";
         if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
           document.getElementById("tab-users").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
@@ -2079,6 +2202,7 @@ document.getElementById("user-management").style.display="block";
         }
       document.getElementById("tab-report").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
@@ -2098,6 +2222,7 @@ document.getElementById("user-management").style.display="none";
       if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
       document.getElementById("tab-counter").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="none";
@@ -2114,6 +2239,7 @@ document.getElementById("user-management").style.display="none";
 
       document.getElementById("tab-planning").onclick = e=>{
         e.preventDefault();
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="block";
@@ -2129,6 +2255,7 @@ document.getElementById("planning").style.display="block";
       if(IS_PLANNER){
         // Nur Planung sichtbar
         setActiveTab("tab-planning");
+        document.getElementById("home").style.display="none";
         document.getElementById("calendar").style.display="none";
         hideTermine();
 document.getElementById("planning").style.display="block";
@@ -2137,8 +2264,19 @@ document.getElementById("planning").style.display="block";
         document.getElementById("counter").style.display="none";
         if(!planningCalendar){ initPlanningCalendar(); }
         planningCalendar.refetchEvents();
+      } else {
+        setActiveTab("tab-home");
+        document.getElementById("home").style.display="block";
+        document.getElementById("calendar").style.display="none";
+        hideTermine();
+        document.getElementById("planning").style.display="none";
+        document.getElementById("user-management").style.display="none";
+        document.getElementById("report").style.display="none";
+        document.getElementById("counter").style.display="none";
+        loadBoardPosts();
       }
 
+      document.getElementById('board-save')?.addEventListener('click', saveBoardPost);
 
       // Kalender
       if(!IS_PLANNER){
@@ -4315,14 +4453,14 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
   // Planner BBS: nur Planung + nur CV
   if(role === "planner_bbs"){
     // Tabs ausblenden (alles außer Planung)
-    ["tab-calendar","tab-termine","tab-users","tab-report","tab-counter"].forEach(hideTab);
+    ["tab-home","tab-calendar","tab-termine","tab-users","tab-report","tab-counter"].forEach(hideTab);
 
     // Wenn es eine zentrale Funktion gibt, nutze sie (init + refetch + view)
     if(typeof showPlanningTab === "function"){
       try{ showPlanningTab(); }catch(e){}
     }else{
       // Fallback
-      ["calendar","termine","user-management","report","counter"].forEach(hide);
+      ["home","calendar","termine","user-management","report","counter"].forEach(hide);
       const planning = document.getElementById("planning");
       if(planning) planning.style.display = "block";
       const planningTab = document.getElementById("tab-planning");
