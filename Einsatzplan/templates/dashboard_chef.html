@@ -2710,6 +2710,26 @@ document.getElementById("planning").style.display="block";
       });
       return result;
     }
+    window.collectLanguageSkills = collectLanguageSkills;
+
+    function getLanguageSkillsSafe(prefix){
+      try{
+        if(typeof collectLanguageSkills === 'function') return collectLanguageSkills(prefix);
+      }catch(e){}
+      try{
+        if(typeof window.collectLanguageSkills === 'function') return window.collectLanguageSkills(prefix);
+      }catch(e){}
+      const result = {};
+      document.querySelectorAll(`input.lang-check[data-prefix="${prefix}"]`).forEach(cb => {
+        const lang = cb.dataset.lang;
+        const sel = document.getElementById(`${prefix}-lang-${lang}`);
+        if(cb.checked && sel && sel.value){
+          result[lang] = sel.value;
+        }
+      });
+      return result;
+    }
+    window.getLanguageSkillsSafe = getLanguageSkillsSafe;
 
     function setLanguageSkills(prefix, data){
       const map = data || {};
@@ -2803,7 +2823,7 @@ document.getElementById("planning").style.display="block";
           bsw: document.getElementById("bsw").value,
           sanitaeter: document.getElementById("sanitaeter").value,
           stundensatz: document.getElementById("stundensatz").value,
-          language_skills: collectLanguageSkills('add'),
+          language_skills: getLanguageSkillsSafe('add'),
           brandschutzhelfer: document.getElementById('brandschutzhelfer').checked ? 'ja' : 'nein',
           deeskalation: document.getElementById('deeskalation').checked ? 'ja' : 'nein',
           gssk: document.getElementById('gssk').checked ? 'ja' : 'nein',
@@ -3675,7 +3695,7 @@ document.getElementById("confirmed-counter").textContent =
         bsw: document.getElementById("edit-bsw").value,
         sanitaeter: document.getElementById("edit-sanitaeter").value,
         stundensatz:document.getElementById("edit-stundensatz").value,
-        language_skills: collectLanguageSkills('edit'),
+        language_skills: getLanguageSkillsSafe('edit'),
         brandschutzhelfer: document.getElementById('edit-brandschutzhelfer').checked ? 'ja' : 'nein',
         deeskalation: document.getElementById('edit-deeskalation').checked ? 'ja' : 'nein',
         gssk: document.getElementById('edit-gssk').checked ? 'ja' : 'nein',
