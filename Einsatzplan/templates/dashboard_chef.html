@@ -784,41 +784,6 @@ body.modal-open{ touch-action: auto !important; }
 <script>
 // Kleine Sicherheits-Fallbacks
 window.usersList = Array.isArray(window.usersList) ? window.usersList : [];
-function isPriorityUser(user){
-  const first = String(user?.vorname || '').trim().toLowerCase();
-  const last = String(user?.nachname || '').trim().toLowerCase();
-  return first === 'kevin' && last === 'casutt';
-}
-
-function compareUsersSpecial(a,b){
-  const ap = isPriorityUser(a);
-  const bp = isPriorityUser(b);
-  if(ap && !bp) return -1;
-  if(!ap && bp) return 1;
-
-  const av = String(a?.vorname || '').trim();
-  const bv = String(b?.vorname || '').trim();
-  const byFirst = av.localeCompare(bv, 'de', { sensitivity:'base' });
-  if(byFirst !== 0) return byFirst;
-
-  const an = String(a?.nachname || '').trim();
-  const bn = String(b?.nachname || '').trim();
-  const byLast = an.localeCompare(bn, 'de', { sensitivity:'base' });
-  if(byLast !== 0) return byLast;
-
-  return String(a?.username || '').localeCompare(String(b?.username || ''), 'de', { sensitivity:'base' });
-}
-
-function sortUsersSpecial(list){
-  return (Array.isArray(list) ? [...list] : []).sort(compareUsersSpecial);
-}
-
-function compareUsernamesSpecial(aUsername, bUsername){
-  const a = (window.userByUsername && window.userByUsername()[aUsername]) || { username: aUsername, vorname: window.usersCache?.[aUsername] || aUsername, nachname: '' };
-  const b = (window.userByUsername && window.userByUsername()[bUsername]) || { username: bUsername, vorname: window.usersCache?.[bUsername] || bUsername, nachname: '' };
-  return compareUsersSpecial(a,b);
-}
-
 window.usersCache = window.usersCache || {};
 window.reportData = window.reportData || {};
 window.currentEditUser = window.currentEditUser || null;
@@ -827,6 +792,17 @@ window.currentEditUser = window.currentEditUser || null;
 // Die echten Definitionen im Hauptscript überschreiben das wieder.
 window.setLanguageSkills = window.setLanguageSkills || function(){};
 window.renderImagePreview = window.renderImagePreview || function(){};
+window.collectLanguageSkills = window.collectLanguageSkills || function(prefix){
+  const result = {};
+  document.querySelectorAll(`input.lang-check[data-prefix="${prefix}"]`).forEach(cb => {
+    const lang = cb.dataset.lang;
+    const sel = document.getElementById(`${prefix}-lang-${lang}`);
+    if(cb.checked && sel && sel.value){
+      result[lang] = sel.value;
+    }
+  });
+  return result;
+};
 </script>
 
 
@@ -2193,8 +2169,8 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
         let resUsers = await fetch("/users");
         let users = await resUsers.json();
-        usersList = sortUsersSpecial(users);
-        usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+        usersList = users;
+        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
         window.usersList = usersList;
         window.usersCache = usersCache;
         window.usersList = usersList;
@@ -2202,8 +2178,8 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       } else {
         let resUsers = await fetch("/users_public");
         let users = await resUsers.json();
-        usersList = sortUsersSpecial(users);
-        usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
+        usersList = users;
+        users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
       }
 
       toggleEventRateInputs('create');
@@ -2745,6 +2721,7 @@ document.getElementById("planning").style.display="block";
       });
       return result;
     }
+    window.collectLanguageSkills = collectLanguageSkills;
 
     function setLanguageSkills(prefix, data){
       const map = data || {};
@@ -3396,9 +3373,6 @@ async function saveEventEdit(){
         else _other.push([user, r, stStatus]);
       }
 
-      _best.sort((a,b)=> compareUsernamesSpecial(a[0], b[0]));
-      _other.sort((a,b)=> compareUsernamesSpecial(a[0], b[0]));
-
       for(const [user, r, stStatus] of _best.concat(_other)){
         let fullname = usersCache[user] || user;
 
@@ -3459,7 +3433,7 @@ document.getElementById("confirmed-counter").textContent =
       const replacementSelect = document.getElementById("replacement-user");
       replacementSelect.innerHTML = "";
 
-      const candidates = sortUsersSpecial(usersList);
+      const candidates = usersList;
 
       candidates.forEach(u=>{
         const opt=document.createElement("option");
@@ -3507,11 +3481,11 @@ document.getElementById("confirmed-counter").textContent =
       let res=await fetch("/users");
       let users=await res.json();
 
-      users = sortUsersSpecial(users);
+      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
 
       usersList = users;
       usersCache = {};
-      usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
 
       let list=document.getElementById("user-list");
       list.innerHTML="";
@@ -3616,7 +3590,7 @@ document.getElementById("confirmed-counter").textContent =
           const res = await fetch("/users", { cache: "no-store" });
           const users = await res.json();
           if(Array.isArray(users)){
-            usersList = sortUsersSpecial(users);
+            usersList = users;
             usersCache = {};
             users.forEach(u => { usersCache[u.username] = `${u.vorname || ""} ${u.nachname || ""}`.trim(); });
             window.usersList = usersList;
@@ -3818,7 +3792,7 @@ document.getElementById("confirmed-counter").textContent =
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
-      usersList = sortUsersSpecial(await ures.json());
+      usersList = await ures.json();
       const uMap = userByUsername();
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
@@ -3898,12 +3872,8 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
               rate = Number(ev.stundensatz ?? 0);
               if (isNaN(rate)) rate = 0;
             } else {
-              if(r.user_rate_snapshot !== undefined && r.user_rate_snapshot !== null && String(r.user_rate_snapshot) !== ""){
-                rate = Number(r.user_rate_snapshot);
-              } else {
-                const u = uMap[user];
-                rate = Number(u?.stundensatz ?? 0);
-              }
+              const u = uMap[user];
+              rate = Number(u?.stundensatz ?? 0);
               if (isNaN(rate)) rate = 0;
             }
 
@@ -4036,7 +4006,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
     async function loadCounter(){
       // Users + Cache
       let ures = await fetch("/users");
-      usersList = sortUsersSpecial(await ures.json());
+      usersList = await ures.json();
       usersCache = {};
       usersList.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`; });
 
@@ -4286,7 +4256,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
       confirmed.sort((a,b)=>{
         const an = (usersCache[a.username] || a.username);
         const bn = (usersCache[b.username] || b.username);
-        return compareUsernamesSpecial(a.username, b.username);
+        return an.localeCompare(bn, "de");
       });
 
       if(confirmed.length === 0){
@@ -4360,7 +4330,7 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
       confirmedWithComments.sort((a,b)=>{
         const an = (usersCache[a.username] || a.username);
         const bn = (usersCache[b.username] || b.username);
-        return compareUsernamesSpecial(a.username, b.username);
+        return an.localeCompare(bn, "de");
       });
 
       if(confirmedWithComments.length === 0){
