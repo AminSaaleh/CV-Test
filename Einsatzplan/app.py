@@ -437,6 +437,7 @@ def init_db():
             start_time TEXT,
             end_time TEXT,
             rate_override DOUBLE PRECISION,
+            user_rate_snapshot DOUBLE PRECISION,
             UNIQUE(event_id, username)
         );
         '''
@@ -502,6 +503,7 @@ def init_db():
         ("start_time", "ALTER TABLE response ADD COLUMN start_time TEXT"),
         ("end_time", "ALTER TABLE response ADD COLUMN end_time TEXT"),
         ("rate_override", "ALTER TABLE response ADD COLUMN rate_override DOUBLE PRECISION"),
+        ("user_rate_snapshot", "ALTER TABLE response ADD COLUMN user_rate_snapshot DOUBLE PRECISION"),
     ]:
         if not col_exists(db, "response", c):
             db.execute(ddl)
@@ -704,7 +706,18 @@ def get_users():
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
-        "SELECT * FROM users WHERE username NOT IN (%s,%s) ORDER BY nachname, vorname",
+        """
+        SELECT * FROM users
+        WHERE username NOT IN (%s,%s)
+        ORDER BY
+          CASE
+            WHEN LOWER(COALESCE(vorname,''))='kven' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
+            ELSE 1
+          END,
+          LOWER(COALESCE(vorname,'')),
+          LOWER(COALESCE(nachname,'')),
+          LOWER(COALESCE(username,''))
+        """,
         ("AdminTest","TestAdmin")
     )
     users = [row_to_dict(r) for r in cur.fetchall()]
@@ -728,7 +741,18 @@ def users_public():
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
-        "SELECT username, vorname, nachname FROM users WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE ORDER BY nachname, vorname",
+        """
+        SELECT username, vorname, nachname FROM users
+        WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE
+        ORDER BY
+          CASE
+            WHEN LOWER(COALESCE(vorname,''))='kven' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
+            ELSE 1
+          END,
+          LOWER(COALESCE(vorname,'')),
+          LOWER(COALESCE(nachname,'')),
+          LOWER(COALESCE(username,''))
+        """,
         ("AdminTest", "TestAdmin")
     )
     users = [row_to_dict(r) for r in cur.fetchall()]
@@ -1212,7 +1236,7 @@ def events_list():
     result = []
     for e in events:
         rcur = db.execute(
-            "SELECT username,status,remark,start_time,end_time,rate_override FROM response WHERE event_id=%s",
+            "SELECT username,status,remark,start_time,end_time,rate_override,user_rate_snapshot FROM response WHERE event_id=%s",
             (e["id"],)
         )
         rmap = {
@@ -1221,7 +1245,8 @@ def events_list():
                 "remark": r["remark"] or "",
                 "start_time": r["start_time"] or "",
                 "end_time": r.get("end_time") or "",
-                "rate_override": r["rate_override"]
+                "rate_override": r["rate_override"],
+                "user_rate_snapshot": r.get("user_rate_snapshot")
             } for r in rcur.fetchall()
         }
         e["responses"] = rmap
@@ -1363,15 +1388,23 @@ def assign_user():
     if not db.execute("SELECT 1 FROM users WHERE username=%s", (username,)).fetchone():
         return jsonify({"error": "User nicht gefunden"}), 404
 
+    user_row = db.execute("SELECT stundensatz FROM users WHERE username=%s", (username,)).fetchone()
+    user_rate_snapshot = None if not user_row else user_row.get("stundensatz")
+
     if db.execute("SELECT 1 FROM response WHERE event_id=%s AND username=%s", (event_id, username)).fetchone():
         db.execute(
-            "UPDATE response SET status='bestätigt' WHERE event_id=%s AND username=%s",
-            (event_id, username)
+            """
+            UPDATE response
+            SET status='bestätigt',
+                user_rate_snapshot = COALESCE(user_rate_snapshot, %s)
+            WHERE event_id=%s AND username=%s
+            """,
+            (user_rate_snapshot, event_id, username)
         )
     else:
         db.execute(
-            "INSERT INTO response (event_id, username, status, remark, start_time, end_time) VALUES (%s,%s,%s,%s,%s,%s)",
-            (event_id, username, "bestätigt", "", "", "")
+            "INSERT INTO response (event_id, username, status, remark, start_time, end_time, user_rate_snapshot) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (event_id, username, "bestätigt", "", "", "", user_rate_snapshot)
         )
 
     db.commit()
@@ -1600,15 +1633,26 @@ def confirm_event():
         (event_id, username)
     ).fetchone()
 
+    user_row = db.execute("SELECT stundensatz FROM users WHERE username=%s", (username,)).fetchone()
+    user_rate_snapshot = None if not user_row else user_row.get("stundensatz")
+
     if exists:
         db.execute(
-            "UPDATE response SET status=%s WHERE event_id=%s AND username=%s",
-            (decision_db, event_id, username)
+            """
+            UPDATE response
+            SET status=%s,
+                user_rate_snapshot = CASE
+                    WHEN %s = 'bestätigt' THEN COALESCE(user_rate_snapshot, %s)
+                    ELSE user_rate_snapshot
+                END
+            WHERE event_id=%s AND username=%s
+            """,
+            (decision_db, decision_db, user_rate_snapshot, event_id, username)
         )
     else:
         db.execute(
-            "INSERT INTO response (event_id, username, status, remark, start_time, end_time) VALUES (%s,%s,%s,%s,%s,%s)",
-            (event_id, username, decision_db, "", "", "")
+            "INSERT INTO response (event_id, username, status, remark, start_time, end_time, user_rate_snapshot) VALUES (%s,%s,%s,%s,%s,%s,%s)",
+            (event_id, username, decision_db, "", "", "", user_rate_snapshot if decision_db == "bestätigt" else None)
         )
 
     db.commit()
@@ -1724,10 +1768,10 @@ def edit_entry():
         else:
             db.execute(
                 """
-                INSERT INTO response (event_id, username, status, remark, start_time, end_time, rate_override)
-                VALUES (%s,%s,%s,%s,%s,%s,%s)
+                INSERT INTO response (event_id, username, status, remark, start_time, end_time, rate_override, user_rate_snapshot)
+                VALUES (%s,%s,%s,%s,%s,%s,%s, (SELECT stundensatz FROM users WHERE username=%s))
                 """,
-                (event_id, username, "bestätigt", remark, start_time or "", end_time or "", rate_override)
+                (event_id, username, "bestätigt", remark, start_time or "", end_time or "", rate_override, username)
             )
     else:
         db.execute(
