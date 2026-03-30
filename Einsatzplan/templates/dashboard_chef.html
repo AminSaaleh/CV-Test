@@ -3484,12 +3484,35 @@ document.getElementById("confirmed-counter").textContent =
       }
     }
 
+    function sortUsersSpecial(list){
+      const arr = Array.isArray(list) ? [...list] : [];
+      return arr.sort((a,b)=>{
+        const aFirst = String(a?.vorname || '').trim().toLocaleLowerCase('de');
+        const aLast  = String(a?.nachname || '').trim().toLocaleLowerCase('de');
+        const bFirst = String(b?.vorname || '').trim().toLocaleLowerCase('de');
+        const bLast  = String(b?.nachname || '').trim().toLocaleLowerCase('de');
+        const aUser  = String(a?.username || '').trim().toLocaleLowerCase('de');
+        const bUser  = String(b?.username || '').trim().toLocaleLowerCase('de');
+
+        const aIsKevin = aFirst === 'kevin' && aLast === 'casutt';
+        const bIsKevin = bFirst === 'kevin' && bLast === 'casutt';
+        if(aIsKevin && !bIsKevin) return -1;
+        if(!aIsKevin && bIsKevin) return 1;
+
+        const byFirst = aFirst.localeCompare(bFirst, 'de');
+        if(byFirst !== 0) return byFirst;
+        const byLast = aLast.localeCompare(bLast, 'de');
+        if(byLast !== 0) return byLast;
+        return aUser.localeCompare(bUser, 'de');
+      });
+    }
+
     // User Management
     async function loadUsers(){
       let res=await fetch("/users");
       let users=await res.json();
 
-      users.sort((a,b)=> String(a.username||"").localeCompare(String(b.username||""), "de"));
+      users = sortUsersSpecial(Array.isArray(users) ? users : []);
 
       usersList = users;
       usersCache = {};
@@ -3598,9 +3621,9 @@ document.getElementById("confirmed-counter").textContent =
           const res = await fetch("/users", { cache: "no-store" });
           const users = await res.json();
           if(Array.isArray(users)){
-            usersList = users;
+            usersList = sortUsersSpecial(Array.isArray(users) ? users : []);
             usersCache = {};
-            users.forEach(u => { usersCache[u.username] = `${u.vorname || ""} ${u.nachname || ""}`.trim(); });
+            usersList.forEach(u => { usersCache[u.username] = `${u.vorname || ""} ${u.nachname || ""}`.trim(); });
             window.usersList = usersList;
             window.usersCache = usersCache;
             user = users.find(u => String(u.username) === String(username));
