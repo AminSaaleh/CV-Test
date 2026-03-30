@@ -2123,6 +2123,35 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       loadBoardPosts();
     }
 
+
+    async function deleteBoardPost(postId){
+      const id = Number(postId);
+      if(!Number.isInteger(id) || id <= 0){
+        alert('Ungültige Beitrags-ID.');
+        return;
+      }
+      if(!CAN_EDIT_BOARD){
+        alert('Du darfst Beiträge nicht löschen.');
+        return;
+      }
+      const ok = window.confirm('Möchtest du diesen Beitrag wirklich löschen?');
+      if(!ok) return;
+
+      try{
+        const res = await fetch(`/board/${id}`, {
+          method:'DELETE',
+          headers:{ 'Content-Type':'application/json' }
+        });
+        const data = await res.json().catch(()=>({}));
+        if(!res.ok || data.error){
+          throw new Error(data.error || 'Beitrag konnte nicht gelöscht werden.');
+        }
+        await loadBoardPosts();
+      }catch(err){
+        alert(err.message || 'Beitrag konnte nicht gelöscht werden.');
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', async function() {
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
