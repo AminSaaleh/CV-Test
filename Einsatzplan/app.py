@@ -711,7 +711,7 @@ def get_users():
         WHERE username NOT IN (%s,%s)
         ORDER BY
           CASE
-            WHEN LOWER(COALESCE(vorname,''))='kven' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
+            WHEN LOWER(COALESCE(vorname,''))='kevin' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
             ELSE 1
           END,
           LOWER(COALESCE(vorname,'')),
@@ -746,7 +746,7 @@ def users_public():
         WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE
         ORDER BY
           CASE
-            WHEN LOWER(COALESCE(vorname,''))='kven' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
+            WHEN LOWER(COALESCE(vorname,''))='kevin' AND LOWER(COALESCE(nachname,''))='casutt' THEN 0
             ELSE 1
           END,
           LOWER(COALESCE(vorname,'')),
