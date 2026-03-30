@@ -712,8 +712,8 @@ def get_users():
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
-        "SELECT * FROM users WHERE username NOT IN (%s,%s) ORDER BY nachname, vorname",
-        ("AdminTest","TestAdmin")
+        """SELECT * FROM users\n           WHERE username NOT IN (%s,%s)\n           ORDER BY\n             CASE WHEN LOWER(COALESCE(vorname, '')) = %s AND LOWER(COALESCE(nachname, '')) = %s THEN 0 ELSE 1 END,\n             LOWER(COALESCE(vorname, '')),\n             LOWER(COALESCE(nachname, '')),\n             LOWER(COALESCE(username, ''))""",
+        ("AdminTest","TestAdmin", "kevin", "casutt")
     )
     users = [row_to_dict(r) for r in cur.fetchall()]
     for u in users:
@@ -732,12 +732,12 @@ def users_public():
     if "username" not in session:
         return jsonify({"error": "Nicht eingeloggt"}), 403
 
-    if session.get("role") not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
+    if normalize_role(session.get("role")) not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
     cur = get_db().execute(
-        "SELECT username, vorname, nachname FROM users WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE ORDER BY nachname, vorname",
-        ("AdminTest", "TestAdmin")
+        """SELECT username, vorname, nachname FROM users\n           WHERE username NOT IN (%s,%s) AND COALESCE(is_locked, FALSE)=FALSE\n           ORDER BY\n             CASE WHEN LOWER(COALESCE(vorname, '')) = %s AND LOWER(COALESCE(nachname, '')) = %s THEN 0 ELSE 1 END,\n             LOWER(COALESCE(vorname, '')),\n             LOWER(COALESCE(nachname, '')),\n             LOWER(COALESCE(username, ''))""",
+        ("AdminTest", "TestAdmin", "kevin", "casutt")
     )
     users = [row_to_dict(r) for r in cur.fetchall()]
     return jsonify(users)
