@@ -1174,22 +1174,17 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <label><input type="checkbox" id="behoerdlich_studium"> Behördlich/Studium</label>
         </div>
         <div class="qual-card">
-          <h5>Führerschein</h5>
+          <h5>Ausweisdokument</h5>
+          <input type="text" id="ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
+          <input type="text" id="ausweis_nr" placeholder="Dokumentennr." style="margin-top:10px;">
+          <input type="text" id="ausweis_behoerde" placeholder="Ausstellende Behörde" style="margin-top:10px;">
+          <div style="margin-top:10px;">
+            <label for="ausweis_gueltig_bis">Gültig bis</label>
+            <input type="date" id="ausweis_gueltig_bis">
+          </div>
+          <h5 style="margin-top:14px;">Führerschein</h5>
           <label><input type="checkbox" id="fuehrerschein"> Führerschein vorhanden</label>
           <input type="text" id="fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
-        </div>
-      </div>
-
-      <div class="section-title-lite">Ausweisdokument</div>
-      <div class="form-row">
-        <input type="text" id="ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
-        <input type="text" id="ausweis_nr" placeholder="Dokumentennr.">
-      </div>
-      <div class="form-row">
-        <input type="text" id="ausweis_behoerde" placeholder="Ausstellende Behörde">
-        <div>
-          <label for="ausweis_gueltig_bis">Gültig bis</label>
-          <input type="date" id="ausweis_gueltig_bis">
         </div>
       </div>
 
@@ -1207,7 +1202,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <th>BSW</th>
           <th>Sani</th>
           <th>P-Schein</th>
-          <th>Ausweis-Art</th>
+          <th>Ausweisart</th>
           <th>Dokumentennr.</th>
           <th>Behörde</th>
           <th>Gültig bis</th>
@@ -1546,22 +1541,17 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <label><input type="checkbox" id="edit-behoerdlich_studium"> Behördlich/Studium</label>
         </div>
         <div class="qual-card">
-          <h5>Führerschein</h5>
+          <h5>Ausweisdokument</h5>
+          <input type="text" id="edit-ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
+          <input type="text" id="edit-ausweis_nr" placeholder="Dokumentennr." style="margin-top:10px;">
+          <input type="text" id="edit-ausweis_behoerde" placeholder="Ausstellende Behörde" style="margin-top:10px;">
+          <div style="margin-top:10px;">
+            <label for="edit-ausweis_gueltig_bis">Gültig bis</label>
+            <input type="date" id="edit-ausweis_gueltig_bis">
+          </div>
+          <h5 style="margin-top:14px;">Führerschein</h5>
           <label><input type="checkbox" id="edit-fuehrerschein"> Führerschein vorhanden</label>
           <input type="text" id="edit-fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
-        </div>
-      </div>
-
-      <div class="section-title-lite">Ausweisdokument</div>
-      <div class="form-row">
-        <input type="text" id="edit-ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
-        <input type="text" id="edit-ausweis_nr" placeholder="Dokumentennr.">
-      </div>
-      <div class="form-row">
-        <input type="text" id="edit-ausweis_behoerde" placeholder="Ausstellende Behörde">
-        <div>
-          <label for="edit-ausweis_gueltig_bis">Gültig bis</label>
-          <input type="date" id="edit-ausweis_gueltig_bis">
         </div>
       </div>
 
@@ -2892,8 +2882,8 @@ document.getElementById("planning").style.display="block";
         e.target.reset();
         setLanguageSkills('add', {});
         const addFs=document.getElementById('fuehrerschein'); if(addFs){ addFs.checked=false; addFs.dispatchEvent(new Event('change')); }
-        clearImagePreview('add');
         const addAusweisDate = document.getElementById('ausweis_gueltig_bis'); if(addAusweisDate) addAusweisDate.value = '';
+        clearImagePreview('add');
       };
       }
     });
@@ -3092,22 +3082,11 @@ document.getElementById("dup-date").value = "";
     }
 
     async function confirmResponse(user, decision) {
-      const res = await fetch("/events/confirm", {
+      await fetch("/events/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_id: currentEventId, username: user, decision })
       });
-      const data = await res.json().catch(() => ({}));
-
-      if(!res.ok || data.error){
-        alert(data.error || "Aktion konnte nicht gespeichert werden.");
-        return;
-      }
-
-      if(decision === "bestätigt" && data.mail_error){
-        alert("Bestätigung gespeichert, aber E-Mail konnte nicht versendet werden: " + data.mail_error);
-      }
-
       await refreshDetailsModal();
       calendar.refetchEvents();
       if(planningCalendar) planningCalendar.refetchEvents();
@@ -3828,21 +3807,6 @@ document.getElementById("confirmed-counter").textContent =
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
-    }
-
-    function formatDateDE(value){
-      const raw = String(value || '').trim();
-      if(!raw) return '-';
-      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if(m) return `${m[3]}.${m[2]}.${m[1]}`;
-      const d = new Date(raw);
-      if(!isNaN(d.getTime())){
-        const dd = String(d.getDate()).padStart(2, '0');
-        const mm = String(d.getMonth() + 1).padStart(2, '0');
-        const yy = d.getFullYear();
-        return `${dd}.${mm}.${yy}`;
-      }
-      return raw;
     }
 
     function downloadUserPdf(username){
