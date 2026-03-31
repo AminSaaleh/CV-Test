@@ -1133,10 +1133,11 @@ def user_pdf(username):
     static_dir = os.path.join(app.root_path, "static")
     logo_label = "CV logo" if pdf_type == "CV" else "CP logo"
     if pdf_type == "CV":
-        logo_candidates = [os.path.join(static_dir, "casutt_logo.jpeg")]
+        logo_path = os.path.join(static_dir, "casutt_logo.jpeg")
     else:
-        logo_candidates = sorted(glob.glob(os.path.join(static_dir, "WhatsApp Image*")))
-    logo_path = next((p for p in logo_candidates if os.path.exists(p)), "")
+        logo_path = os.path.join(static_dir, "CP-Logo.png")
+    if not os.path.exists(logo_path):
+        logo_path = ""
 
     pdf.setTitle(f"Mitarbeiter_{username}")
     pdf.setAuthor("CV Planung")
@@ -1197,6 +1198,7 @@ def user_pdf(username):
         ("Dokumentennr.", clean_text(u.get("ausweis_nr"))),
         ("§ 34a GewO", s34a_text),
         ("Bewacher ID", clean_text(u.get("bewach_id"))),
+        ("Erklärung", "✅" if bool(u.get("consent_given")) else ""),
     ]
     for label, value in basis_rows:
         pdf.setFont("Helvetica-Bold", 9.5)
