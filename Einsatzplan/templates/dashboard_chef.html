@@ -1180,6 +1180,19 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         </div>
       </div>
 
+      <div class="section-title-lite">Ausweisdokument</div>
+      <div class="form-row">
+        <input type="text" id="ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
+        <input type="text" id="ausweis_nr" placeholder="Dokumentennr.">
+      </div>
+      <div class="form-row">
+        <input type="text" id="ausweis_behoerde" placeholder="Ausstellende Behörde">
+        <div>
+          <label for="ausweis_gueltig_bis">Gültig bis</label>
+          <input type="date" id="ausweis_gueltig_bis">
+        </div>
+      </div>
+
       <button type="submit" class="confirm">➕ Hinzufügen</button>
     </form>
 
@@ -1194,6 +1207,10 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <th>BSW</th>
           <th>Sani</th>
           <th>P-Schein</th>
+          <th>Ausweis-Art</th>
+          <th>Dokumentennr.</th>
+          <th>Behörde</th>
+          <th>Gültig bis</th>
           <th>SVS</th>
           <th>Erklärung</th>
           <th>Aktionen</th>
@@ -1532,6 +1549,19 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <h5>Führerschein</h5>
           <label><input type="checkbox" id="edit-fuehrerschein"> Führerschein vorhanden</label>
           <input type="text" id="edit-fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
+        </div>
+      </div>
+
+      <div class="section-title-lite">Ausweisdokument</div>
+      <div class="form-row">
+        <input type="text" id="edit-ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
+        <input type="text" id="edit-ausweis_nr" placeholder="Dokumentennr.">
+      </div>
+      <div class="form-row">
+        <input type="text" id="edit-ausweis_behoerde" placeholder="Ausstellende Behörde">
+        <div>
+          <label for="edit-ausweis_gueltig_bis">Gültig bis</label>
+          <input type="date" id="edit-ausweis_gueltig_bis">
         </div>
       </div>
 
@@ -2825,6 +2855,10 @@ document.getElementById("planning").style.display="block";
           bsw: document.getElementById("bsw").value,
           sanitaeter: document.getElementById("sanitaeter").value,
           stundensatz: document.getElementById("stundensatz").value,
+          ausweis_art: document.getElementById('ausweis_art').value,
+          ausweis_nr: document.getElementById('ausweis_nr').value,
+          ausweis_behoerde: document.getElementById('ausweis_behoerde').value,
+          ausweis_gueltig_bis: document.getElementById('ausweis_gueltig_bis').value,
           language_skills: getLanguageSkillsSafe('add'),
           brandschutzhelfer: document.getElementById('brandschutzhelfer').checked ? 'ja' : 'nein',
           deeskalation: document.getElementById('deeskalation').checked ? 'ja' : 'nein',
@@ -2859,6 +2893,7 @@ document.getElementById("planning").style.display="block";
         setLanguageSkills('add', {});
         const addFs=document.getElementById('fuehrerschein'); if(addFs){ addFs.checked=false; addFs.dispatchEvent(new Event('change')); }
         clearImagePreview('add');
+        const addAusweisDate = document.getElementById('ausweis_gueltig_bis'); if(addAusweisDate) addAusweisDate.value = '';
       };
       }
     });
@@ -3057,11 +3092,22 @@ document.getElementById("dup-date").value = "";
     }
 
     async function confirmResponse(user, decision) {
-      await fetch("/events/confirm", {
+      const res = await fetch("/events/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_id: currentEventId, username: user, decision })
       });
+      const data = await res.json().catch(() => ({}));
+
+      if(!res.ok || data.error){
+        alert(data.error || "Aktion konnte nicht gespeichert werden.");
+        return;
+      }
+
+      if(decision === "bestätigt" && data.mail_error){
+        alert("Bestätigung gespeichert, aber E-Mail konnte nicht versendet werden: " + data.mail_error);
+      }
+
       await refreshDetailsModal();
       calendar.refetchEvents();
       if(planningCalendar) planningCalendar.refetchEvents();
@@ -3538,6 +3584,10 @@ document.getElementById("confirmed-counter").textContent =
           <td>${escapeHtml(capYesNo(u.bsw || "nein"))}</td>
           <td>${escapeHtml(capYesNo(u.sanitaeter || "nein"))}</td>
           <td>${escapeHtml(capYesNo(u.pschein || "nein"))}</td>
+          <td>${escapeHtml(u.ausweis_art || '-')}</td>
+          <td>${escapeHtml(u.ausweis_nr || '-')}</td>
+          <td>${escapeHtml(u.ausweis_behoerde || '-')}</td>
+          <td>${escapeHtml(formatDateDE(u.ausweis_gueltig_bis || ''))}</td>
           <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
           <td>${consentIcon(!!u.consent_given)}</td>
           <td>
@@ -3662,6 +3712,10 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-steuernummer").value=user.steuernummer || "";
       document.getElementById("edit-bsw").value=user.bsw || "nein";
       document.getElementById("edit-sanitaeter").value=user.sanitaeter || "nein";
+      document.getElementById("edit-ausweis_art").value=user.ausweis_art || "";
+      document.getElementById("edit-ausweis_nr").value=user.ausweis_nr || "";
+      document.getElementById("edit-ausweis_behoerde").value=user.ausweis_behoerde || "";
+      document.getElementById("edit-ausweis_gueltig_bis").value=user.ausweis_gueltig_bis || "";
 
       document.getElementById("edit-brandschutzhelfer").checked=String(user.brandschutzhelfer || 'nein').toLowerCase()==='ja';
       document.getElementById("edit-deeskalation").checked=String(user.deeskalation || 'nein').toLowerCase()==='ja';
@@ -3720,6 +3774,10 @@ document.getElementById("confirmed-counter").textContent =
         bsw: document.getElementById("edit-bsw").value,
         sanitaeter: document.getElementById("edit-sanitaeter").value,
         stundensatz:document.getElementById("edit-stundensatz").value,
+        ausweis_art: document.getElementById('edit-ausweis_art').value,
+        ausweis_nr: document.getElementById('edit-ausweis_nr').value,
+        ausweis_behoerde: document.getElementById('edit-ausweis_behoerde').value,
+        ausweis_gueltig_bis: document.getElementById('edit-ausweis_gueltig_bis').value,
         language_skills: getLanguageSkillsSafe('edit'),
         brandschutzhelfer: document.getElementById('edit-brandschutzhelfer').checked ? 'ja' : 'nein',
         deeskalation: document.getElementById('edit-deeskalation').checked ? 'ja' : 'nein',
@@ -3770,6 +3828,21 @@ document.getElementById("confirmed-counter").textContent =
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+    }
+
+    function formatDateDE(value){
+      const raw = String(value || '').trim();
+      if(!raw) return '-';
+      const m = raw.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+      if(m) return `${m[3]}.${m[2]}.${m[1]}`;
+      const d = new Date(raw);
+      if(!isNaN(d.getTime())){
+        const dd = String(d.getDate()).padStart(2, '0');
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const yy = d.getFullYear();
+        return `${dd}.${mm}.${yy}`;
+      }
+      return raw;
     }
 
     function downloadUserPdf(username){
