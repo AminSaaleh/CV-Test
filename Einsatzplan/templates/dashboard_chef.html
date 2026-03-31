@@ -1215,6 +1215,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
     </table>
 </div>
   </div>
+</div>
 
   <!-- Modal Einsatz anlegen -->
   <div class="modal" id="eventModal">
@@ -1918,6 +1919,16 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       const v = Number(n);
       if(isNaN(v)) return "0,00";
       return v.toLocaleString('de-DE', { minimumFractionDigits: digits, maximumFractionDigits: digits });
+    }
+
+    function formatDateDE(value){
+      const v = String(value || '').trim();
+      if(!v) return '-';
+      const m = v.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if(m) return `${m[3]}.${m[2]}.${m[1]}`;
+      const d = new Date(v);
+      if(!Number.isNaN(d.getTime())) return d.toLocaleDateString('de-DE');
+      return v;
     }
 
     // ✅ Zahl aus deutschem Format lesen (z.B. "20,50" oder "20.50" oder "1.234,56")
