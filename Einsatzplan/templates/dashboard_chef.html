@@ -173,6 +173,13 @@
   color:#6b7280;
 }
 .personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
+#user-management .user-table{table-layout:auto;}
+#user-management .user-table th,
+#user-management .user-table td{white-space:nowrap;}
+#user-management .user-table .personal-note-cell{white-space:normal !important; min-width:180px;}
+#user-management .user-table th:last-child,
+#user-management .user-table td:last-child{min-width:320px;}
+#user-management .personal-action-btns button{white-space:nowrap;}
 .personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
 .personal-name-cell{text-align:left !important;white-space:nowrap;}
 .consent-check{font-size:20px;font-weight:700;}
@@ -3570,10 +3577,6 @@ document.getElementById("confirmed-counter").textContent =
           <td>${escapeHtml(capYesNo(u.bsw || "nein"))}</td>
           <td>${escapeHtml(capYesNo(u.sanitaeter || "nein"))}</td>
           <td>${escapeHtml(capYesNo(u.pschein || "nein"))}</td>
-          <td>${escapeHtml(u.ausweis_art || '-')}</td>
-          <td>${escapeHtml(u.ausweis_nr || '-')}</td>
-          <td>${escapeHtml(u.ausweis_behoerde || '-')}</td>
-          <td>${escapeHtml(formatDateDE(u.ausweis_gueltig_bis || ''))}</td>
           <td>${(u.stundensatz!=="" && u.stundensatz!==null && u.stundensatz!==undefined) ? (fmtNumDE(Number(u.stundensatz),2) + " €/h") : "-"}</td>
           <td>${consentIcon(!!u.consent_given)}</td>
           <td>
