@@ -32,27 +32,38 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
-MAIL_FROM = os.environ.get("MAIL_FROM", f"REMINDER – CV Planung <{SMTP_USER}>")
+SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").strip().lower() not in ("0", "false", "nein", "no")
+MAIL_FROM = os.environ.get("MAIL_FROM", f"CV Planung <{SMTP_USER}>")
 
 def send_mail(to_addr: str, subject: str, body: str) -> None:
-    """Send a plain text email via SMTP. No-op if config is missing."""
+    """Send a plain text email via SMTP and raise useful errors if config/delivery fails."""
     to_addr = (to_addr or "").strip()
     if not to_addr:
-        return
+        raise ValueError("Empfänger-Adresse fehlt.")
     if not (SMTP_HOST and SMTP_PORT and SMTP_USER and SMTP_PASS):
-        return
+        raise RuntimeError("SMTP ist nicht vollständig konfiguriert. Bitte SMTP_HOST, SMTP_PORT, SMTP_USER und SMTP_PASS setzen.")
 
     msg = EmailMessage()
     msg["From"] = MAIL_FROM
     msg["To"] = to_addr
     msg["Subject"] = subject
-    msg.set_content(body)
+    msg.set_content(body, charset="utf-8")
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
-        s.ehlo()
-        s.starttls()
-        s.login(SMTP_USER, SMTP_PASS)
-        s.send_message(msg)
+    try:
+        if SMTP_PORT == 465:
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+                s.ehlo()
+                if SMTP_USE_TLS:
+                    s.starttls()
+                    s.ehlo()
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+    except Exception as e:
+        raise RuntimeError(f"E-Mail-Versand fehlgeschlagen: {e}") from e
 
 def build_welcome_mail(employee_name: str, username: str, password: str) -> str:
     lines = [
@@ -118,6 +129,48 @@ def build_change_mail(employee_name: str,
         f"Einsatz:  {title}",
         f"Dienstkleidung: {dienst}",
         f"Ort: {location}",
+        "",
+        "Viele Grüße",
+        "CV Planung"
+    ])
+
+    return "\n".join(lines)
+
+
+def build_confirmation_mail(employee_name: str,
+                            event_title: str,
+                            event_start_dt: str,
+                            ort: str,
+                            dienstkleidung: str,
+                            start_time: str = "") -> str:
+    date_de = "TT.MM.JJJJ"
+    try:
+        if isinstance(event_start_dt, str) and event_start_dt.strip():
+            d = datetime.fromisoformat(event_start_dt.replace("Z", "").strip())
+            date_de = d.strftime("%d.%m.%Y")
+    except Exception:
+        pass
+
+    title = (event_title or "").strip() or "-"
+    dienst = (dienstkleidung or "").strip() or "-"
+    location = (ort or "").strip() or "-"
+    time_info = (start_time or "").strip()
+
+    lines = [
+        f"Hallo {employee_name},",
+        "",
+        "dein Einsatz wurde bestätigt. ✅",
+        "",
+        f"Einsatz: {title}",
+        f"Datum: {date_de}",
+    ]
+
+    if time_info:
+        lines.append(f"Startzeit: {time_info}")
+
+    lines.extend([
+        f"Ort: {location}",
+        f"Dienstkleidung: {dienst}",
         "",
         "Viele Grüße",
         "CV Planung"
@@ -1616,7 +1669,15 @@ def confirm_event():
         (event_id, username)
     ).fetchone()
 
+    current_start_time = ""
+
     if exists:
+        existing_row = db.execute(
+            "SELECT start_time FROM response WHERE event_id=%s AND username=%s",
+            (event_id, username)
+        ).fetchone()
+        current_start_time = (existing_row.get("start_time") if existing_row else "") or ""
+
         if decision_db == "bestätigt":
             db.execute(
                 "UPDATE response SET status=%s, profile_rate_snapshot = COALESCE(profile_rate_snapshot, %s) WHERE event_id=%s AND username=%s",
@@ -1634,7 +1695,41 @@ def confirm_event():
         )
 
     db.commit()
-    return jsonify({"status": "ok"})
+
+    mail_sent = False
+    mail_error = ""
+
+    if decision_db == "bestätigt":
+        u = db.execute(
+            "SELECT vorname, nachname, email FROM users WHERE username=%s",
+            (username,)
+        ).fetchone()
+        e = db.execute(
+            "SELECT title, start, ort, dienstkleidung FROM event WHERE id=%s",
+            (event_id,)
+        ).fetchone()
+
+        if u and e and (u.get("email") or "").strip():
+            employee_name = (f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}").strip() or username
+            event_start_dt = ((e.get("start") or "").strip().replace("T", " ")) or "-"
+            subject = f"Einsatz bestätigt: {(e.get('title') or 'Einsatz')}"
+            body = build_confirmation_mail(
+                employee_name=employee_name,
+                event_title=(e.get("title") or "Einsatz"),
+                event_start_dt=event_start_dt,
+                ort=(e.get("ort") or ""),
+                dienstkleidung=(e.get("dienstkleidung") or ""),
+                start_time=current_start_time,
+            )
+            try:
+                send_mail((u.get("email") or "").strip(), subject, body)
+                mail_sent = True
+            except Exception as e:
+                mail_error = str(e)
+        else:
+            mail_error = "Keine E-Mail-Adresse beim Mitarbeiter hinterlegt."
+
+    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
 
 
 @app.route("/events/endtime", methods=["POST"])
