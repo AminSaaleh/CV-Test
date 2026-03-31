@@ -7,7 +7,7 @@
 #   python app.py
 #
 from flask import Flask, render_template, request, redirect, url_for, session, jsonify, g
-import os, uuid, re, io, json
+import os, uuid, re, io, json, glob
 from datetime import datetime
 
 
@@ -353,24 +353,6 @@ def employee_requires_consent() -> bool:
     except Exception:
         # Im Zweifel sperren wir
         return True
-
-def parse_pdf_variant(value: str) -> str:
-    v = (value or "").strip().lower()
-    return "CV" if v == "cv" else "CP"
-
-
-def draw_pdf_logo_badge(c, page_width, margin, y, variant: str):
-    badge_text = f"{variant} logo"
-    badge_w = 92
-    badge_h = 26
-    x = page_width - margin - badge_w
-    c.setStrokeColor(colors.HexColor("#c8d5e3"))
-    c.setFillColor(colors.HexColor("#eef4fb") if variant == "CV" else colors.HexColor("#fff7db"))
-    c.roundRect(x, y - badge_h + 6, badge_w, badge_h, 8, stroke=1, fill=1)
-    c.setFillColor(colors.HexColor("#1f2937"))
-    c.setFont("Helvetica-Bold", 10)
-    c.drawCentredString(x + badge_w / 2, y - 10, badge_text)
-    return x
 
 def init_db():
     db = get_db()
@@ -1006,7 +988,9 @@ def user_pdf(username):
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
-    logo_variant = parse_pdf_variant(request.args.get("variant") or request.args.get("logo") or "CP")
+    pdf_type = (request.args.get("pdf_type") or "CV").strip().upper()
+    if pdf_type not in ("CV", "CP"):
+        pdf_type = "CV"
 
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
@@ -1146,22 +1130,46 @@ def user_pdf(username):
     width, height = A4
     margin = 34
     content_w = width - 2 * margin
+    static_dir = os.path.join(app.root_path, "static")
+    logo_label = "CV logo" if pdf_type == "CV" else "CP logo"
+    if pdf_type == "CV":
+        logo_candidates = [os.path.join(static_dir, "casutt_logo.jpeg")]
+    else:
+        logo_candidates = sorted(glob.glob(os.path.join(static_dir, "WhatsApp Image*")))
+    logo_path = next((p for p in logo_candidates if os.path.exists(p)), "")
 
     pdf.setTitle(f"Mitarbeiter_{username}")
     pdf.setAuthor("CV Planung")
     pdf.setSubject("Mitarbeiterprofil")
 
     header_y = height - 28
-    logo_left_x = draw_pdf_logo_badge(pdf, width, margin, header_y, logo_variant)
     pdf.setFont("Helvetica-Bold", 15)
     pdf.setFillColor(colors.HexColor("#1f2937"))
     pdf.drawString(margin, header_y, "Mitarbeiterprofil")
     pdf.setFont("Helvetica", 8)
     pdf.setFillColor(colors.HexColor("#6b7280"))
     pdf.drawString(margin, header_y - 12, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
-    pdf.setFont("Helvetica-Bold", 11)
-    pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.drawRightString(logo_left_x - 10, header_y, full_name)
+    header_logo_w = 108
+    header_logo_h = 32
+    header_logo_x = width - margin - header_logo_w
+    header_logo_y = header_y - 18
+    if logo_path:
+        try:
+            pdf.drawImage(logo_path, header_logo_x, header_logo_y, header_logo_w, header_logo_h, preserveAspectRatio=True, mask='auto', anchor='c')
+        except Exception:
+            pdf.setStrokeColor(colors.HexColor("#d2d7df"))
+            pdf.setFillColor(colors.white)
+            pdf.roundRect(header_logo_x, header_logo_y, header_logo_w, header_logo_h, 6, stroke=1, fill=1)
+            pdf.setFont("Helvetica-Bold", 10)
+            pdf.setFillColor(colors.HexColor("#111827"))
+            pdf.drawCentredString(header_logo_x + header_logo_w / 2, header_logo_y + 11, logo_label)
+    else:
+        pdf.setStrokeColor(colors.HexColor("#d2d7df"))
+        pdf.setFillColor(colors.white)
+        pdf.roundRect(header_logo_x, header_logo_y, header_logo_w, header_logo_h, 6, stroke=1, fill=1)
+        pdf.setFont("Helvetica-Bold", 10)
+        pdf.setFillColor(colors.HexColor("#111827"))
+        pdf.drawCentredString(header_logo_x + header_logo_w / 2, header_logo_y + 11, logo_label)
 
     top_y = height - 70
     left_w = content_w * 0.56
@@ -1238,14 +1246,9 @@ def user_pdf(username):
     right_items = [(lang, level or "-") for lang, level in language_rows]
     right_bottom = draw_info_box(pdf, right_x, lower_top, right_w, "Fremdsprachen", right_items, min_height=120)
 
-    pdf.setFont("Helvetica", 8)
-    pdf.setFillColor(colors.HexColor("#6b7280"))
-    pdf.drawRightString(width - margin, 14, f"Export für {full_name}")
-
     pdf.save()
     buffer.seek(0)
-    filename_variant = logo_variant.lower()
-    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}_{filename_variant}.pdf")
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}.pdf")
 
 
 @app.route("/users/<username>", methods=["DELETE"])
