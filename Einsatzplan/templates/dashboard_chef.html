@@ -837,6 +837,20 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 #calendar .fc-daygrid-body-natural .fc-daygrid-day-events{margin-bottom:2px;}
 </style>
 
+
+<style>
+.pdf-choice-modal{
+  position:fixed; inset:0; background:rgba(15,23,42,.45); display:none; align-items:center; justify-content:center; z-index:2000;
+}
+.pdf-choice-modal.show{display:flex;}
+.pdf-choice-card{
+  width:min(92vw, 380px); background:#fff; border-radius:16px; padding:18px; box-shadow:0 20px 50px rgba(0,0,0,.18); border:1px solid #d6dbe3;
+}
+.pdf-choice-card h3{margin:0 0 8px 0; font-size:18px;}
+.pdf-choice-card p{margin:0 0 12px 0; color:#475569; font-size:14px;}
+.pdf-choice-card select{width:100%; margin-bottom:14px;}
+.pdf-choice-actions{display:flex; gap:10px; justify-content:flex-end;}
+</style>
 </head>
 <body>
   <nav>
@@ -1115,9 +1129,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
 
       <div class="form-row">
-        <label><input type="checkbox" id="bsw"> BSW</label>
-        <label><input type="checkbox" id="sanitaeter"> Sanitäter</label>
-        <label><input type="checkbox" id="pschein"> P-Schein</label>
         <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
       </div>
 
@@ -1168,7 +1179,10 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <label><input type="checkbox" id="fachkraft_ss"> Fachkraft S&amp;S</label><br>
           <label><input type="checkbox" id="personenschutz"> Personenschutz</label><br>
           <label><input type="checkbox" id="waffensachkunde"> Waffensachkunde</label><br>
-          <label><input type="checkbox" id="behoerdlich_studium"> Behördlich/Studium</label>
+          <label><input type="checkbox" id="behoerdlich_studium"> Behördlich/Studium</label><br>
+          <label><input type="checkbox" id="bsw"> BSW</label><br>
+          <label><input type="checkbox" id="sanitaeter"> Sanitäter</label><br>
+          <label><input type="checkbox" id="pschein"> P-Schein</label>
         </div>
         <div class="qual-card">
           <h5>Ausweisdokument</h5>
@@ -1457,17 +1471,11 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <option value="Sachkunde">Sachkunde</option>
       </select>
 
-      <label><input type="checkbox" id="edit-pschein"> P-Schein</label>
-
       <label>Bewach-ID</label>
       <input type="text" id="edit-bewach-id">
 
       <label>Steuernummer</label>
       <input type="text" id="edit-steuernummer">
-
-      <label><input type="checkbox" id="edit-bsw"> BSW</label>
-
-      <label><input type="checkbox" id="edit-sanitaeter"> Sanitäter</label>
 
       <label>Stundensatz (€/h)</label>
       <input type="number" id="edit-stundensatz" step="0.01" min="0">
@@ -1520,7 +1528,10 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft S&amp;S</label><br>
           <label><input type="checkbox" id="edit-personenschutz"> Personenschutz</label><br>
           <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde</label><br>
-          <label><input type="checkbox" id="edit-behoerdlich_studium"> Behördlich/Studium</label>
+          <label><input type="checkbox" id="edit-behoerdlich_studium"> Behördlich/Studium</label><br>
+          <label><input type="checkbox" id="edit-bsw"> BSW</label><br>
+          <label><input type="checkbox" id="edit-sanitaeter"> Sanitäter</label><br>
+          <label><input type="checkbox" id="edit-pschein"> P-Schein</label>
         </div>
         <div class="qual-card">
           <h5>Ausweisdokument</h5>
@@ -3798,15 +3809,34 @@ document.getElementById("confirmed-counter").textContent =
         .replace(/'/g, "&#039;");
     }
 
+    let currentPdfUsername = "";
+
     function downloadUserPdf(username){
-      const rawChoice = prompt('Welches PDF möchtest du erzeugen? Bitte CV oder CP eingeben.', 'CV');
-      if(rawChoice === null) return;
-      const pdfType = String(rawChoice || '').trim().toUpperCase();
-      if(pdfType !== 'CV' && pdfType !== 'CP'){
-        alert('Bitte nur CV oder CP eingeben.');
-        return;
+      currentPdfUsername = String(username || "");
+      const modal = document.getElementById('pdf-choice-modal');
+      const select = document.getElementById('pdf-type-select');
+      if(select) select.value = 'CV';
+      if(modal){
+        modal.classList.add('show');
+        modal.setAttribute('aria-hidden', 'false');
       }
-      window.open('/users/' + encodeURIComponent(username) + '/pdf?pdf_type=' + encodeURIComponent(pdfType), '_blank');
+    }
+
+    function closePdfChoiceModal(){
+      const modal = document.getElementById('pdf-choice-modal');
+      if(modal){
+        modal.classList.remove('show');
+        modal.setAttribute('aria-hidden', 'true');
+      }
+      currentPdfUsername = "";
+    }
+
+    function confirmPdfChoice(){
+      const select = document.getElementById('pdf-type-select');
+      const pdfType = String(select?.value || 'CV').trim().toUpperCase();
+      if(!currentPdfUsername) return closePdfChoiceModal();
+      window.open('/users/' + encodeURIComponent(currentPdfUsername) + '/pdf?pdf_type=' + encodeURIComponent(pdfType), '_blank');
+      closePdfChoiceModal();
     }
 
     async function toggleUserLock(username){
@@ -4730,6 +4760,22 @@ document.addEventListener('DOMContentLoaded', function(){
   }catch(e){}
 });
 </script>
+
+
+<div id="pdf-choice-modal" class="pdf-choice-modal" aria-hidden="true">
+  <div class="pdf-choice-card">
+    <h3>PDF erzeugen</h3>
+    <p>Bitte wähle aus, welches PDF du öffnen möchtest.</p>
+    <select id="pdf-type-select">
+      <option value="CV">CV</option>
+      <option value="CP">CP</option>
+    </select>
+    <div class="pdf-choice-actions">
+      <button type="button" class="reject" onclick="closePdfChoiceModal()">Abbrechen</button>
+      <button type="button" class="confirm" onclick="confirmPdfChoice()">Öffnen</button>
+    </div>
+  </div>
+</div>
 
 </body>
 </html>
