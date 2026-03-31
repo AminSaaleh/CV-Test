@@ -329,6 +329,10 @@ def normalize_user_payload(d):
         "behoerdlich_studium": yesno(d.get("behoerdlich_studium")),
         "fuehrerschein": yesno(d.get("fuehrerschein")),
         "fuehrerschein_klassen": (d.get("fuehrerschein_klassen") or "").strip(),
+        "ausweis_art": (d.get("ausweis_art") or "").strip(),
+        "ausweis_nr": (d.get("ausweis_nr") or "").strip(),
+        "ausweis_behoerde": (d.get("ausweis_behoerde") or "").strip(),
+        "ausweis_gueltig_bis": (d.get("ausweis_gueltig_bis") or "").strip(),
         "image_data": clean_image_data(d.get("image_data")),
     }
 
@@ -443,6 +447,10 @@ def init_db():
             behoerdlich_studium TEXT DEFAULT 'nein',
             fuehrerschein TEXT DEFAULT 'nein',
             fuehrerschein_klassen TEXT,
+            ausweis_art TEXT,
+            ausweis_nr TEXT,
+            ausweis_behoerde TEXT,
+            ausweis_gueltig_bis TEXT,
             image_data TEXT
         );
         '''
@@ -531,6 +539,10 @@ def init_db():
         ("behoerdlich_studium", "ALTER TABLE users ADD COLUMN behoerdlich_studium TEXT DEFAULT 'nein'"),
         ("fuehrerschein", "ALTER TABLE users ADD COLUMN fuehrerschein TEXT DEFAULT 'nein'"),
         ("fuehrerschein_klassen", "ALTER TABLE users ADD COLUMN fuehrerschein_klassen TEXT"),
+        ("ausweis_art", "ALTER TABLE users ADD COLUMN ausweis_art TEXT"),
+        ("ausweis_nr", "ALTER TABLE users ADD COLUMN ausweis_nr TEXT"),
+        ("ausweis_behoerde", "ALTER TABLE users ADD COLUMN ausweis_behoerde TEXT"),
+        ("ausweis_gueltig_bis", "ALTER TABLE users ADD COLUMN ausweis_gueltig_bis TEXT"),
         ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
     ]:
         if not col_exists(db, "users", c):
@@ -819,8 +831,9 @@ def add_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
+                ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis,image_data)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -848,6 +861,10 @@ def add_user():
                 extra["behoerdlich_studium"],
                 extra["fuehrerschein"],
                 extra["fuehrerschein_klassen"],
+                extra["ausweis_art"],
+                extra["ausweis_nr"],
+                extra["ausweis_behoerde"],
+                extra["ausweis_gueltig_bis"],
                 extra["image_data"],
             ),
         )
@@ -901,9 +918,10 @@ def rename_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
+                ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis,image_data,
                 consent_given,consent_name,consent_date)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -931,6 +949,10 @@ def rename_user():
                 old.get("behoerdlich_studium") or "nein",
                 old.get("fuehrerschein") or "nein",
                 old.get("fuehrerschein_klassen") or "",
+                old.get("ausweis_art") or "",
+                old.get("ausweis_nr") or "",
+                old.get("ausweis_behoerde") or "",
+                old.get("ausweis_gueltig_bis") or "",
                 old.get("image_data") or "",
                 bool(old.get("consent_given") or False),
                 old.get("consent_name") or "",
@@ -969,7 +991,8 @@ def edit_user(username):
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
               "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung",
               "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen",
+              "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis", "image_data"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -995,7 +1018,8 @@ def edit_user(username):
 
     extra_updates = normalize_user_payload(d)
     for k in ["brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen",
+              "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis", "image_data"]:
         if k in d:
             updates[k] = extra_updates[k]
 
@@ -1004,7 +1028,8 @@ def edit_user(username):
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
            bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s,
            language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
-           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s, image_data=%s
+           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s,
+           ausweis_art=%s, ausweis_nr=%s, ausweis_behoerde=%s, ausweis_gueltig_bis=%s, image_data=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
@@ -1013,7 +1038,9 @@ def edit_user(username):
             updates["stundensatz"], updates.get("language_skills") or dump_language_skills({}),
             updates.get("brandschutzhelfer") or "nein", updates.get("deeskalation") or "nein", updates.get("gssk") or "nein", updates.get("fachkraft_ss") or "nein",
             updates.get("personenschutz") or "nein", updates.get("waffensachkunde") or "nein", updates.get("behoerdlich_studium") or "nein",
-            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "", clean_image_data(updates.get("image_data")), username
+            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "",
+            updates.get("ausweis_art") or "", updates.get("ausweis_nr") or "", updates.get("ausweis_behoerde") or "", updates.get("ausweis_gueltig_bis") or "",
+            clean_image_data(updates.get("image_data")), username
         )
     )
     db.commit()
@@ -1106,6 +1133,18 @@ def user_pdf(username):
 
     language_skills = parse_language_skills(u.get("language_skills"))
     language_text = ", ".join([f"{lang}: {level}" for lang, level in language_skills.items()]) or "-"
+    ausweis_gueltig_bis = (u.get("ausweis_gueltig_bis") or "").strip()
+    if ausweis_gueltig_bis:
+        try:
+            ausweis_gueltig_bis = datetime.fromisoformat(ausweis_gueltig_bis).strftime("%d.%m.%Y")
+        except Exception:
+            pass
+    ausweis_items = [
+        ("Art", (u.get("ausweis_art") or "").strip() or "-"),
+        ("Dokumentennr.", (u.get("ausweis_nr") or "").strip() or "-"),
+        ("Ausstellende Behörde", (u.get("ausweis_behoerde") or "").strip() or "-"),
+        ("Gültig bis", ausweis_gueltig_bis or "-"),
+    ]
     fuehrerschein_text = yn(u.get("fuehrerschein"))
     if fuehrerschein_text == "Ja" and (u.get("fuehrerschein_klassen") or "").strip():
         fuehrerschein_text += f" – Klasse {(u.get('fuehrerschein_klassen') or '').strip()}"
@@ -1221,6 +1260,8 @@ def user_pdf(username):
         ("Erklärung", "Datenschutz-Selbsterklärung liegt vor" if bool(u.get("consent_given") or False) else "Datenschutz-Selbsterklärung fehlt"),
         ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
     ], accent=colors.HexColor("#e9f8ef"))
+
+    draw_kv_box(pdf, margin, lower_bottom - 18, width - 2 * margin, "Ausweisdokument", ausweis_items, accent=colors.HexColor("#fff4e6"))
 
     pdf.setFont("Helvetica", 9)
     pdf.setFillColor(colors.HexColor("#64748b"))
