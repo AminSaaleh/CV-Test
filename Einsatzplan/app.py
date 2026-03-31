@@ -1150,8 +1150,8 @@ def user_pdf(username):
     pdf.setFont("Helvetica", 8)
     pdf.setFillColor(colors.HexColor("#6b7280"))
     pdf.drawString(margin, header_y - 12, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
-    header_logo_w = 108
-    header_logo_h = 32
+    header_logo_w = 200
+    header_logo_h = 80
     header_logo_x = width - margin - header_logo_w
     header_logo_y = header_y - 18
     if logo_path:
