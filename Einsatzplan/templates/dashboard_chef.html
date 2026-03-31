@@ -842,7 +842,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <a href="#" id="tab-calendar">📅 Kalender</a>
             <a href="#" id="tab-termine">🗓️ Meine Termine</a>
 <a href="#" id="tab-planning">🗂️ Planung</a>
-      <a href="#" id="tab-users">👥 Personal</a>
+      <a href="#" id="tab-users">👥 Personalliste</a>
       <a href="#" id="tab-report">📊 Report</a>
       <a href="#" id="tab-counter">🧮 Zähler</a>
 {% endif %}
@@ -1083,7 +1083,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <option value="mitarbeiter">Mitarbeiter</option>
           <option value="vorgesetzter">Vorgesetzter</option>
             <option value="vorgesetzter_cp">Vorgesetzter CP</option>
-            <option value="planner_bbs">Planner BBS</option>
+            <option value="planner_bbs">Planer BBS</option>
           <option value="planer">Planer</option>
         
         </select>
@@ -1446,7 +1446,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <option value="vorgesetzter">Vorgesetzter</option>
           <option value="planer">Planer</option>
       
-            <option value="planner_bbs">Planner BBS</option>
+            <option value="planner_bbs">Planer BBS</option>
             <option value="vorgesetzter_cp">Vorgesetzter CP</option>
         </select>
 
@@ -2176,7 +2176,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
 
     document.addEventListener('DOMContentLoaded', async function() {
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
-      // Alle anderen Rollen (Planer/Planner BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
+      // Alle anderen Rollen (Planer/Planer BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
       if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
         let resUsers = await fetch("/users");
         let users = await resUsers.json();
@@ -4593,7 +4593,7 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
   const hide = (id)=>{ const el=document.getElementById(id); if(el) el.style.display="none"; };
   const hideTab = (tabId)=>{ const el=document.getElementById(tabId); if(el) el.style.display="none"; };
 
-  // Planner BBS: nur Planung + nur CV
+  // Planer BBS: nur Planung + nur CV
   if(role === "planner_bbs"){
     // Tabs ausblenden (alles außer Planung)
     ["tab-home","tab-calendar","tab-termine","tab-users","tab-report","tab-counter"].forEach(hideTab);
