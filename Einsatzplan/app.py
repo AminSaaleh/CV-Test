@@ -32,38 +32,27 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
-SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").strip().lower() not in ("0", "false", "nein", "no")
-MAIL_FROM = os.environ.get("MAIL_FROM", f"CV Planung <{SMTP_USER}>")
+MAIL_FROM = os.environ.get("MAIL_FROM", f"REMINDER – CV Planung <{SMTP_USER}>")
 
 def send_mail(to_addr: str, subject: str, body: str) -> None:
-    """Send a plain text email via SMTP and raise useful errors if config/delivery fails."""
+    """Send a plain text email via SMTP. No-op if config is missing."""
     to_addr = (to_addr or "").strip()
     if not to_addr:
-        raise ValueError("Empfänger-Adresse fehlt.")
+        return
     if not (SMTP_HOST and SMTP_PORT and SMTP_USER and SMTP_PASS):
-        raise RuntimeError("SMTP ist nicht vollständig konfiguriert. Bitte SMTP_HOST, SMTP_PORT, SMTP_USER und SMTP_PASS setzen.")
+        return
 
     msg = EmailMessage()
     msg["From"] = MAIL_FROM
     msg["To"] = to_addr
     msg["Subject"] = subject
-    msg.set_content(body, charset="utf-8")
+    msg.set_content(body)
 
-    try:
-        if SMTP_PORT == 465:
-            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as s:
-                s.login(SMTP_USER, SMTP_PASS)
-                s.send_message(msg)
-        else:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
-                s.ehlo()
-                if SMTP_USE_TLS:
-                    s.starttls()
-                    s.ehlo()
-                s.login(SMTP_USER, SMTP_PASS)
-                s.send_message(msg)
-    except Exception as e:
-        raise RuntimeError(f"E-Mail-Versand fehlgeschlagen: {e}") from e
+    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+        s.ehlo()
+        s.starttls()
+        s.login(SMTP_USER, SMTP_PASS)
+        s.send_message(msg)
 
 def build_welcome_mail(employee_name: str, username: str, password: str) -> str:
     lines = [
@@ -129,48 +118,6 @@ def build_change_mail(employee_name: str,
         f"Einsatz:  {title}",
         f"Dienstkleidung: {dienst}",
         f"Ort: {location}",
-        "",
-        "Viele Grüße",
-        "CV Planung"
-    ])
-
-    return "\n".join(lines)
-
-
-def build_confirmation_mail(employee_name: str,
-                            event_title: str,
-                            event_start_dt: str,
-                            ort: str,
-                            dienstkleidung: str,
-                            start_time: str = "") -> str:
-    date_de = "TT.MM.JJJJ"
-    try:
-        if isinstance(event_start_dt, str) and event_start_dt.strip():
-            d = datetime.fromisoformat(event_start_dt.replace("Z", "").strip())
-            date_de = d.strftime("%d.%m.%Y")
-    except Exception:
-        pass
-
-    title = (event_title or "").strip() or "-"
-    dienst = (dienstkleidung or "").strip() or "-"
-    location = (ort or "").strip() or "-"
-    time_info = (start_time or "").strip()
-
-    lines = [
-        f"Hallo {employee_name},",
-        "",
-        "dein Einsatz wurde bestätigt. ✅",
-        "",
-        f"Einsatz: {title}",
-        f"Datum: {date_de}",
-    ]
-
-    if time_info:
-        lines.append(f"Startzeit: {time_info}")
-
-    lines.extend([
-        f"Ort: {location}",
-        f"Dienstkleidung: {dienst}",
         "",
         "Viele Grüße",
         "CV Planung"
@@ -329,10 +276,6 @@ def normalize_user_payload(d):
         "behoerdlich_studium": yesno(d.get("behoerdlich_studium")),
         "fuehrerschein": yesno(d.get("fuehrerschein")),
         "fuehrerschein_klassen": (d.get("fuehrerschein_klassen") or "").strip(),
-        "ausweis_art": (d.get("ausweis_art") or "").strip(),
-        "ausweis_nr": (d.get("ausweis_nr") or "").strip(),
-        "ausweis_behoerde": (d.get("ausweis_behoerde") or "").strip(),
-        "ausweis_gueltig_bis": (d.get("ausweis_gueltig_bis") or "").strip(),
         "image_data": clean_image_data(d.get("image_data")),
     }
 
@@ -447,10 +390,6 @@ def init_db():
             behoerdlich_studium TEXT DEFAULT 'nein',
             fuehrerschein TEXT DEFAULT 'nein',
             fuehrerschein_klassen TEXT,
-            ausweis_art TEXT,
-            ausweis_nr TEXT,
-            ausweis_behoerde TEXT,
-            ausweis_gueltig_bis TEXT,
             image_data TEXT
         );
         '''
@@ -539,10 +478,6 @@ def init_db():
         ("behoerdlich_studium", "ALTER TABLE users ADD COLUMN behoerdlich_studium TEXT DEFAULT 'nein'"),
         ("fuehrerschein", "ALTER TABLE users ADD COLUMN fuehrerschein TEXT DEFAULT 'nein'"),
         ("fuehrerschein_klassen", "ALTER TABLE users ADD COLUMN fuehrerschein_klassen TEXT"),
-        ("ausweis_art", "ALTER TABLE users ADD COLUMN ausweis_art TEXT"),
-        ("ausweis_nr", "ALTER TABLE users ADD COLUMN ausweis_nr TEXT"),
-        ("ausweis_behoerde", "ALTER TABLE users ADD COLUMN ausweis_behoerde TEXT"),
-        ("ausweis_gueltig_bis", "ALTER TABLE users ADD COLUMN ausweis_gueltig_bis TEXT"),
         ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
     ]:
         if not col_exists(db, "users", c):
@@ -831,9 +766,8 @@ def add_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
-                ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis,image_data)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -861,10 +795,6 @@ def add_user():
                 extra["behoerdlich_studium"],
                 extra["fuehrerschein"],
                 extra["fuehrerschein_klassen"],
-                extra["ausweis_art"],
-                extra["ausweis_nr"],
-                extra["ausweis_behoerde"],
-                extra["ausweis_gueltig_bis"],
                 extra["image_data"],
             ),
         )
@@ -918,10 +848,9 @@ def rename_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,
-                ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis,image_data,
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,
                 consent_given,consent_name,consent_date)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -949,10 +878,6 @@ def rename_user():
                 old.get("behoerdlich_studium") or "nein",
                 old.get("fuehrerschein") or "nein",
                 old.get("fuehrerschein_klassen") or "",
-                old.get("ausweis_art") or "",
-                old.get("ausweis_nr") or "",
-                old.get("ausweis_behoerde") or "",
-                old.get("ausweis_gueltig_bis") or "",
                 old.get("image_data") or "",
                 bool(old.get("consent_given") or False),
                 old.get("consent_name") or "",
@@ -991,8 +916,7 @@ def edit_user(username):
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
               "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung",
               "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen",
-              "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis", "image_data"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
         if k in d:
             # ✅ Bugfix: Sachkunde darf beim Speichern der E-Mail nicht verschwinden.
             # Wenn Frontend ein leeres Feld sendet, behalten wir den bisherigen Wert.
@@ -1018,8 +942,7 @@ def edit_user(username):
 
     extra_updates = normalize_user_payload(d)
     for k in ["brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
-              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen",
-              "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis", "image_data"]:
+              "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
         if k in d:
             updates[k] = extra_updates[k]
 
@@ -1028,8 +951,7 @@ def edit_user(username):
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
            bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s,
            language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
-           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s,
-           ausweis_art=%s, ausweis_nr=%s, ausweis_behoerde=%s, ausweis_gueltig_bis=%s, image_data=%s
+           personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s, image_data=%s
            WHERE username=%s""",
         (
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
@@ -1038,9 +960,7 @@ def edit_user(username):
             updates["stundensatz"], updates.get("language_skills") or dump_language_skills({}),
             updates.get("brandschutzhelfer") or "nein", updates.get("deeskalation") or "nein", updates.get("gssk") or "nein", updates.get("fachkraft_ss") or "nein",
             updates.get("personenschutz") or "nein", updates.get("waffensachkunde") or "nein", updates.get("behoerdlich_studium") or "nein",
-            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "",
-            updates.get("ausweis_art") or "", updates.get("ausweis_nr") or "", updates.get("ausweis_behoerde") or "", updates.get("ausweis_gueltig_bis") or "",
-            clean_image_data(updates.get("image_data")), username
+            updates.get("fuehrerschein") or "nein", updates.get("fuehrerschein_klassen") or "", clean_image_data(updates.get("image_data")), username
         )
     )
     db.commit()
@@ -1133,18 +1053,6 @@ def user_pdf(username):
 
     language_skills = parse_language_skills(u.get("language_skills"))
     language_text = ", ".join([f"{lang}: {level}" for lang, level in language_skills.items()]) or "-"
-    ausweis_gueltig_bis = (u.get("ausweis_gueltig_bis") or "").strip()
-    if ausweis_gueltig_bis:
-        try:
-            ausweis_gueltig_bis = datetime.fromisoformat(ausweis_gueltig_bis).strftime("%d.%m.%Y")
-        except Exception:
-            pass
-    ausweis_items = [
-        ("Art", (u.get("ausweis_art") or "").strip() or "-"),
-        ("Dokumentennr.", (u.get("ausweis_nr") or "").strip() or "-"),
-        ("Ausstellende Behörde", (u.get("ausweis_behoerde") or "").strip() or "-"),
-        ("Gültig bis", ausweis_gueltig_bis or "-"),
-    ]
     fuehrerschein_text = yn(u.get("fuehrerschein"))
     if fuehrerschein_text == "Ja" and (u.get("fuehrerschein_klassen") or "").strip():
         fuehrerschein_text += f" – Klasse {(u.get('fuehrerschein_klassen') or '').strip()}"
@@ -1260,8 +1168,6 @@ def user_pdf(username):
         ("Erklärung", "Datenschutz-Selbsterklärung liegt vor" if bool(u.get("consent_given") or False) else "Datenschutz-Selbsterklärung fehlt"),
         ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
     ], accent=colors.HexColor("#e9f8ef"))
-
-    draw_kv_box(pdf, margin, lower_bottom - 18, width - 2 * margin, "Ausweisdokument", ausweis_items, accent=colors.HexColor("#fff4e6"))
 
     pdf.setFont("Helvetica", 9)
     pdf.setFillColor(colors.HexColor("#64748b"))
@@ -1710,15 +1616,7 @@ def confirm_event():
         (event_id, username)
     ).fetchone()
 
-    current_start_time = ""
-
     if exists:
-        existing_row = db.execute(
-            "SELECT start_time FROM response WHERE event_id=%s AND username=%s",
-            (event_id, username)
-        ).fetchone()
-        current_start_time = (existing_row.get("start_time") if existing_row else "") or ""
-
         if decision_db == "bestätigt":
             db.execute(
                 "UPDATE response SET status=%s, profile_rate_snapshot = COALESCE(profile_rate_snapshot, %s) WHERE event_id=%s AND username=%s",
@@ -1736,41 +1634,7 @@ def confirm_event():
         )
 
     db.commit()
-
-    mail_sent = False
-    mail_error = ""
-
-    if decision_db == "bestätigt":
-        u = db.execute(
-            "SELECT vorname, nachname, email FROM users WHERE username=%s",
-            (username,)
-        ).fetchone()
-        e = db.execute(
-            "SELECT title, start, ort, dienstkleidung FROM event WHERE id=%s",
-            (event_id,)
-        ).fetchone()
-
-        if u and e and (u.get("email") or "").strip():
-            employee_name = (f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}").strip() or username
-            event_start_dt = ((e.get("start") or "").strip().replace("T", " ")) or "-"
-            subject = f"Einsatz bestätigt: {(e.get('title') or 'Einsatz')}"
-            body = build_confirmation_mail(
-                employee_name=employee_name,
-                event_title=(e.get("title") or "Einsatz"),
-                event_start_dt=event_start_dt,
-                ort=(e.get("ort") or ""),
-                dienstkleidung=(e.get("dienstkleidung") or ""),
-                start_time=current_start_time,
-            )
-            try:
-                send_mail((u.get("email") or "").strip(), subject, body)
-                mail_sent = True
-            except Exception as e:
-                mail_error = str(e)
-        else:
-            mail_error = "Keine E-Mail-Adresse beim Mitarbeiter hinterlegt."
-
-    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
+    return jsonify({"status": "ok"})
 
 
 @app.route("/events/endtime", methods=["POST"])
