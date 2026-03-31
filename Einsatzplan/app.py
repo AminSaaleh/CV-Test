@@ -1036,8 +1036,17 @@ def user_pdf(username):
     def draw_info_box(c, x, y_top, w, title, items, min_height=100):
         label_w = 98
         probe_y = y_top - 40
-        for label, value in items:
-            probe_y = draw_wrapped(c, value, x + 12 + label_w, probe_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+        for item in items:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                label, value = item[0], item[1]
+                label = str(label or "").strip()
+                value = str(value or "").strip() or "-"
+                if label:
+                    probe_y = draw_wrapped(c, value, x + 12 + label_w, probe_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+                else:
+                    probe_y = draw_wrapped(c, value, x + 12, probe_y, w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+            else:
+                probe_y = draw_wrapped(c, str(item or "-"), x + 12, probe_y, w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
             probe_y -= 3
         box_h = max(min_height, y_top - probe_y + 12)
 
@@ -1052,11 +1061,20 @@ def user_pdf(username):
         c.line(x + 8, y_top - 20, x + w - 8, y_top - 20)
 
         row_y = y_top - 40
-        for label, value in items:
-            c.setFont("Helvetica-Bold", 10)
-            c.setFillColor(colors.HexColor("#374151"))
-            c.drawString(x + 12, row_y, f"{label}:")
-            row_y = draw_wrapped(c, value, x + 12 + label_w, row_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+        for item in items:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                label, value = item[0], item[1]
+                label = str(label or "").strip()
+                value = str(value or "").strip() or "-"
+                if label:
+                    c.setFont("Helvetica-Bold", 10)
+                    c.setFillColor(colors.HexColor("#374151"))
+                    c.drawString(x + 12, row_y, f"{label}:")
+                    row_y = draw_wrapped(c, value, x + 12 + label_w, row_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+                else:
+                    row_y = draw_wrapped(c, value, x + 12, row_y, w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+            else:
+                row_y = draw_wrapped(c, str(item or "-"), x + 12, row_y, w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
             row_y -= 3
         return y_top - box_h
 
@@ -1065,7 +1083,7 @@ def user_pdf(username):
     if not language_rows:
         language_rows = [("Sprachen", "-")]
 
-    qual_values = [("Hinweis", clean_text(u.get("bemerkung")))]
+    qual_values = []
     for label, key in [
         ("Brandschutzhelfer", "brandschutzhelfer"),
         ("Rettungssanitäter", "sanitaeter"),
@@ -1079,7 +1097,10 @@ def user_pdf(username):
         ("P-Schein", "pschein"),
     ]:
         if yn(u.get(key)) == "Ja":
-            qual_values.append((label, "Ja"))
+            qual_values.append(label)
+
+    if not qual_values:
+        qual_values = ["-"]
 
     full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
     s34a_text = clean_text(u.get("s34a_art"), "") or yn(u.get("s34a"))
@@ -1187,15 +1208,6 @@ def user_pdf(username):
         ("Gültig bis", fmt_date_de(u.get("ausweis_gueltig_bis"))),
     ])
     right_bottom = draw_info_box(pdf, right_x, lower_top, right_w, "Fremdsprachen", right_items, min_height=120)
-
-    footer_y = min(left_bottom, right_bottom) - 16
-    info_items = [
-        ("E-Mail", clean_text(u.get("email"))),
-        ("SVS", f"{float(u.get('stundensatz')):.2f} €/h" if u.get("stundensatz") not in (None, "") else "-"),
-        ("Erklärung", "Datenschutz-Selbsterklärung liegt vor" if bool(u.get("consent_given") or False) else "Datenschutz-Selbsterklärung fehlt"),
-        ("Status", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
-    ]
-    draw_info_box(pdf, margin, footer_y, content_w, "Weitere Angaben", info_items, min_height=82)
 
     pdf.setFont("Helvetica", 8)
     pdf.setFillColor(colors.HexColor("#6b7280"))
