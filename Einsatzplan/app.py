@@ -999,7 +999,20 @@ def user_pdf(username):
     def yn(value):
         return "Ja" if str(value or "").strip().lower() == "ja" else "Nein"
 
-    def draw_wrapped(c, text, x, y, max_width, line_height=14, font_name="Helvetica", font_size=10, color=colors.black):
+    def clean_text(value, fallback="-"):
+        value = str(value or "").strip()
+        return value if value else fallback
+
+    def fmt_date_de(value):
+        value = (value or "").strip()
+        if not value:
+            return "-"
+        try:
+            return datetime.fromisoformat(value.replace("Z", "")).strftime("%d.%m.%Y")
+        except Exception:
+            return value
+
+    def draw_wrapped(c, text, x, y, max_width, line_height=12, font_name="Helvetica", font_size=10, color=colors.black):
         c.setFont(font_name, font_size)
         c.setFillColor(color)
         words = str(text or "-").split()
@@ -1020,105 +1033,122 @@ def user_pdf(username):
             y -= line_height
         return y
 
-    def draw_kv_box(c, x, y_top, w, title, items, accent=colors.HexColor("#d9e9ff")):
-        label_w = 110
-        line_h = 16
-        inner_y = y_top - 34
-        content_y = inner_y
-        c.setFont("Helvetica-Bold", 14)
+    def draw_info_box(c, x, y_top, w, title, items, min_height=100):
+        label_w = 98
+        probe_y = y_top - 40
         for label, value in items:
-            c.setFillColor(colors.HexColor("#23324d"))
-            c.drawString(x + 14, content_y, f"{label}:")
-            content_y = draw_wrapped(c, value, x + 14 + label_w, content_y, w - label_w - 28, line_height=line_h, font_name="Helvetica", font_size=11)
-            content_y -= 4
-        height_box = max(98, y_top - content_y + 12)
+            probe_y = draw_wrapped(c, value, x + 12 + label_w, probe_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+            probe_y -= 3
+        box_h = max(min_height, y_top - probe_y + 12)
+
+        c.setStrokeColor(colors.HexColor("#d2d7df"))
         c.setFillColor(colors.white)
-        c.setStrokeColor(colors.HexColor("#d8dee8"))
-        c.roundRect(x, y_top - height_box, w, height_box, 12, stroke=1, fill=1)
-        c.setFillColor(accent)
-        c.roundRect(x, y_top - 28, w, 28, 12, stroke=0, fill=1)
-        c.rect(x, y_top - 28, w, 14, stroke=0, fill=1)
-        c.setFillColor(colors.HexColor("#0f172a"))
-        c.setFont("Helvetica-Bold", 13)
-        c.drawString(x + 14, y_top - 18, title)
-        c.setFillColor(colors.black)
-        content_y = y_top - 48
+        c.rect(x, y_top - box_h, w, box_h, stroke=1, fill=1)
+
+        c.setFillColor(colors.HexColor("#2f7ebd"))
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(x + 8, y_top - 15, title)
+        c.setStrokeColor(colors.HexColor("#c8d5e3"))
+        c.line(x + 8, y_top - 20, x + w - 8, y_top - 20)
+
+        row_y = y_top - 40
         for label, value in items:
-            c.setFont("Helvetica-Bold", 11)
-            c.setFillColor(colors.HexColor("#23324d"))
-            c.drawString(x + 14, content_y, f"{label}:")
-            content_y = draw_wrapped(c, value, x + 14 + label_w, content_y, w - label_w - 28, line_height=line_h, font_name="Helvetica", font_size=11)
-            content_y -= 4
-        return y_top - height_box
+            c.setFont("Helvetica-Bold", 10)
+            c.setFillColor(colors.HexColor("#374151"))
+            c.drawString(x + 12, row_y, f"{label}:")
+            row_y = draw_wrapped(c, value, x + 12 + label_w, row_y, w - label_w - 24, line_height=12, font_name="Helvetica", font_size=10, color=colors.HexColor("#111827"))
+            row_y -= 3
+        return y_top - box_h
 
     language_skills = parse_language_skills(u.get("language_skills"))
-    language_text = ", ".join([f"{lang}: {level}" for lang, level in language_skills.items()]) or "-"
-    fuehrerschein_text = yn(u.get("fuehrerschein"))
-    if fuehrerschein_text == "Ja" and (u.get("fuehrerschein_klassen") or "").strip():
-        fuehrerschein_text += f" – Klasse {(u.get('fuehrerschein_klassen') or '').strip()}"
+    language_rows = [(str(lang).strip(), str(level).strip()) for lang, level in language_skills.items() if str(lang).strip()]
+    if not language_rows:
+        language_rows = [("Sprachen", "-")]
 
-    all_qualifications = [
-        ("Sanitätsdienst", yn(u.get("sanitaeter"))),
-        ("Brandschutzhelfer", yn(u.get("brandschutzhelfer"))),
-        ("Deeskalation", yn(u.get("deeskalation"))),
-        ("GSSK", yn(u.get("gssk"))),
-        ("Fachkraft S&S", yn(u.get("fachkraft_ss"))),
-        ("Personenschutz", yn(u.get("personenschutz"))),
-        ("Waffensachkunde", yn(u.get("waffensachkunde"))),
-        ("Behördlich/Studium", yn(u.get("behoerdlich_studium"))),
-        ("BSW", yn(u.get("bsw"))),
-        ("P-Schein", yn(u.get("pschein"))),
-    ]
-    visible_qualifications = [(k, v) for k, v in all_qualifications if v == "Ja"]
-    if not visible_qualifications:
-        visible_qualifications = [("Qualifikationen", "Keine zusätzlichen Qualifikationen hinterlegt")]
+    qual_values = [("Hinweis", clean_text(u.get("bemerkung")))]
+    for label, key in [
+        ("Brandschutzhelfer", "brandschutzhelfer"),
+        ("Rettungssanitäter", "sanitaeter"),
+        ("Personenschutz", "personenschutz"),
+        ("GSSK", "gssk"),
+        ("Deeskalation", "deeskalation"),
+        ("Fachkraft S&S", "fachkraft_ss"),
+        ("Waffensachkunde", "waffensachkunde"),
+        ("Behördlich/Studium", "behoerdlich_studium"),
+        ("BSW", "bsw"),
+        ("P-Schein", "pschein"),
+    ]:
+        if yn(u.get(key)) == "Ja":
+            qual_values.append((label, "Ja"))
+
+    full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
+    s34a_text = clean_text(u.get("s34a_art"), "") or yn(u.get("s34a"))
+    fuehrerschein_text = yn(u.get("fuehrerschein"))
+    if fuehrerschein_text == "Ja" and clean_text(u.get("fuehrerschein_klassen"), ""):
+        fuehrerschein_text += f" ({clean_text(u.get('fuehrerschein_klassen'), '')})"
 
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
     width, height = A4
-    margin = 42
+    margin = 34
+    content_w = width - 2 * margin
 
     pdf.setTitle(f"Mitarbeiter_{username}")
     pdf.setAuthor("CV Planung")
-    pdf.setFillColor(colors.HexColor("#08152e"))
-    pdf.roundRect(margin, height - 85, width - 2 * margin, 48, 14, stroke=0, fill=1)
-    pdf.setFillColor(colors.white)
-    pdf.setFont("Helvetica-Bold", 20)
-    pdf.drawString(margin + 18, height - 58, "Mitarbeiterprofil")
-    pdf.setFont("Helvetica", 10)
-    pdf.drawString(margin + 18, height - 74, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
+    pdf.setSubject("Mitarbeiterprofil")
 
-    card_y_top = height - 120
-    left_w = width * 0.58
-    right_x = margin + left_w + 18
-    right_w = width - margin - right_x
-    card_h = 120
+    header_y = height - 28
+    pdf.setFont("Helvetica-Bold", 15)
+    pdf.setFillColor(colors.HexColor("#1f2937"))
+    pdf.drawString(margin, header_y, "Mitarbeiterprofil")
+    pdf.setFont("Helvetica", 8)
+    pdf.setFillColor(colors.HexColor("#6b7280"))
+    pdf.drawString(margin, header_y - 12, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
+    pdf.setFont("Helvetica-Bold", 11)
+    pdf.setFillColor(colors.HexColor("#111827"))
+    pdf.drawRightString(width - margin, header_y, full_name)
 
+    top_y = height - 70
+    left_w = content_w * 0.56
+    gap = 14
+    right_w = content_w - left_w - gap
+    right_x = margin + left_w + gap
+
+    # Basisdaten links oben
+    pdf.setStrokeColor(colors.HexColor("#d2d7df"))
     pdf.setFillColor(colors.white)
-    pdf.setStrokeColor(colors.HexColor("#d8dee8"))
-    pdf.roundRect(margin, card_y_top - card_h, left_w, card_h, 16, stroke=1, fill=1)
-    pdf.setFillColor(colors.HexColor("#0f172a"))
-    pdf.setFont("Helvetica-Bold", 19)
-    full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
-    pdf.drawString(margin + 18, card_y_top - 28, full_name)
-    pdf.setFont("Helvetica", 11)
-    summary_lines = [
-        f"Benutzername: {username}",
-        f"E-Mail: {(u.get('email') or '').strip() or '-'}",
-        f"Bemerkung: {(u.get('bemerkung') or '').strip() or '-'}",
-        f"Datenschutz: {'Ja' if bool(u.get('consent_given') or False) else 'Nein'}",
+    pdf.rect(margin, top_y - 142, left_w, 142, stroke=1, fill=1)
+    pdf.setFillColor(colors.HexColor("#2f7ebd"))
+    pdf.setFont("Helvetica-Bold", 12)
+    pdf.drawString(margin + 8, top_y - 15, "Basisdaten")
+    pdf.setStrokeColor(colors.HexColor("#c8d5e3"))
+    pdf.line(margin + 8, top_y - 20, margin + left_w - 8, top_y - 20)
+
+    label_x = margin + 12
+    value_x = margin + 116
+    row_y = top_y - 42
+    basis_rows = [
+        ("Vorname", clean_text(u.get("vorname"))),
+        ("Nachname", clean_text(u.get("nachname"))),
+        ("Amtl. Dokument", clean_text(u.get("ausweis_art"))),
+        ("Dokumentennr.", clean_text(u.get("ausweis_nr"))),
+        ("§ 34a GewO", s34a_text),
+        ("Bewacher ID", clean_text(u.get("bewach_id"))),
     ]
-    line_y = card_y_top - 50
-    for line in summary_lines:
-        pdf.setFillColor(colors.HexColor("#334155"))
-        pdf.drawString(margin + 18, line_y, line)
-        line_y -= 16
+    for label, value in basis_rows:
+        pdf.setFont("Helvetica-Bold", 9.5)
+        pdf.setFillColor(colors.HexColor("#374151"))
+        pdf.drawString(label_x, row_y, f"{label}:")
+        row_y = draw_wrapped(pdf, value, value_x, row_y, left_w - (value_x - margin) - 16, line_height=11, font_name="Helvetica", font_size=9.5, color=colors.HexColor("#111827"))
+        row_y -= 7
 
-    image_x = right_x
-    image_y = card_y_top - card_h
+    # Bild rechts oben
+    img_h = 142
+    img_y = top_y - img_h
+    pdf.setStrokeColor(colors.HexColor("#d2d7df"))
     pdf.setFillColor(colors.white)
-    pdf.setStrokeColor(colors.HexColor("#d8dee8"))
-    pdf.roundRect(image_x, image_y, right_w, card_h, 16, stroke=1, fill=1)
+    pdf.rect(right_x, img_y, right_w, img_h, stroke=1, fill=1)
+
     img_value = (u.get("image_data") or "").strip()
     drawn_image = False
     if img_value.startswith("data:image/") and ";base64," in img_value:
@@ -1126,52 +1156,50 @@ def user_pdf(username):
             raw = base64.b64decode(img_value.split(",", 1)[1])
             reader = ImageReader(io.BytesIO(raw))
             iw, ih = reader.getSize()
-            max_w = right_w - 20
-            max_h = card_h - 20
+            pad = 10
+            max_w = right_w - 2 * pad
+            max_h = img_h - 2 * pad
             scale = min(max_w / iw, max_h / ih)
             draw_w = iw * scale
             draw_h = ih * scale
-            draw_x = image_x + (right_w - draw_w) / 2
-            draw_y = image_y + (card_h - draw_h) / 2
+            draw_x = right_x + (right_w - draw_w) / 2
+            draw_y = img_y + (img_h - draw_h) / 2
             pdf.drawImage(reader, draw_x, draw_y, draw_w, draw_h, preserveAspectRatio=True, mask='auto')
             drawn_image = True
         except Exception:
             drawn_image = False
     if not drawn_image:
-        pdf.setFillColor(colors.HexColor("#eef2f7"))
-        pdf.roundRect(image_x + 16, image_y + 16, right_w - 32, card_h - 32, 10, stroke=0, fill=1)
-        pdf.setFillColor(colors.HexColor("#64748b"))
+        pdf.setFillColor(colors.HexColor("#f3f4f6"))
+        pdf.rect(right_x + 10, img_y + 10, right_w - 20, img_h - 20, stroke=0, fill=1)
+        pdf.setFillColor(colors.HexColor("#6b7280"))
         pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawCentredString(image_x + right_w / 2, image_y + card_h / 2 + 6, "Kein Bild")
-        pdf.setFont("Helvetica", 10)
-        pdf.drawCentredString(image_x + right_w / 2, image_y + card_h / 2 - 10, "Kein Bild hinterlegt")
+        pdf.drawCentredString(right_x + right_w / 2, img_y + img_h / 2 + 4, "Kein Bild")
+        pdf.setFont("Helvetica", 9)
+        pdf.drawCentredString(right_x + right_w / 2, img_y + img_h / 2 - 10, "Kein Foto hinterlegt")
 
-    box_top = card_y_top - card_h - 18
-    left_box_w = (width - 2 * margin - 14) / 2
-    right_box_x = margin + left_box_w + 14
+    lower_top = img_y - 16
+    left_bottom = draw_info_box(pdf, margin, lower_top, left_w, "Qualifikationen", qual_values, min_height=120)
 
-    left_bottom = draw_kv_box(pdf, margin, box_top, left_box_w, "Basisdaten", [
-        ("§ 34a GewO", yn(u.get("s34a")) + (f" ({u.get('s34a_art')})" if yn(u.get("s34a")) == "Ja" and (u.get("s34a_art") or "").strip() else "")),
-        ("Bewacher-ID", (u.get("bewach_id") or "").strip() or "-"),
-        ("BSW", yn(u.get("bsw"))),
-        ("P-Schein", yn(u.get("pschein"))),
+    right_items = [(lang, level or "-") for lang, level in language_rows]
+    right_items.extend([
         ("Führerschein", fuehrerschein_text),
+        ("Behörde", clean_text(u.get("ausweis_behoerde"))),
+        ("Gültig bis", fmt_date_de(u.get("ausweis_gueltig_bis"))),
+    ])
+    right_bottom = draw_info_box(pdf, right_x, lower_top, right_w, "Fremdsprachen", right_items, min_height=120)
+
+    footer_y = min(left_bottom, right_bottom) - 16
+    info_items = [
+        ("E-Mail", clean_text(u.get("email"))),
         ("SVS", f"{float(u.get('stundensatz')):.2f} €/h" if u.get("stundensatz") not in (None, "") else "-"),
-    ], accent=colors.HexColor("#e8efff"))
-
-    right_bottom = draw_kv_box(pdf, right_box_x, box_top, left_box_w, "Qualifikationen", visible_qualifications, accent=colors.HexColor("#eef8f0"))
-
-    lower_top = min(left_bottom, right_bottom) - 18
-    lower_bottom = draw_kv_box(pdf, margin, lower_top, width - 2 * margin, "Fremdsprachen & Hinweise", [
-        ("Sprachen", language_text),
-        ("Sonstige Hinweise", (u.get("bemerkung") or "").strip() or "-"),
         ("Erklärung", "Datenschutz-Selbsterklärung liegt vor" if bool(u.get("consent_given") or False) else "Datenschutz-Selbsterklärung fehlt"),
-        ("Accountstatus", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
-    ], accent=colors.HexColor("#e9f8ef"))
+        ("Status", "Gesperrt" if bool(u.get("is_locked") or False) else "Aktiv"),
+    ]
+    draw_info_box(pdf, margin, footer_y, content_w, "Weitere Angaben", info_items, min_height=82)
 
-    pdf.setFont("Helvetica", 9)
-    pdf.setFillColor(colors.HexColor("#64748b"))
-    pdf.drawRightString(width - margin, 20, f"Export für {full_name}")
+    pdf.setFont("Helvetica", 8)
+    pdf.setFillColor(colors.HexColor("#6b7280"))
+    pdf.drawRightString(width - margin, 14, f"Export für {full_name}")
 
     pdf.save()
     buffer.seek(0)
