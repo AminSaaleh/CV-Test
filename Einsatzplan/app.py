@@ -354,6 +354,24 @@ def employee_requires_consent() -> bool:
         # Im Zweifel sperren wir
         return True
 
+def parse_pdf_variant(value: str) -> str:
+    v = (value or "").strip().lower()
+    return "CV" if v == "cv" else "CP"
+
+
+def draw_pdf_logo_badge(c, page_width, margin, y, variant: str):
+    badge_text = f"{variant} logo"
+    badge_w = 92
+    badge_h = 26
+    x = page_width - margin - badge_w
+    c.setStrokeColor(colors.HexColor("#c8d5e3"))
+    c.setFillColor(colors.HexColor("#eef4fb") if variant == "CV" else colors.HexColor("#fff7db"))
+    c.roundRect(x, y - badge_h + 6, badge_w, badge_h, 8, stroke=1, fill=1)
+    c.setFillColor(colors.HexColor("#1f2937"))
+    c.setFont("Helvetica-Bold", 10)
+    c.drawCentredString(x + badge_w / 2, y - 10, badge_text)
+    return x
+
 def init_db():
     db = get_db()
 
@@ -988,6 +1006,8 @@ def user_pdf(username):
     if normalize_role(session.get("role")) not in ["chef", "vorgesetzter"]:
         return jsonify({"error": "Nicht erlaubt"}), 403
 
+    logo_variant = parse_pdf_variant(request.args.get("variant") or request.args.get("logo") or "CP")
+
     db = get_db()
     u = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
     if not u:
@@ -1132,6 +1152,7 @@ def user_pdf(username):
     pdf.setSubject("Mitarbeiterprofil")
 
     header_y = height - 28
+    logo_left_x = draw_pdf_logo_badge(pdf, width, margin, header_y, logo_variant)
     pdf.setFont("Helvetica-Bold", 15)
     pdf.setFillColor(colors.HexColor("#1f2937"))
     pdf.drawString(margin, header_y, "Mitarbeiterprofil")
@@ -1140,7 +1161,7 @@ def user_pdf(username):
     pdf.drawString(margin, header_y - 12, f"Export am {datetime.now().strftime('%d.%m.%Y, %H:%M Uhr')}")
     pdf.setFont("Helvetica-Bold", 11)
     pdf.setFillColor(colors.HexColor("#111827"))
-    pdf.drawRightString(width - margin, header_y, full_name)
+    pdf.drawRightString(logo_left_x - 10, header_y, full_name)
 
     top_y = height - 70
     left_w = content_w * 0.56
@@ -1223,7 +1244,8 @@ def user_pdf(username):
 
     pdf.save()
     buffer.seek(0)
-    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}.pdf")
+    filename_variant = logo_variant.lower()
+    return send_file(buffer, mimetype="application/pdf", as_attachment=True, download_name=f"mitarbeiter_{username}_{filename_variant}.pdf")
 
 
 @app.route("/users/<username>", methods=["DELETE"])
