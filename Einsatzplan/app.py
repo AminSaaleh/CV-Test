@@ -1099,14 +1099,27 @@ def user_pdf(username):
         if yn(u.get(key)) == "Ja":
             qual_values.append(label)
 
+    fuehrerschein_text = yn(u.get("fuehrerschein"))
+    if fuehrerschein_text == "Ja":
+        klassen = clean_text(u.get('fuehrerschein_klassen'), '')
+        qual_values.append(f"Führerschein{f' – Klasse {klassen}' if klassen else ''}")
+
     if not qual_values:
         qual_values = ["-"]
 
     full_name = f"{(u.get('vorname') or '').strip()} {(u.get('nachname') or '').strip()}".strip() or username
-    s34a_text = clean_text(u.get("s34a_art"), "") or yn(u.get("s34a"))
-    fuehrerschein_text = yn(u.get("fuehrerschein"))
-    if fuehrerschein_text == "Ja" and clean_text(u.get("fuehrerschein_klassen"), ""):
-        fuehrerschein_text += f" ({clean_text(u.get('fuehrerschein_klassen'), '')})"
+    s34a_flag = yn(u.get("s34a"))
+    s34a_art = clean_text(u.get("s34a_art"), "")
+    if s34a_flag == "Ja":
+        art_lc = s34a_art.strip().lower()
+        if art_lc == "sachkunde":
+            s34a_text = "Sachkunde"
+        elif art_lc == "unterrichtung":
+            s34a_text = "Unterrichtung"
+        else:
+            s34a_text = "Ja"
+    else:
+        s34a_text = "Nein"
 
     buffer = io.BytesIO()
     pdf = canvas.Canvas(buffer, pagesize=A4)
@@ -1202,11 +1215,6 @@ def user_pdf(username):
     left_bottom = draw_info_box(pdf, margin, lower_top, left_w, "Qualifikationen", qual_values, min_height=120)
 
     right_items = [(lang, level or "-") for lang, level in language_rows]
-    right_items.extend([
-        ("Führerschein", fuehrerschein_text),
-        ("Behörde", clean_text(u.get("ausweis_behoerde"))),
-        ("Gültig bis", fmt_date_de(u.get("ausweis_gueltig_bis"))),
-    ])
     right_bottom = draw_info_box(pdf, right_x, lower_top, right_w, "Fremdsprachen", right_items, min_height=120)
 
     pdf.setFont("Helvetica", 8)
