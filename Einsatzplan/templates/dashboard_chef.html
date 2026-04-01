@@ -2266,7 +2266,7 @@ document.getElementById("user-management").style.display="none";
 
       if(!IS_PLANNER){
         // Personal-Tab nur für Chef/Vorgesetzter
-        if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+        if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter' || String(ROLE).toLowerCase() === 'vorgesetzter_cp'){
           document.getElementById("tab-users").onclick = e=>{
         e.preventDefault();
         document.getElementById("home").style.display="none";
@@ -3884,7 +3884,7 @@ document.getElementById("confirmed-counter").textContent =
     // REPORT laden (Jahresübersicht: Jan–Dez)
     async function loadReport(){
       // Users + Cache
-      const usersUrl = (String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter')
+      const usersUrl = (String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter' || String(ROLE).toLowerCase() === 'vorgesetzter_cp')
         ? "/users"
         : "/users_public";
       let ures = await fetch(usersUrl);
