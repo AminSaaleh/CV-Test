@@ -2180,7 +2180,7 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     document.addEventListener('DOMContentLoaded', async function() {
       // ✅ Nur Chef/Vorgesetzter bekommt volle Personaldaten.
       // Alle anderen Rollen (Planer/Planer BBS/Vorgesetzter CP) bekommen nur Name (für Planung/Report).
-      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter'){
+      if(String(ROLE).toLowerCase() === 'chef' || String(ROLE).toLowerCase() === 'vorgesetzter' || String(ROLE).toLowerCase() === 'vorgesetzter_cp'){
         let resUsers = await fetch("/users");
         let users = await resUsers.json();
         usersList = users;
