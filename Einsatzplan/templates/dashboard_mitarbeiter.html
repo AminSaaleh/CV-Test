@@ -964,33 +964,38 @@
 
       if(r && r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override).trim() !== ""){
         const ov = Number(r.rate_override);
-        return isNaN(ov) ? 0 : ov;
+        return Number.isFinite(ov) ? ov : null;
       }
 
       const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
       if(useEventRate){
-        const eventRate = Number(ev.stundensatz ?? 0);
-        return isNaN(eventRate) ? 0 : eventRate;
+        const raw = ev.stundensatz;
+        if(raw === undefined || raw === null || String(raw).trim() === "") return null;
+        const eventRate = Number(raw);
+        return Number.isFinite(eventRate) ? eventRate : null;
       }
 
       if(r && r.profile_rate_snapshot !== undefined && r.profile_rate_snapshot !== null && String(r.profile_rate_snapshot).trim() !== ""){
         const snap = Number(r.profile_rate_snapshot);
-        return isNaN(snap) ? 0 : snap;
+        return Number.isFinite(snap) ? snap : null;
       }
 
-      return 0;
+      return null;
     }
 
     function rateLabel(ev, myResponse){
       // Wenn Override gesetzt wurde, immer so anzeigen
       if(myResponse && myResponse.rate_override !== undefined && myResponse.rate_override !== null && String(myResponse.rate_override).trim() !== ""){
         const ov = Number(myResponse.rate_override);
-        return fmtRate(ov) + " (überschrieben)";
+        return Number.isFinite(ov) ? (fmtRate(ov) + " (überschrieben)") : "-";
       }
 
-      const base = fmtRate(getMyRate(ev));
+      const rate = getMyRate(ev);
+      if(!Number.isFinite(rate)) return "-";
+
+      const base = fmtRate(rate);
       const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
-      return useEventRate ? base : (base + " (Profil)");
+      return useEventRate ? base : (base + " (Profil-Snapshot)");
     }
 
     function formatDateDE(iso){
@@ -1688,7 +1693,7 @@ Zahlungsziel: 14 Tage.`;
           if(hours<0) hours=0;
 
           const rate = getMyRate(ev);
-          const earnings = hours * rate;
+          const earnings = hours * (Number.isFinite(rate) ? rate : 0);
 
           totalHours += hours;
           totalEarnings += earnings;
@@ -1701,7 +1706,7 @@ Zahlungsziel: 14 Tage.`;
             plannedEnd: ev.planned_end_time || "-",
             endStr:end.toLocaleTimeString("de-DE",{hour:"2-digit",minute:"2-digit"}),
             hours, rate,
-            rateText: (r && r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override).trim() !== "") ? (fmtRate(rate) + " (überschrieben)") : ((Number(ev.use_event_rate ?? 1) === 1) ? fmtRate(rate) : (fmtRate(rate) + " (Profil)")),
+            rateText: rateLabel(ev, r),
             earnings
           });
         }
