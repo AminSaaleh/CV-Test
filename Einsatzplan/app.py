@@ -390,7 +390,11 @@ def init_db():
             behoerdlich_studium TEXT DEFAULT 'nein',
             fuehrerschein TEXT DEFAULT 'nein',
             fuehrerschein_klassen TEXT,
-            image_data TEXT
+            image_data TEXT,
+            ausweis_art TEXT,
+            ausweis_nr TEXT,
+            ausweis_behoerde TEXT,
+            ausweis_gueltig_bis TEXT
         );
         '''
     )
@@ -479,6 +483,10 @@ def init_db():
         ("fuehrerschein", "ALTER TABLE users ADD COLUMN fuehrerschein TEXT DEFAULT 'nein'"),
         ("fuehrerschein_klassen", "ALTER TABLE users ADD COLUMN fuehrerschein_klassen TEXT"),
         ("image_data", "ALTER TABLE users ADD COLUMN image_data TEXT"),
+        ("ausweis_art", "ALTER TABLE users ADD COLUMN ausweis_art TEXT"),
+        ("ausweis_nr", "ALTER TABLE users ADD COLUMN ausweis_nr TEXT"),
+        ("ausweis_behoerde", "ALTER TABLE users ADD COLUMN ausweis_behoerde TEXT"),
+        ("ausweis_gueltig_bis", "ALTER TABLE users ADD COLUMN ausweis_gueltig_bis TEXT"),
     ]:
         if not col_exists(db, "users", c):
             db.execute(ddl)
@@ -766,8 +774,8 @@ def add_user():
         db.execute(
             """INSERT INTO users
                (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
-                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+                language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis)
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -796,6 +804,10 @@ def add_user():
                 extra["fuehrerschein"],
                 extra["fuehrerschein_klassen"],
                 extra["image_data"],
+                d.get("ausweis_art") or "",
+                d.get("ausweis_nr") or "",
+                d.get("ausweis_behoerde") or "",
+                d.get("ausweis_gueltig_bis") or "",
             ),
         )
         db.commit()
@@ -816,7 +828,13 @@ def add_user():
     else:
         mail_error = "Keine E-Mail-Adresse hinterlegt."
 
-    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
+        created_user = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    created_user = row_to_dict(created_user) if created_user else {"username": username}
+    if created_user.get("stundensatz") is None:
+        created_user["stundensatz"] = ""
+    created_user["language_skills"] = parse_language_skills(created_user.get("language_skills"))
+
+    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error, "user": created_user})
 
 @app.route("/users/rename", methods=["POST"])
 def rename_user():
@@ -914,7 +932,7 @@ def edit_user(username):
 
     updates = dict(u)
     for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
-              "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung",
+              "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung", "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis",
               "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
               "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
         if k in d:
@@ -949,7 +967,7 @@ def edit_user(username):
     db.execute(
         """UPDATE users SET
            password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
-           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, stundensatz=%s,
+           bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, ausweis_art=%s, ausweis_nr=%s, ausweis_behoerde=%s, ausweis_gueltig_bis=%s, stundensatz=%s,
            language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
            personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s, image_data=%s
            WHERE username=%s""",
@@ -957,6 +975,7 @@ def edit_user(username):
             updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
             updates["s34a"], updates["s34a_art"], updates["pschein"],
             updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"], updates.get("bemerkung") or "",
+            updates.get("ausweis_art") or "", updates.get("ausweis_nr") or "", updates.get("ausweis_behoerde") or "", updates.get("ausweis_gueltig_bis") or "",
             updates["stundensatz"], updates.get("language_skills") or dump_language_skills({}),
             updates.get("brandschutzhelfer") or "nein", updates.get("deeskalation") or "nein", updates.get("gssk") or "nein", updates.get("fachkraft_ss") or "nein",
             updates.get("personenschutz") or "nein", updates.get("waffensachkunde") or "nein", updates.get("behoerdlich_studium") or "nein",
@@ -1089,14 +1108,14 @@ def user_pdf(username):
 
     qual_values = []
     for label, key in [
-        ("Brandschutzhelfer", "brandschutzhelfer"),
+        ("Ersthelfer/-in", "brandschutzhelfer"),
         ("Rettungssanitäter", "sanitaeter"),
+        ("Deeskalationslehrgang", "deeskalation"),
+        ("Geprüfte Schutz- und Sicherheitskraft (GSSK)", "gssk"),
+        ("Fachkraft für Schutz und Sicherheit", "fachkraft_ss"),
         ("Personenschutz", "personenschutz"),
-        ("GSSK", "gssk"),
-        ("Deeskalation", "deeskalation"),
-        ("Fachkraft S&S", "fachkraft_ss"),
-        ("Waffensachkunde", "waffensachkunde"),
-        ("Behördlich/Studium", "behoerdlich_studium"),
+        ("Waffensachkunde / Berufswaffenträger/-in", "waffensachkunde"),
+        ("Behördliche Verwendung / Studium", "behoerdlich_studium"),
         ("BSW", "bsw"),
         ("P-Schein", "pschein"),
     ]:
