@@ -24,6 +24,7 @@ def normalize_role(role: str) -> str:
 
 
 # --- Mail (Gmail App Password / SMTP) ---
+import socket
 import smtplib
 from email.message import EmailMessage
 
@@ -32,15 +33,16 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.gmail.com")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "587"))
 SMTP_USER = os.environ.get("SMTP_USER", "")
 SMTP_PASS = os.environ.get("SMTP_PASS", "")
+SMTP_SECURITY = (os.environ.get("SMTP_SECURITY", "tls") or "tls").strip().lower()
 MAIL_FROM = os.environ.get("MAIL_FROM", f"REMINDER – CV Planung <{SMTP_USER}>")
 
 def send_mail(to_addr: str, subject: str, body: str) -> None:
-    """Send a plain text email via SMTP. No-op if config is missing."""
+    """Send a plain text email via SMTP with TLS (587) or SSL (465)."""
     to_addr = (to_addr or "").strip()
     if not to_addr:
-        return
+        raise ValueError("Empfängeradresse fehlt.")
     if not (SMTP_HOST and SMTP_PORT and SMTP_USER and SMTP_PASS):
-        return
+        raise RuntimeError("SMTP-Konfiguration unvollständig.")
 
     msg = EmailMessage()
     msg["From"] = MAIL_FROM
@@ -48,11 +50,33 @@ def send_mail(to_addr: str, subject: str, body: str) -> None:
     msg["Subject"] = subject
     msg.set_content(body)
 
-    with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
-        s.ehlo()
-        s.starttls()
-        s.login(SMTP_USER, SMTP_PASS)
-        s.send_message(msg)
+    security = SMTP_SECURITY
+    if security == "auto":
+        security = "ssl" if SMTP_PORT == 465 else "tls"
+
+    try:
+        if security == "ssl":
+            with smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+                s.ehlo()
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+        else:
+            with smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=20) as s:
+                s.ehlo()
+                s.starttls()
+                s.ehlo()
+                s.login(SMTP_USER, SMTP_PASS)
+                s.send_message(msg)
+    except socket.gaierror as e:
+        raise RuntimeError(f"SMTP-Host nicht auflösbar/erreichbar: {e}") from e
+    except TimeoutError as e:
+        raise RuntimeError("Zeitüberschreitung beim Verbinden mit dem SMTP-Server.") from e
+    except OSError as e:
+        raise RuntimeError(f"Netzwerkfehler beim SMTP-Versand: {e}") from e
+    except smtplib.SMTPAuthenticationError as e:
+        raise RuntimeError("SMTP-Login fehlgeschlagen. Bitte SMTP_USER, SMTP_PASS oder App-Passwort prüfen.") from e
+    except smtplib.SMTPException as e:
+        raise RuntimeError(f"SMTP-Fehler: {e}") from e
 
 def build_welcome_mail(employee_name: str, username: str, password: str) -> str:
     lines = [
