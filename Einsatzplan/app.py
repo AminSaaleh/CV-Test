@@ -1217,7 +1217,7 @@ def user_pdf(username):
         ("Dokumentennr.", clean_text(u.get("ausweis_nr"))),
         ("§ 34a GewO", s34a_text),
         ("Bewacher ID", clean_text(u.get("bewach_id"))),
-        ("Erklärung", "✅" if bool(u.get("consent_given")) else ""),
+        
     ]
     for label, value in basis_rows:
         pdf.setFont("Helvetica-Bold", 9.5)
