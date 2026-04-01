@@ -1442,7 +1442,7 @@ def events_list():
 
         # Chef/Vorgesetzter/Planer: keine eigenen Raten berechnen
         if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-            e["my_rate"] = 0
+            e["my_rate"] = None
         else:
             my_response = rmap.get(session.get("username"), {}) or {}
 
@@ -1452,17 +1452,22 @@ def events_list():
             # bei Profil-Lohnänderungen nicht rückwirkend umgerechnet werden.
             if my_response.get("rate_override") not in (None, ""):
                 try:
-                    e["my_rate"] = float(my_response.get("rate_override") or 0.0)
+                    parsed_rate = float(my_response.get("rate_override"))
+                    e["my_rate"] = parsed_rate
                 except Exception:
-                    e["my_rate"] = 0.0
+                    e["my_rate"] = None
             elif use_event_rate == 1:
-                e["my_rate"] = float(e.get("stundensatz") or 0.0)
+                try:
+                    event_rate = e.get("stundensatz")
+                    e["my_rate"] = None if event_rate in (None, "") else float(event_rate)
+                except Exception:
+                    e["my_rate"] = None
             else:
                 snap = my_response.get("profile_rate_snapshot")
                 try:
-                    e["my_rate"] = 0.0 if snap in (None, "") else float(snap)
+                    e["my_rate"] = None if snap in (None, "") else float(snap)
                 except Exception:
-                    e["my_rate"] = 0.0
+                    e["my_rate"] = None
 
         result.append(e)
 
