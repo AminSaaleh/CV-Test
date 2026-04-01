@@ -1124,8 +1124,8 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
 
       <div class="form-row">
-        <input type="text" id="bewach_id" placeholder="Bewach-ID">
-        <input type="text" id="steuernummer" placeholder="Steuernummer">
+        <input type="text" id="bewach_id" placeholder="Bewach-ID" required>
+        <input type="text" id="steuernummer" placeholder="Steuernummer" required>
       </div>
 
       <div class="form-row">
@@ -1169,7 +1169,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
       </div>
 
-      
+      <div class="section-title-lite">Zusätzliche Qualifikationen</div>
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
@@ -3982,25 +3982,26 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
             let hours = calc.hours;
 
             const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
-            let rate = 0;
+            let rate = null;
 
-            // ✅ manuelle Überschreibung aus Report/Details (response.rate_override)
+            // ✅ WICHTIG:
+            // Für historische Einsätze niemals den AKTUELLEN Mitarbeiter-Stundensatz aus der Verwaltung
+            // als Fallback nehmen. Sonst ändern sich alte, bereits gespeicherte Einsätze rückwirkend.
             if(r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override) !== ""){
-              rate = Number(r.rate_override);
-              if(isNaN(rate)) rate = 0;
+              const parsed = Number(r.rate_override);
+              rate = isNaN(parsed) ? null : parsed;
             } else if(useEventRate){
-              rate = Number(ev.stundensatz ?? 0);
-              if (isNaN(rate)) rate = 0;
+              const parsed = Number(ev.stundensatz ?? "");
+              rate = isNaN(parsed) ? null : parsed;
             } else if(r.profile_rate_snapshot !== undefined && r.profile_rate_snapshot !== null && String(r.profile_rate_snapshot) !== "") {
-              rate = Number(r.profile_rate_snapshot);
-              if (isNaN(rate)) rate = 0;
+              const parsed = Number(r.profile_rate_snapshot);
+              rate = isNaN(parsed) ? null : parsed;
             } else {
-              const u = uMap[user];
-              rate = Number(u?.stundensatz ?? 0);
-              if (isNaN(rate)) rate = 0;
+              // Kein Live-Fallback auf users.stundensatz -> alte Einsätze bleiben stabil.
+              rate = null;
             }
 
-            const cost = hours * rate;
+            const cost = hours * (rate ?? 0);
 
             const bucket = ensureUser(user);
             bucket.months[monthIdx].hours += hours;
@@ -4273,6 +4274,13 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
         sumCost  += d.cost;
 
         let tr=document.createElement("tr");
+        const rateLabel = (d.rate === null || d.rate === undefined || Number.isNaN(Number(d.rate)))
+          ? "-"
+          : `${fmtNumDE(Number(d.rate),2)} €/h`;
+        const costLabel = (d.rate === null || d.rate === undefined || Number.isNaN(Number(d.rate)))
+          ? "-"
+          : `${fmtNumDE(Number(d.cost),2)} €`;
+
         tr.innerHTML=`
           <td>${fmtDateOnlyDE(start)}</td>
           <td>${ev.title}</td>
@@ -4280,8 +4288,8 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
           <td>${fmtTimeOnly(start)}</td>
           <td>${endLabel}</td>
           <td>${fmtNumDE(d.hours,2)} h</td>
-          <td>${fmtNumDE(d.rate,2)} €/h</td>
-          <td>${fmtNumDE(d.cost,2)} €</td>
+          <td>${rateLabel}</td>
+          <td>${costLabel}</td>
           <td><button class="confirm">✏️ Bearbeiten</button></td>
         `;
         tr.querySelector("button").onclick = ()=>openReportEndEdit(username, ev, d.start_time, d.end_time, d.remark, d.rate_override);
