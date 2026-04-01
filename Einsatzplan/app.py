@@ -125,6 +125,55 @@ def build_change_mail(employee_name: str,
 
     return "\n".join(lines)
 
+
+def build_confirmation_mail(employee_name: str,
+                            event_title: str,
+                            event_start_dt: str,
+                            ort: str,
+                            dienstkleidung: str,
+                            start_time: str = "") -> str:
+    date_de = "TT.MM.JJJJ"
+    time_de = ""
+    try:
+        if isinstance(event_start_dt, str) and event_start_dt.strip():
+            d = datetime.fromisoformat(event_start_dt.replace("Z", "").strip())
+            date_de = d.strftime("%d.%m.%Y")
+            time_de = d.strftime("%H:%M")
+    except Exception:
+        pass
+
+    custom_start = (start_time or "").strip()
+    if custom_start:
+        time_de = custom_start
+
+    title = (event_title or "").strip() or "-"
+    location = (ort or "").strip() or "-"
+    dienst = (dienstkleidung or "").strip() or "-"
+
+    lines = [
+        f"Hallo {employee_name},",
+        "",
+        "deine Zusage wurde vom Vorgesetzten bestätigt. ✅",
+        "",
+        f"Einsatz: {title}",
+        f"Datum: {date_de}",
+    ]
+
+    if time_de:
+        lines.append(f"Startzeit: {time_de}")
+
+    lines.extend([
+        f"Ort: {location}",
+        f"Dienstkleidung: {dienst}",
+        "",
+        "Bitte logge dich bei Bedarf in die CV-Planung ein, um die Details einzusehen.",
+        "",
+        "Viele Grüße",
+        "CV Planung"
+    ])
+
+    return "\n".join(lines)
+
 import psycopg2
 import psycopg2.extras
 from psycopg2 import IntegrityError
@@ -1700,17 +1749,17 @@ def confirm_event():
         return jsonify({"error": "Ungültige Entscheidung"}), 400
 
     db = get_db()
-    user_row = db.execute("SELECT stundensatz FROM users WHERE username=%s", (username,)).fetchone()
+    user_row = db.execute("SELECT vorname, nachname, email, stundensatz FROM users WHERE username=%s", (username,)).fetchone()
     if not user_row:
         return jsonify({"error": "User nicht gefunden"}), 404
     profile_rate_snapshot = user_row.get("stundensatz")
 
-    exists = db.execute(
-        "SELECT 1 FROM response WHERE event_id=%s AND username=%s",
+    existing = db.execute(
+        "SELECT status, start_time FROM response WHERE event_id=%s AND username=%s",
         (event_id, username)
     ).fetchone()
 
-    if exists:
+    if existing:
         if decision_db == "bestätigt":
             db.execute(
                 "UPDATE response SET status=%s, profile_rate_snapshot = COALESCE(profile_rate_snapshot, %s) WHERE event_id=%s AND username=%s",
@@ -1728,7 +1777,39 @@ def confirm_event():
         )
 
     db.commit()
-    return jsonify({"status": "ok"})
+
+    mail_sent = False
+    mail_error = ""
+    if decision_db == "bestätigt":
+        try:
+            event_row = db.execute(
+                "SELECT title, start, ort, dienstkleidung FROM event WHERE id=%s",
+                (event_id,)
+            ).fetchone()
+            employee_name = " ".join(filter(None, [
+                (user_row.get("vorname") or "").strip(),
+                (user_row.get("nachname") or "").strip()
+            ])).strip() or username
+            to_addr = (user_row.get("email") or "").strip()
+            if to_addr and event_row:
+                subject = f"Bestätigung für deinen Einsatz: {event_row.get('title') or 'Einsatz'}"
+                start_override = (existing.get("start_time") if existing else "") if existing else ""
+                body = build_confirmation_mail(
+                    employee_name=employee_name,
+                    event_title=event_row.get("title") or "",
+                    event_start_dt=event_row.get("start") or "",
+                    ort=event_row.get("ort") or "",
+                    dienstkleidung=event_row.get("dienstkleidung") or "",
+                    start_time=start_override or "",
+                )
+                send_mail(to_addr, subject, body)
+                mail_sent = True
+            elif not to_addr:
+                mail_error = "Keine E-Mail-Adresse beim Mitarbeiter hinterlegt."
+        except Exception as e:
+            mail_error = str(e)
+
+    return jsonify({"status": "ok", "mail_sent": mail_sent, "mail_error": mail_error})
 
 
 @app.route("/events/endtime", methods=["POST"])
