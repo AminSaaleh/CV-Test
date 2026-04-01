@@ -4649,16 +4649,14 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
     });
   }
 
-  // Vorgesetzter CP: alles wie Vorgesetzter, aber ohne Personal & ohne Zähler,
+  // Vorgesetzter CP: wie Vorgesetzter mit Personal-Zugriff, aber ohne Zähler,
   // und Report NUR CP (Filter weg + Kopfzeile Gold)
   if(role === "vorgesetzter_cp"){
     // Zähler weg
     hideTab("tab-counter");
     hide("counter");
 
-    // Personal weg (Tab heißt tab-users)
-    hideTab("tab-users");
-    hide("user-management");
+    // Personal bleibt sichtbar
 
     // Report: CP erzwingen + Filter UI ausblenden
     const rtgl = document.getElementById("report-cat-toggle");
