@@ -828,7 +828,7 @@ def add_user():
     else:
         mail_error = "Keine E-Mail-Adresse hinterlegt."
 
-        created_user = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
+    created_user = db.execute("SELECT * FROM users WHERE username=%s", (username,)).fetchone()
     created_user = row_to_dict(created_user) if created_user else {"username": username}
     if created_user.get("stundensatz") is None:
         created_user["stundensatz"] = ""
