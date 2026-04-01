@@ -1444,10 +1444,25 @@ def events_list():
         if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
             e["my_rate"] = 0
         else:
-            if use_event_rate == 1:
+            my_response = rmap.get(session.get("username"), {}) or {}
+
+            # Historischer Satz für den aktuell eingeloggten Mitarbeiter:
+            # Priorität: rate_override -> Einsatz-Stundensatz -> gespeicherter Snapshot.
+            # KEIN Fallback mehr auf den aktuellen users.stundensatz, damit alte Einsätze
+            # bei Profil-Lohnänderungen nicht rückwirkend umgerechnet werden.
+            if my_response.get("rate_override") not in (None, ""):
+                try:
+                    e["my_rate"] = float(my_response.get("rate_override") or 0.0)
+                except Exception:
+                    e["my_rate"] = 0.0
+            elif use_event_rate == 1:
                 e["my_rate"] = float(e.get("stundensatz") or 0.0)
             else:
-                e["my_rate"] = my_profile_rate
+                snap = my_response.get("profile_rate_snapshot")
+                try:
+                    e["my_rate"] = 0.0 if snap in (None, "") else float(snap)
+                except Exception:
+                    e["my_rate"] = 0.0
 
         result.append(e)
 
