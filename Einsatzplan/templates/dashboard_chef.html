@@ -1124,8 +1124,8 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
 
       <div class="form-row">
-        <input type="text" id="bewach_id" placeholder="Bewach-ID">
-        <input type="text" id="steuernummer" placeholder="Steuernummer">
+        <input type="text" id="bewach_id" placeholder="Bewach-ID" required>
+        <input type="text" id="steuernummer" placeholder="Steuernummer" required>
       </div>
 
       <div class="form-row">
@@ -1169,19 +1169,19 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <div class="image-preview-box" id="image-preview-box"><div class="image-preview-placeholder">Noch kein Bild ausgewählt</div></div>
       </div>
 
-     
+      <div class="section-title-lite">Zusätzliche Qualifikationen</div>
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
           <label><input type="checkbox" id="brandschutzhelfer"> ⁠Ersthelfer/-in</label><br>
-          <label><input type="checkbox" id="sanitaeter"> Rettungssanitäter/-in oder höherwertig</label><br>
+          <label><input type="checkbox" id="deeskalation"> Deeskalationslehrgang</label><br>
           <label><input type="checkbox" id="gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label><br>
           <label><input type="checkbox" id="fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label><br>
           <label><input type="checkbox" id="personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label><br>
           <label><input type="checkbox" id="waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label><br>
           <label><input type="checkbox" id="behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label><br>
           <label><input type="checkbox" id="bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label><br>
-          <label><input type="checkbox" id="deeskalation"> Deeskalationslehrgang</label><br>
+          <label><input type="checkbox" id="sanitaeter"> Rettungssanitäter/-in oder höherwertig</label><br>
           <label><input type="checkbox" id="pschein"> Personenbeförderungsschein (P-Schein)</label>
         </div>
         <div class="qual-card">
@@ -1199,7 +1199,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         </div>
       </div>
 
-      <button type="submit" class="confirm">➕ Hinzufügen & versenden</button>
+      <button type="submit" class="confirm">➕ Hinzufügen</button>
     </form>
 
     <h4>Personalliste</h4>
@@ -3097,11 +3097,19 @@ document.getElementById("dup-date").value = "";
     }
 
     async function confirmResponse(user, decision) {
-      await fetch("/events/confirm", {
+      const res = await fetch("/events/confirm", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ event_id: currentEventId, username: user, decision })
       });
+      const r = await res.json().catch(()=>({}));
+      if(!res.ok || r.error){
+        alert(r.error || "Aktion fehlgeschlagen");
+        return;
+      }
+      if(decision === "bestätigt" && r.mail_error){
+        alert("Bestätigung gespeichert, aber E-Mail konnte nicht gesendet werden: " + r.mail_error);
+      }
       await refreshDetailsModal();
       calendar.refetchEvents();
       if(planningCalendar) planningCalendar.refetchEvents();
