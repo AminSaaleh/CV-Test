@@ -1360,7 +1360,29 @@ def events_list():
     # ✅ Rollen-Restriktionen (serverseitig)
     role_lc = normalize_role(role)
     if role_lc == "planner_bbs":
-        events = [e for e in events if (e.get("category") or "CP").strip().upper() == "CV"]
+        today = datetime.now().date()
+
+        def _planner_bbs_visible_from_today(ev):
+            # Planer BBS darf nur CV-Einsätze ab dem heutigen Tag sehen.
+            # Alles in der Vergangenheit bleibt für diese Rolle unsichtbar/leer.
+            if (ev.get("category") or "CP").strip().upper() != "CV":
+                return False
+
+            raw_start = str(ev.get("start") or "").strip()
+            if not raw_start:
+                return False
+
+            try:
+                start_date = datetime.fromisoformat(raw_start.replace("Z", "")).date()
+            except Exception:
+                try:
+                    start_date = datetime.fromisoformat(raw_start.split("T")[0]).date()
+                except Exception:
+                    return False
+
+            return start_date >= today
+
+        events = [e for e in events if _planner_bbs_visible_from_today(e)]
     # Mitarbeiter: Profil-Stundensatz holen (für my_rate)
     my_profile_rate = 0.0
     if role not in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
@@ -1442,7 +1464,7 @@ def events_list():
 
         # Chef/Vorgesetzter/Planer: keine eigenen Raten berechnen
         if role in ["chef", "vorgesetzter", "planer", "planner_bbs", "vorgesetzter_cp"]:
-            e["my_rate"] = None
+            e["my_rate"] = 0
         else:
             my_response = rmap.get(session.get("username"), {}) or {}
 
@@ -1452,22 +1474,17 @@ def events_list():
             # bei Profil-Lohnänderungen nicht rückwirkend umgerechnet werden.
             if my_response.get("rate_override") not in (None, ""):
                 try:
-                    parsed_rate = float(my_response.get("rate_override"))
-                    e["my_rate"] = parsed_rate
+                    e["my_rate"] = float(my_response.get("rate_override") or 0.0)
                 except Exception:
-                    e["my_rate"] = None
+                    e["my_rate"] = 0.0
             elif use_event_rate == 1:
-                try:
-                    event_rate = e.get("stundensatz")
-                    e["my_rate"] = None if event_rate in (None, "") else float(event_rate)
-                except Exception:
-                    e["my_rate"] = None
+                e["my_rate"] = float(e.get("stundensatz") or 0.0)
             else:
                 snap = my_response.get("profile_rate_snapshot")
                 try:
-                    e["my_rate"] = None if snap in (None, "") else float(snap)
+                    e["my_rate"] = 0.0 if snap in (None, "") else float(snap)
                 except Exception:
-                    e["my_rate"] = None
+                    e["my_rate"] = 0.0
 
         result.append(e)
 
