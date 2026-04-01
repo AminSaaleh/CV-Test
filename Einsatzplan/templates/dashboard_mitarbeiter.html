@@ -1438,8 +1438,8 @@ tYear.addEventListener("change", loadTermine);
             };
 
             // Farbe + Textfarbe setzen (Dot nutzt currentColor!)
-            if (st === "zugesagt") { ev.color = "orange"; ev.textColor = "orange"; }
-            if (st === "bestätigt") { ev.color = "green"; ev.textColor = "green"; }
+            if (st === "zugesagt") { ev.color = "#f39c12"; ev.textColor = "#f39c12"; ev.borderColor = "#f39c12"; }
+            if (st === "bestätigt") { ev.color = "#2ecc71"; ev.textColor = "#2ecc71"; ev.borderColor = "#2ecc71"; }
 
             // ✅ Chef-Ablehnung/Entfernen ebenfalls rot anzeigen, falls sichtbar
             if (["abgelehnt","abgelehnt_chef","entfernt_chef"].includes(st)) { ev.color = "red"; ev.textColor = "red"; }
@@ -1506,7 +1506,7 @@ tYear.addEventListener("change", loadTermine);
         body: JSON.stringify({ event_id: currentEventId, response: status, remark })
       });
       const r = await res.json().catch(()=>({}));
-      if(!res.ok || r.error){ alert(r.error || "Aktion fehlgeschlagen"); }
+      if(!res.ok || r.error){ alert(r.error || "Aktion fehlgeschlagen"); return; }
 
       closeRespondModal();
       if(typeof ensureCalendarVisibleAndLoaded === "function") ensureCalendarVisibleAndLoaded();
