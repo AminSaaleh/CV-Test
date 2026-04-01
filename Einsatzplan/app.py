@@ -270,6 +270,14 @@ def yesno(v, default="nein"):
     return "ja" if s in ("1", "true", "ja", "yes", "on") else default
 
 
+def freeze_profile_rate_snapshot(db, username: str):
+    """Read the current user rate once so it can be frozen on the response row.
+    Historical assignments must never depend on the live users.stundensatz value.
+    """
+    user_row = db.execute("SELECT stundensatz FROM users WHERE username=%s", (username,)).fetchone()
+    return user_row.get("stundensatz") if user_row else None
+
+
 def parse_language_skills(value):
     if isinstance(value, dict):
         return value
@@ -1512,10 +1520,9 @@ def assign_user():
     if not db.execute("SELECT 1 FROM event WHERE id=%s", (event_id,)).fetchone():
         return jsonify({"error": "Event nicht gefunden"}), 404
 
-    user_row = db.execute("SELECT stundensatz FROM users WHERE username=%s", (username,)).fetchone()
-    if not user_row:
+    profile_rate_snapshot = freeze_profile_rate_snapshot(db, username)
+    if profile_rate_snapshot is None and not db.execute("SELECT 1 FROM users WHERE username=%s", (username,)).fetchone():
         return jsonify({"error": "User nicht gefunden"}), 404
-    profile_rate_snapshot = user_row.get("stundensatz")
 
     if db.execute("SELECT 1 FROM response WHERE event_id=%s AND username=%s", (event_id, username)).fetchone():
         db.execute(
@@ -1752,7 +1759,7 @@ def confirm_event():
     user_row = db.execute("SELECT vorname, nachname, email, stundensatz FROM users WHERE username=%s", (username,)).fetchone()
     if not user_row:
         return jsonify({"error": "User nicht gefunden"}), 404
-    profile_rate_snapshot = user_row.get("stundensatz")
+    profile_rate_snapshot = freeze_profile_rate_snapshot(db, username)
 
     existing = db.execute(
         "SELECT status, start_time FROM response WHERE event_id=%s AND username=%s",
@@ -1901,11 +1908,7 @@ def edit_entry():
         old_start = (old_row.get("start_time") if old_row else "") or ""
         old_remark = (old_row.get("remark") if old_row else "") or ""
 
-        user_row = db.execute(
-            "SELECT stundensatz FROM users WHERE username=%s",
-            (username,)
-        ).fetchone()
-        profile_rate_snapshot = user_row.get("stundensatz") if user_row else None
+        profile_rate_snapshot = freeze_profile_rate_snapshot(db, username)
 
         exists = db.execute(
             "SELECT 1 FROM response WHERE event_id=%s AND username=%s",
