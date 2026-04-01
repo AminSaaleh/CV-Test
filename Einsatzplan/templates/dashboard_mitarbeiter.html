@@ -814,7 +814,7 @@
 
 <tfoot>
   <tr class="tfoot-sum report-sum-only">
-    <td></td><td></td><td></td><td></td><td></td><td></td>
+    <td></td><td></td><td></td><td></td><td></td><td></td><td></td>
     <td id="report-sum-earnings" class="sum-earnings"><b>0.00 €</b></td>
   </tr>
 </tfoot>
@@ -954,19 +954,31 @@
     }
 
 
-    // ✅ my_rate kommt vom Backend und ist IMMER der richtige Satz (Einsatz oder Profil)
+    // ✅ Historischer Stundensatz pro Einsatz:
+    // Priorität: Override -> Einsatz-Stundensatz -> gespeicherter Profil-Snapshot.
+    // WICHTIG: Kein Fallback auf den aktuellen Profil-Stundensatz mehr,
+    // damit alte Einsätze sich bei Lohnänderungen nicht rückwirkend ändern.
     function getMyRate(ev){
       const me = "{{ user }}";
       const r = ev.responses?.[me] || null;
 
-      // ✅ Chef-Override pro Einsatz hat Priorität
       if(r && r.rate_override !== undefined && r.rate_override !== null && String(r.rate_override).trim() !== ""){
         const ov = Number(r.rate_override);
         return isNaN(ov) ? 0 : ov;
       }
 
-      const v = Number(ev.my_rate ?? 0);
-      return isNaN(v) ? 0 : v;
+      const useEventRate = Number(ev.use_event_rate ?? 1) === 1;
+      if(useEventRate){
+        const eventRate = Number(ev.stundensatz ?? 0);
+        return isNaN(eventRate) ? 0 : eventRate;
+      }
+
+      if(r && r.profile_rate_snapshot !== undefined && r.profile_rate_snapshot !== null && String(r.profile_rate_snapshot).trim() !== ""){
+        const snap = Number(r.profile_rate_snapshot);
+        return isNaN(snap) ? 0 : snap;
+      }
+
+      return 0;
     }
 
     function rateLabel(ev, myResponse){
