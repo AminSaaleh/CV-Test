@@ -2880,6 +2880,17 @@ document.getElementById("planning").style.display="block";
           successMsg += " Es wurde keine E-Mail versendet.";
         }
 
+        if(rAdd.user){
+          const createdUser = Object.assign({ consent_given:false, is_locked:false }, rAdd.user);
+          createdUser.language_skills = createdUser.language_skills || {};
+          usersList = sortUsersSpecial([createdUser, ...(Array.isArray(usersList) ? usersList.filter(u => String(u.username) !== String(createdUser.username)) : [])]);
+          usersCache = {};
+          usersList.forEach(u => { usersCache[u.username] = `${u.vorname || ""} ${u.nachname || ""}`.trim(); });
+          window.usersList = usersList;
+          window.usersCache = usersCache;
+          renderUsersTable(usersList);
+        }
+
         alert(successMsg);
         await loadUsers();
         e.target.reset();
@@ -3538,20 +3549,12 @@ document.getElementById("confirmed-counter").textContent =
       });
     }
 
-    // User Management
-    async function loadUsers(){
-      let res=await fetch("/users");
-      let users=await res.json();
-
-      users = sortUsersSpecial(Array.isArray(users) ? users : []);
-
-      usersList = users;
-      usersCache = {};
-      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
-
-      let list=document.getElementById("user-list");
+    function renderUsersTable(users){
+      const list=document.getElementById("user-list");
+      if(!list) return;
       list.innerHTML="";
-      users.forEach(u=>{
+
+      (Array.isArray(users) ? users : []).forEach(u=>{
         let tr=document.createElement("tr");
         if(u.is_locked) tr.classList.add("is-locked-row");
 
@@ -3580,7 +3583,20 @@ document.getElementById("confirmed-counter").textContent =
         `;
         list.appendChild(tr);
       });
+    }
 
+    // User Management
+    async function loadUsers(){
+      let res=await fetch("/users", { cache: "no-store" });
+      let users=await res.json();
+
+      users = sortUsersSpecial(Array.isArray(users) ? users : []);
+
+      usersList = users;
+      usersCache = {};
+      users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
+
+      renderUsersTable(users);
 
 
       // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
