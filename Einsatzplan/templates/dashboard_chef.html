@@ -1870,10 +1870,10 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 
       <div class="detail-box"><b>Titel:</b> <span id="d-title"></span></div>
       <div class="detail-box"><b>Einsatzdatum:</b> <span id="d-date"></span></div>
-       <div class="detail-box"><b>Start:</b> <span id="d-start"></span></div>
+       <div class="detail-box"><b>Startzeit:</b> <span id="d-start"></span></div>
       <div class="detail-box"><b>Endzeit:</b> <span id="d-planned-end"></span></div>
       <div class="detail-box"><b>Einsatzörtlichkeit:</b> <span id="d-ort"></span></div>
-      <div class="detail-box"><b>Dienstkleidung:</b> <span id="d-dienst"></span></div>
+      <div class="detail-box"><b>Dienstbekleidung:</b> <span id="d-dienst"></span></div>
       <div class="detail-box"><b>Einsatzdetails:</b> <span id="d-auftrag"></span></div>
 
       
@@ -1938,34 +1938,34 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <h3>Einsatz bearbeiten</h3>
 
       <input type="hidden" id="edit-event-id">
-
-      <label>Titel</label>
-      <input id="edit-ev-title" placeholder="Titel">
-
-      <label>Auftraggeber</label>
+      
+       <label>Auftraggeber:</label>
       <select id="edit-ev-category">
         <option value="CV">Casutt Veranstaltungsservice</option>
         <option value="CP">CP-Security-Solutions</option>
       </select>
+      
+      <label>Titel:</label>
+      <input id="edit-ev-title" placeholder="Titel">
 
-      <label>Ort</label>
+     <label>Startzeit:</label>
+     <input id="edit-ev-start" type="datetime-local">
+      <label>Endzeit:</label>
+      <input id="edit-ev-planned-end" type="time">
+
+
+      <label>Einsatzörtlichkeit:</label>
       <input id="edit-ev-ort" placeholder="Ort">
-
-      <label>Dienstkleidung</label>
-      <input id="edit-ev-dienst" placeholder="Dienstkleidung">
-
-      <label>Mitteilung</label>
+      <label>Einsatzdetails:</label>
       <input id="edit-ev-auftrag" placeholder="Mitteilung">
 
-      <label>Start (Datum & Uhrzeit)</label>
-      <input id="edit-ev-start" type="datetime-local">
+      <label>Dienstbekleidung:</label>
+      <input id="edit-ev-dienst" placeholder="Dienstkleidung">
 
       
-      <label>Voraussichtliche Endzeit</label>
-      <input id="edit-ev-planned-end" type="time">
       <div class="form-row">
         <div>
-          <label>Frist (Annahme bis)</label>
+          <label>Frist:</label>
           <input id="edit-ev-frist" type="datetime-local">
         </div>
         <div>
@@ -1976,6 +1976,9 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           </select>
         </div>
       </div>
+      <label>SVS</label>
+      <input id="edit-ev-rate" type="number" step="0.01" min="0">
+
 
       <label>Benötigte Mitarbeiter</label>
       <input id="edit-ev-required" type="number" min="0" value="0">
@@ -1985,9 +1988,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <label for="edit-use-event-rate"><b>Stundensatz pro Einsatz festlegen</b> (sonst: Mitarbeiter-Stundensätze)</label>
       </div>
 
-      <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
-      <input id="edit-ev-rate" type="number" step="0.01" min="0">
-
+      
       <div class="modal-actions">
         <button class="confirm" onclick="saveEventEdit()">💾 Speichern</button>
       </div>
