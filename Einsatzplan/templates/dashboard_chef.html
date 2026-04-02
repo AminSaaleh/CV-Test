@@ -7,31 +7,6 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    /* 🔥 FINAL FIX – Zusatzqualifikationen komplett links */
-#editUserModal .qual-card .check-list{
-  display:flex !important;
-  flex-direction:column !important;
-  align-items:flex-start !important;
-}
-
-#editUserModal .qual-card .check-list label{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:8px !important;
-  text-align:left !important;
-  width:100% !important;
-}
-
-#editUserModal .qual-card .check-list input[type="checkbox"]{
-  margin-top:3px !important;
-  flex:0 0 auto !important;
-}
-
-#editUserModal .qual-card .check-list span{
-  text-align:left !important;
-  line-height:1.4;
-}
     /* ============================= */
 /* FINAL CLEAN FIX – PERSONAL MODAL */
 /* ============================= */
@@ -2132,17 +2107,17 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
-          <div class="check-list">
-            <label><input type="checkbox" id="edit-brandschutzhelfer"> ⁠Ersthelfer/-in</label>
-            <label><input type="checkbox" id="edit-deeskalation"> Deeskalationslehrgang</label>
-            <label><input type="checkbox" id="edit-gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label>
-            <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label>
-            <label><input type="checkbox" id="edit-personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label>
-            <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label>
-            <label><input type="checkbox" id="edit-behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label>
-            <label><input type="checkbox" id="edit-bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label>
-            <label><input type="checkbox" id="edit-sanitaeter"> Rettungssanitäter/-in oder höherwertig</label>
-            <label><input type="checkbox" id="edit-pschein"> Personenbeförderungsschein (P-Schein)</label>
+          <div class="check-list qual-left-fix">
+            <label><input type="checkbox" id="edit-brandschutzhelfer"><span>Ersthelfer/-in</span></label>
+            <label><input type="checkbox" id="edit-deeskalation"><span>Deeskalationslehrgang</span></label>
+            <label><input type="checkbox" id="edit-gssk"><span>Geprüfte Schutz- und Sicherheitskraft (GSSK)</span></label>
+            <label><input type="checkbox" id="edit-fachkraft_ss"><span>Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</span></label>
+            <label><input type="checkbox" id="edit-personenschutz"><span>Erfahrung / Einsatz im Bereich Personenschutz</span></label>
+            <label><input type="checkbox" id="edit-waffensachkunde"><span>Waffensachkunde / Berufswaffenträger/-in</span></label>
+            <label><input type="checkbox" id="edit-behoerdlich_studium"><span>Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</span></label>
+            <label><input type="checkbox" id="edit-bsw"><span>Brandsicherheitswache / Brandschutzhelfer/-in</span></label>
+            <label><input type="checkbox" id="edit-sanitaeter"><span>Rettungssanitäter/-in oder höherwertig</span></label>
+            <label><input type="checkbox" id="edit-pschein"><span>Personenbeförderungsschein (P-Schein)</span></label>
           </div>
         </div>
         <div class="qual-card">
@@ -5425,6 +5400,44 @@ document.addEventListener('DOMContentLoaded', function(){
   </div>
 </div>
 
+
+<style id="qual-left-hard-fix">
+/* FINAL HARD FIX – Zusatzqualifikationen wirklich links */
+#editUserModal .qual-left-fix{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  gap:10px !important;
+  width:100% !important;
+}
+#editUserModal .qual-left-fix label{
+  display:grid !important;
+  grid-template-columns:18px minmax(0,1fr) !important;
+  align-items:start !important;
+  justify-content:start !important;
+  column-gap:10px !important;
+  width:100% !important;
+  margin:0 !important;
+  padding:0 !important;
+  text-align:left !important;
+}
+#editUserModal .qual-left-fix input[type="checkbox"]{
+  width:16px !important;
+  height:16px !important;
+  margin:2px 0 0 0 !important;
+  justify-self:start !important;
+  align-self:start !important;
+}
+#editUserModal .qual-left-fix span{
+  display:block !important;
+  min-width:0 !important;
+  white-space:normal !important;
+  word-break:break-word !important;
+  overflow-wrap:anywhere !important;
+  text-align:left !important;
+  line-height:1.4 !important;
+}
+</style>
 </body>
 </html>
 
