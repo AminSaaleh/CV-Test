@@ -312,6 +312,155 @@
 .fc-day-sat, .fc-day-sun {
   background-color: #f2f2f2 !important;
 }
+  /* ======================================= */
+/* FINAL FIX – EDIT USER MODAL SAUBER */
+/* ======================================= */
+
+/* Modal etwas breiter und sauber */
+#editUserModal .modal-content{
+  width:min(1180px, 96vw) !important;
+  max-height:92vh;
+  overflow:auto;
+  box-sizing:border-box;
+}
+
+/* Oberes Formular normal in 2 Spalten */
+#editUserModal .personal-form-grid{
+  grid-template-columns:repeat(2, minmax(0,1fr));
+  gap:12px;
+}
+
+/* Fremdsprachen über volle Breite */
+#editUserModal .lang-section-full{
+  grid-column: 1 / -1;
+  width:100%;
+}
+
+#editUserModal .lang-columns{
+  display:grid !important;
+  grid-template-columns: repeat(4, minmax(0,1fr)) !important;
+  gap:8px 24px !important;
+  columns: unset !important;
+}
+
+#editUserModal .lang-item{
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+  margin:0 !important;
+  white-space:nowrap;
+}
+
+#editUserModal .lang-item input[type="checkbox"]{
+  margin:0 !important;
+  flex:0 0 auto;
+}
+
+#editUserModal .lang-item label{
+  margin:0 !important;
+  display:inline !important;
+  white-space:nowrap;
+  font-size:13px;
+  font-weight:500;
+}
+
+/* Bild ebenfalls über volle Breite */
+#editUserModal .image-section-full{
+  grid-column: 1 / -1;
+  width:100%;
+}
+
+#editUserModal .image-upload-grid{
+  display:grid;
+  grid-template-columns: 280px minmax(320px,1fr);
+  gap:16px;
+  align-items:start;
+}
+
+/* Unterer Bereich: 2 saubere Spalten */
+#editUserModal .qual-grid{
+  display:grid !important;
+  grid-template-columns: 1fr 1fr !important;
+  gap:20px !important;
+  align-items:start !important;
+}
+
+#editUserModal .qual-card{
+  padding:14px !important;
+  min-width:0;
+}
+
+/* LINKER BLOCK: Checkboxen linksbündig, nicht mittig */
+#editUserModal .qual-card .checkbox-row,
+#editUserModal .qual-card .check-list label{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  margin:8px 0 !important;
+  text-align:left !important;
+  white-space:normal !important;
+}
+
+#editUserModal .qual-card .checkbox-row input[type="checkbox"],
+#editUserModal .qual-card .check-list label input[type="checkbox"]{
+  margin:2px 0 0 0 !important;
+  flex:0 0 auto !important;
+}
+
+#editUserModal .qual-card .checkbox-row span,
+#editUserModal .qual-card .check-list label span{
+  display:block;
+  line-height:1.35;
+}
+
+/* Falls Text direkt im label steckt */
+#editUserModal .qual-card label{
+  text-align:left !important;
+}
+
+/* Rechter Block: Inputs sauber */
+#editUserModal .qual-card input[type="text"],
+#editUserModal .qual-card input[type="date"],
+#editUserModal .qual-card select{
+  width:100% !important;
+  box-sizing:border-box !important;
+  margin-bottom:10px !important;
+}
+
+/* Führerschein-Zeile sauber links */
+#editUserModal .fuehrerschein-row,
+#editUserModal .stack-field .checkbox-row{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+}
+
+/* Responsive */
+@media (max-width: 1100px){
+  #editUserModal .lang-columns{
+    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width: 800px){
+  #editUserModal .personal-form-grid,
+  #editUserModal .qual-grid,
+  #editUserModal .image-upload-grid{
+    grid-template-columns:1fr !important;
+  }
+
+  #editUserModal .lang-columns{
+    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width: 560px){
+  #editUserModal .lang-columns{
+    grid-template-columns:1fr !important;
+  }
+}
 </style>
 
 
