@@ -7,6 +7,31 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
+    /* 🔥 FINAL FIX – Zusatzqualifikationen komplett links */
+#editUserModal .qual-card .check-list{
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+}
+
+#editUserModal .qual-card .check-list label{
+  display:flex !important;
+  align-items:flex-start !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  text-align:left !important;
+  width:100% !important;
+}
+
+#editUserModal .qual-card .check-list input[type="checkbox"]{
+  margin-top:3px !important;
+  flex:0 0 auto !important;
+}
+
+#editUserModal .qual-card .check-list span{
+  text-align:left !important;
+  line-height:1.4;
+}
     /* ============================= */
 /* FINAL CLEAN FIX – PERSONAL MODAL */
 /* ============================= */
