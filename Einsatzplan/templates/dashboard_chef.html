@@ -1702,10 +1702,10 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
 
 
-      <div class="section-title-lite">Fremdsprachen</div>
+      
       <div class="qual-grid" id="add-language-skills">
         <div class="qual-card">
-          <h5>Sprachen</h5>
+          <h5>Sprachkenntnisse</h5>
           <div class="lang-columns">
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Deutsch"> Deutsch</label><select id="add-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Englisch"> Englisch</label><select id="add-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
@@ -1869,17 +1869,21 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <div class="detail-box"><b>Auftraggeber:</b> <span id="d-firma"></span></div>
 
       <div class="detail-box"><b>Titel:</b> <span id="d-title"></span></div>
-      <div class="detail-box"><b>Ort:</b> <span id="d-ort"></span></div>
+      <div class="detail-box"><b>Einsatzdatum:</b> <span id="d-date"></span></div>
+       <div class="detail-box"><b>Start:</b> <span id="d-start"></span></div>
+      <div class="detail-box"><b>Endzeit:</b> <span id="d-planned-end"></span></div>
+      <div class="detail-box"><b>Einsatzörtlichkeit:</b> <span id="d-ort"></span></div>
       <div class="detail-box"><b>Dienstkleidung:</b> <span id="d-dienst"></span></div>
-      <div class="detail-box"><b>Mitteilung:</b> <span id="d-auftrag"></span></div>
+      <div class="detail-box"><b>Einsatzdetails:</b> <span id="d-auftrag"></span></div>
 
-      <!-- ✅ nur Uhrzeit (keine Datum-Anzeige) -->
-      <div class="detail-box"><b>Start (Uhrzeit):</b> <span id="d-start"></span></div>
+      
+     
 
-      <div class="detail-box"><b>Vorauss. Ende:</b> <span id="d-planned-end"></span></div>
+      
       <div class="detail-box"><b>Frist:</b> <span id="d-frist"></span></div>
+      <div class="detail-box"><b>SVS:</b> <span id="d-rate-mode"></span></div>
       <div class="detail-box"><b>Benötigt:</b> <span id="d-required"></span></div>
-      <div class="detail-box"><b>Abrechnung:</b> <span id="d-rate-mode"></span></div>
+      
 
       <div class="modal-actions"></div>
 
@@ -3924,6 +3928,8 @@ async function saveEventEdit(){
       window._currentEventProps = p;
 
       document.getElementById("d-title").textContent = p.title || (ev && ev.title) || "-";
+      const detailStart = p.start || (ev && ev.start) || null;
+      document.getElementById("d-date").textContent = detailStart ? fmtDateOnlyDE(detailStart) : "-";
       // ✅ Firma = Kategorie (CP/CV)
       const _cat = String(p.category || (ev && (ev.category || ev.extendedProps?.category)) || "CP").toUpperCase();
       const firmaEl = document.getElementById("d-firma");
