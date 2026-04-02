@@ -173,6 +173,24 @@
   color:#6b7280;
 }
 .personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
+.personal-action-btns .personal-btn-pdf{background:#16a34a !important;border-color:#15803d !important;color:#fff !important;}
+.personal-action-btns .personal-btn-edit,
+.personal-action-btns .personal-btn-lock{background:#d4af37 !important;border-color:#b8860b !important;color:#111 !important;}
+.personal-action-btns .personal-btn-delete{background:#dc2626 !important;border-color:#b91c1c !important;color:#fff !important;}
+.personal-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px;}
+.personal-form-grid > div{min-width:0;}
+.personal-form-grid label{display:block;margin-bottom:6px;font-weight:600;}
+.personal-form-grid input,
+.personal-form-grid select{width:100%;box-sizing:border-box;}
+#editUserModal .qual-card label,
+#user-management .qual-card label{display:flex;align-items:flex-start;gap:8px;line-height:1.4;}
+#editUserModal .qual-card label input[type="checkbox"],
+#user-management .qual-card label input[type="checkbox"]{margin-top:2px;flex:0 0 auto;}
+#editUserModal .lang-item label,
+#user-management .lang-item label{display:flex;align-items:center;gap:8px;line-height:1.3;}
+#editUserModal .lang-item label input[type="checkbox"],
+#user-management .lang-item label input[type="checkbox"]{margin:0;}
+
 #user-management .user-table{table-layout:auto;}
 #user-management .user-table th,
 #user-management .user-table td{white-space:nowrap;}
@@ -1085,6 +1103,11 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <input type="text" id="vorname" placeholder="Vorname" required>
         <input type="text" id="nachname" placeholder="Nachname" required>
       </div>
+
+      <div class="form-row">
+        <input type="text" id="geburtsort" placeholder="Geburtsort">
+        <input type="date" id="geburtstag" placeholder="Geburtstag">
+      </div>
       
      <div class="form-row">
         <input type="text" id="bemerkung" placeholder="Bemerkung (freier Text)">
@@ -1430,11 +1453,27 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <label>Benutzername</label>
       <input type="text" id="edit-username">
 
-      <label>Vorname</label>
-      <input type="text" id="edit-vorname">
+      <div class="personal-form-grid">
+        <div>
+          <label for="edit-vorname">Vorname</label>
+          <input type="text" id="edit-vorname">
+        </div>
+        <div>
+          <label for="edit-nachname">Nachname</label>
+          <input type="text" id="edit-nachname">
+        </div>
+      </div>
 
-      <label>Nachname</label>
-      <input type="text" id="edit-nachname">
+      <div class="personal-form-grid">
+        <div>
+          <label for="edit-geburtsort">Geburtsort</label>
+          <input type="text" id="edit-geburtsort" placeholder="Geburtsort">
+        </div>
+        <div>
+          <label for="edit-geburtstag">Geburtstag</label>
+          <input type="date" id="edit-geburtstag">
+        </div>
+      </div>
 
       <label>E-Mail</label>
       <input type="email" id="edit-email">
@@ -2836,6 +2875,8 @@ document.getElementById("planning").style.display="block";
           vorname:document.getElementById("vorname").value,
           nachname:document.getElementById("nachname").value,
           email:(document.getElementById("email").value || "").trim(),
+          geburtsort:(document.getElementById("geburtsort").value || "").trim(),
+          geburtstag:(document.getElementById("geburtstag").value || "").trim(),
           bemerkung:(document.getElementById("bemerkung").value || "").trim(),
           username:document.getElementById("new-username").value,
           password:document.getElementById("new-password").value,
@@ -3582,10 +3623,10 @@ document.getElementById("confirmed-counter").textContent =
           <td>${consentIcon(!!u.consent_given)}</td>
           <td>
             <div class="personal-action-btns">
-              <button class="release" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
-              <button class="confirm" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
-              <button class="confirm" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
-              <button class="reject" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
+              <button class="release personal-btn-pdf" onclick="downloadUserPdf('${escapeHtml(u.username)}')">PDF erzeugen</button>
+              <button class="confirm personal-btn-edit" onclick="openEditModalByUsername('${encodeURIComponent(u.username)}')">Bearbeiten</button>
+              <button class="confirm personal-btn-lock" onclick="toggleUserLock('${escapeHtml(u.username)}')">${lockBtnLabel}</button>
+              <button class="reject personal-btn-delete" onclick="deleteUser('${escapeHtml(u.username)}')">Löschen</button>
             </div>
           </td>
         `;
@@ -3704,6 +3745,8 @@ document.getElementById("confirmed-counter").textContent =
       document.getElementById("edit-vorname").value=user.vorname || "";
       document.getElementById("edit-nachname").value=user.nachname || "";
       document.getElementById("edit-email").value=user.email || "";
+      document.getElementById("edit-geburtsort").value=user.geburtsort || "";
+      document.getElementById("edit-geburtstag").value=user.geburtstag || "";
       document.getElementById("edit-bemerkung").value=user.bemerkung || "";
       document.getElementById("edit-password").value=user.password||"";
       document.getElementById("edit-role").value=user.role || "mitarbeiter";
@@ -3766,6 +3809,8 @@ document.getElementById("confirmed-counter").textContent =
         vorname:document.getElementById("edit-vorname").value,
         nachname:document.getElementById("edit-nachname").value,
         email:(document.getElementById("edit-email").value || "").trim(),
+        geburtsort:(document.getElementById("edit-geburtsort").value || "").trim(),
+        geburtstag:(document.getElementById("edit-geburtstag").value || "").trim(),
         bemerkung:(document.getElementById("edit-bemerkung").value || "").trim(),
         password:(document.getElementById("edit-password").value || "").trim() ? document.getElementById("edit-password").value : null,
         role:document.getElementById("edit-role").value,
