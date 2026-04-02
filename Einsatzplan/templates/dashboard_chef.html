@@ -214,6 +214,40 @@
 .lang-columns{columns:2;column-gap:18px;}
 .lang-columns .lang-item{break-inside:avoid;}
 
+/* ✅ Edit-Modal sauber und responsive */
+#editUserModal .modal-content{width:min(1100px,98vw) !important;max-height:92vh;overflow:auto;box-sizing:border-box;}
+#editUserModal .personal-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+#editUserModal .qual-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
+#editUserModal .qual-card{padding:14px;min-width:0;}
+#editUserModal .qual-card h5{margin-bottom:12px;}
+#editUserModal .lang-columns{columns:unset;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;}
+#editUserModal .lang-item{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;min-width:0;}
+#editUserModal .lang-item label{display:flex;align-items:center;gap:8px;margin:0;min-width:0;font-weight:500;}
+#editUserModal .lang-item select{min-width:0;width:100%;max-width:100%;box-sizing:border-box;}
+#editUserModal .image-upload-grid{grid-template-columns:minmax(240px,320px) minmax(280px,1fr);align-items:start;}
+#editUserModal .image-upload-grid input[type="file"]{width:100%;box-sizing:border-box;}
+#editUserModal .image-preview-box{min-height:180px;}
+#editUserModal .qual-card > input[type="text"],
+#editUserModal .qual-card > input[type="date"],
+#editUserModal .qual-card > select,
+#editUserModal .qual-card > div > input,
+#editUserModal .qual-card > div > select{width:100%;box-sizing:border-box;}
+#editUserModal #edit-fuehrerschein_klassen{width:100%;box-sizing:border-box;}
+#editUserModal .qual-card .stack-field{margin-top:10px;}
+#editUserModal .qual-card .check-list{display:grid;gap:10px;}
+#editUserModal .qual-card .check-list label{margin:0;}
+#editUserModal .modal-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;}
+@media (max-width: 900px){
+  #editUserModal .lang-columns{grid-template-columns:1fr;}
+}
+@media (max-width: 700px){
+  #editUserModal .personal-form-grid,
+  #editUserModal .qual-grid,
+  #editUserModal .image-upload-grid{grid-template-columns:1fr;}
+  #editUserModal .modal-content{width:min(100vw,98vw) !important;padding:14px;}
+}
+
+
 </style>
 
 <style>
@@ -1212,7 +1246,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
           <input type="text" id="ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
           <input type="text" id="ausweis_nr" placeholder="Dokumentennr." style="margin-top:10px;">
           <input type="text" id="ausweis_behoerde" placeholder="Ausstellende Behörde" style="margin-top:10px;">
-          <div style="margin-top:10px;">
+          <div class="stack-field">
             <label for="ausweis_gueltig_bis">Gültig bis</label>
             <input type="date" id="ausweis_gueltig_bis">
           </div>
@@ -1446,7 +1480,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 
   <!-- Modal Benutzer bearbeiten -->
   <div class="modal" id="editUserModal">
-    <div class="modal-content" tabindex="-1" style="width:min(1000px,96vw);max-height:92vh;overflow:auto;">
+    <div class="modal-content" tabindex="-1">
       <span class="close-btn" onclick="closeEditModal()">×</span>
       <h3>Mitarbeiter bearbeiten</h3>
 
@@ -1561,29 +1595,31 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
-          <label><input type="checkbox" id="edit-brandschutzhelfer"> ⁠Ersthelfer/-in</label><br>
-          <label><input type="checkbox" id="edit-deeskalation"> Deeskalationslehrgang</label><br>
-          <label><input type="checkbox" id="edit-gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label><br>
-          <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label><br>
-          <label><input type="checkbox" id="edit-personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label><br>
-          <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label><br>
-          <label><input type="checkbox" id="edit-behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label><br>
-          <label><input type="checkbox" id="edit-bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label><br>
-          <label><input type="checkbox" id="edit-sanitaeter"> Rettungssanitäter/-in oder höherwertig</label><br>
-          <label><input type="checkbox" id="edit-pschein"> Personenbeförderungsschein (P-Schein)</label>
+          <div class="check-list">
+            <label><input type="checkbox" id="edit-brandschutzhelfer"> ⁠Ersthelfer/-in</label>
+            <label><input type="checkbox" id="edit-deeskalation"> Deeskalationslehrgang</label>
+            <label><input type="checkbox" id="edit-gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label>
+            <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label>
+            <label><input type="checkbox" id="edit-personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label>
+            <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label>
+            <label><input type="checkbox" id="edit-behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label>
+            <label><input type="checkbox" id="edit-bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label>
+            <label><input type="checkbox" id="edit-sanitaeter"> Rettungssanitäter/-in oder höherwertig</label>
+            <label><input type="checkbox" id="edit-pschein"> Personenbeförderungsschein (P-Schein)</label>
+          </div>
         </div>
         <div class="qual-card">
           <h5>Ausweisdokument</h5>
           <input type="text" id="edit-ausweis_art" placeholder="Art, z. B. Personalausweis oder Reisepass">
-          <input type="text" id="edit-ausweis_nr" placeholder="Dokumentennr." style="margin-top:10px;">
-          <input type="text" id="edit-ausweis_behoerde" placeholder="Ausstellende Behörde" style="margin-top:10px;">
+          <input type="text" id="edit-ausweis_nr" class="stack-field" placeholder="Dokumentennr.">
+          <input type="text" id="edit-ausweis_behoerde" class="stack-field" placeholder="Ausstellende Behörde">
           <div style="margin-top:10px;">
             <label for="edit-ausweis_gueltig_bis">Gültig bis</label>
             <input type="date" id="edit-ausweis_gueltig_bis">
           </div>
           <h5 style="margin-top:14px;">Führerschein</h5>
           <label><input type="checkbox" id="edit-fuehrerschein"> Führerschein vorhanden</label>
-          <input type="text" id="edit-fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
+          <input type="text" id="edit-fuehrerschein_klassen" class="stack-field" placeholder="Klasse, z. B. B / BE / C1" style="display:none;">
         </div>
       </div>
 
