@@ -1809,48 +1809,49 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </select>
 
 
-      <label>Titel</label>
+      <label>Titel:</label>
       <input id="title" placeholder="Titel des Einsatzes">
 
-      
-
-      <label>Ort</label>
-      <input id="ort" placeholder="Ort">
-
-      <label>Dienstkleidung</label>
-      <input id="dienst" placeholder="Dienstkleidung">
-
-      <label>Mitteilung</label>
-      <input id="auftrag" placeholder="Mitteilung">
-
-      <div class="form-row">
+       <div class="form-row">
         <div>
-          <label>Startzeit</label>
+          <label>Startzeit:</label>
           <input id="start-time" type="time" value="09:00">
         </div>
         <div>
-          <label>Voraussichtliche Endzeit</label>
+          <label>Endzeit:</label>
           <input id="planned-end-time" type="time" value="17:00">
         </div>
       </div>
 
+      <label>Einsatzörtlichkeit:</label>
+      <input id="ort" placeholder="Ort">
+
+      <label>Dienstbekleidung:</label>
+      <input id="dienst" placeholder="Dienstkleidung">
+
+      <label>Einsatzdetails:</label>
+      <input id="auftrag" placeholder="Mitteilung">
+
+     
+
       <div class="form-row">
         <div>
-          <label>Frist (Annahme bis)</label>
+          <label>Frist:</label>
           <input id="frist" type="datetime-local">
         </div>
       </div>
+      
+        <div class="checkbox-row">
+        <input type="checkbox" id="use-event-rate" onchange="toggleEventRateInputs('create')">
+        <label for="use-event-rate"><b>SVS</b></label>
+      </div>
+      <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
+      <input id="event-rate" type="number" step="0.01" min="0" placeholder="z.B. 20.00" disabled>
 
       <label>Benötigte Mitarbeiter</label>
       <input id="required-staff" type="number" min="1" value="1">
 
-      <div class="checkbox-row">
-        <input type="checkbox" id="use-event-rate" checked onchange="toggleEventRateInputs('create')">
-        <label for="use-event-rate"><b>Stundensatz pro Einsatz festlegen</b></label>
-      </div>
-
-      <label>Stundensatz (€/h) – nur wenn oben aktiv</label>
-      <input id="event-rate" type="number" step="0.01" min="0" placeholder="z.B. 20.00">
+    
 
       <div class="modal-actions">
         <button class="release" onclick="saveEvent('geplant')">📄 Nur planen</button>
@@ -2381,7 +2382,11 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       };
     })();
 
-    
+document.addEventListener("DOMContentLoaded", function() {
+    toggleEventRateInputs('create');
+    toggleEventRateInputs('edit'); // optional
+});
+
     // ✅ Auftraggeber-Map (UI zeigt keine Abkürzungen)
     function catToAuftraggeber(cat){
       const c = String(cat || "").toUpperCase();
