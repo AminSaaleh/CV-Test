@@ -451,7 +451,9 @@ def init_db():
             ausweis_art TEXT,
             ausweis_nr TEXT,
             ausweis_behoerde TEXT,
-            ausweis_gueltig_bis TEXT
+            ausweis_gueltig_bis TEXT,
+            geburtsort TEXT,
+            geburtstag TEXT
         );
         '''
     )
@@ -544,6 +546,8 @@ def init_db():
         ("ausweis_nr", "ALTER TABLE users ADD COLUMN ausweis_nr TEXT"),
         ("ausweis_behoerde", "ALTER TABLE users ADD COLUMN ausweis_behoerde TEXT"),
         ("ausweis_gueltig_bis", "ALTER TABLE users ADD COLUMN ausweis_gueltig_bis TEXT"),
+        ("geburtsort", "ALTER TABLE users ADD COLUMN geburtsort TEXT"),
+        ("geburtstag", "ALTER TABLE users ADD COLUMN geburtstag TEXT"),
     ]:
         if not col_exists(db, "users", c):
             db.execute(ddl)
@@ -830,9 +834,9 @@ def add_user():
     try:
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
+               (username,password,role,vorname,nachname,email,geburtsort,geburtstag,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
                 language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,ausweis_art,ausweis_nr,ausweis_behoerde,ausweis_gueltig_bis)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 username,
                 password,
@@ -840,6 +844,8 @@ def add_user():
                 d.get("vorname") or "",
                 d.get("nachname") or "",
                 email,
+                (d.get("geburtsort") or "").strip(),
+                (d.get("geburtstag") or "").strip(),
                 d.get("s34a") or "nein",
                 normalize_s34a_art(d.get("s34a_art") or ""),
                 d.get("pschein") or "nein",
@@ -922,10 +928,10 @@ def rename_user():
         # Lösung: neuen User anlegen, Referenzen umhängen, alten User löschen.
         db.execute(
             """INSERT INTO users
-               (username,password,role,vorname,nachname,email,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
+               (username,password,role,vorname,nachname,email,geburtsort,geburtstag,s34a,s34a_art,pschein,bewach_id,steuernummer,bsw,sanitaeter,bemerkung,is_locked,stundensatz,
                 language_skills,brandschutzhelfer,deeskalation,gssk,fachkraft_ss,personenschutz,waffensachkunde,behoerdlich_studium,fuehrerschein,fuehrerschein_klassen,image_data,
                 consent_given,consent_name,consent_date)
-               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
+               VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)""",
             (
                 new_username,
                 old["password"],
@@ -933,6 +939,8 @@ def rename_user():
                 old["vorname"] or "",
                 old["nachname"] or "",
                 (old.get("email") or "").strip(),
+                (old.get("geburtsort") or "").strip(),
+                (old.get("geburtstag") or "").strip(),
                 old["s34a"] or "nein",
                 normalize_s34a_art(old["s34a_art"] or ""),
                 old["pschein"] or "nein",
@@ -988,7 +996,7 @@ def edit_user(username):
         return jsonify({"error": "Benutzer nicht gefunden"}), 404
 
     updates = dict(u)
-    for k in ["vorname", "nachname", "email", "role", "s34a", "s34a_art", "pschein",
+    for k in ["vorname", "nachname", "email", "geburtsort", "geburtstag", "role", "s34a", "s34a_art", "pschein",
               "bewach_id", "steuernummer", "bsw", "sanitaeter", "bemerkung", "ausweis_art", "ausweis_nr", "ausweis_behoerde", "ausweis_gueltig_bis",
               "brandschutzhelfer", "deeskalation", "gssk", "fachkraft_ss", "personenschutz",
               "waffensachkunde", "behoerdlich_studium", "fuehrerschein", "fuehrerschein_klassen", "image_data"]:
@@ -1023,13 +1031,13 @@ def edit_user(username):
 
     db.execute(
         """UPDATE users SET
-           password=%s, role=%s, vorname=%s, nachname=%s, email=%s, s34a=%s, s34a_art=%s, pschein=%s,
+           password=%s, role=%s, vorname=%s, nachname=%s, email=%s, geburtsort=%s, geburtstag=%s, s34a=%s, s34a_art=%s, pschein=%s,
            bewach_id=%s, steuernummer=%s, bsw=%s, sanitaeter=%s, bemerkung=%s, ausweis_art=%s, ausweis_nr=%s, ausweis_behoerde=%s, ausweis_gueltig_bis=%s, stundensatz=%s,
            language_skills=%s, brandschutzhelfer=%s, deeskalation=%s, gssk=%s, fachkraft_ss=%s,
            personenschutz=%s, waffensachkunde=%s, behoerdlich_studium=%s, fuehrerschein=%s, fuehrerschein_klassen=%s, image_data=%s
            WHERE username=%s""",
         (
-            updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "",
+            updates["password"], updates["role"], updates["vorname"], updates["nachname"], updates.get("email") or "", updates.get("geburtsort") or "", updates.get("geburtstag") or "",
             updates["s34a"], updates["s34a_art"], updates["pschein"],
             updates["bewach_id"], updates["steuernummer"], updates["bsw"], updates["sanitaeter"], updates.get("bemerkung") or "",
             updates.get("ausweis_art") or "", updates.get("ausweis_nr") or "", updates.get("ausweis_behoerde") or "", updates.get("ausweis_gueltig_bis") or "",
