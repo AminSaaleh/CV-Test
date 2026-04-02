@@ -4156,7 +4156,7 @@ document.getElementById("confirmed-counter").textContent =
         if(u.is_locked) tr.classList.add("is-locked-row");
 
         const fullName = `${u.vorname || ""} ${u.nachname || ""}`.trim() || u.username;
-        const lockBtnLabel = u.is_locked ? '🔓 Entsperren' : '🚫 Sperren';
+        const lockBtnLabel = u.is_locked ? '🔓 Entsperren' : ' Sperren';
         const s34aText = `${capYesNo(u.s34a)}${String(u.s34a||'').toLowerCase()==="ja" ? " ("+(u.s34a_art||"")+")" : ""}`;
 
         tr.innerHTML=`
