@@ -6,355 +6,7 @@
   <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    /* ============================= */
-/* FINAL CLEAN FIX – PERSONAL MODAL */
-/* ============================= */
-
-/* 🔹 Hauptlayout */
-#editUserModal .qual-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:24px;
-  align-items:start;
-}
-
-/* 🔹 Karten */
-#editUserModal .qual-card{
-  padding:16px;
-  border-radius:10px;
-  background:#f8fafc;
-}
-
-/* ============================= */
-/* 🌍 FREMDSPRACHEN */
-/* ============================= */
-
-#editUserModal .lang-columns{
-  display:grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap:10px 24px;
-}
-
-#editUserModal .lang-item{
-  display:flex;
-  align-items:center;
-  gap:8px;
-}
-
-#editUserModal .lang-item input[type="checkbox"]{
-  margin:0;
-  flex-shrink:0;
-}
-
-#editUserModal .lang-item label{
-  margin:0;
-  font-size:14px;
-  font-weight:500;
-}
-
-/* ============================= */
-/* 📋 ZUSATZQUALIFIKATIONEN */
-/* ============================= */
-
-#editUserModal .checkbox-row{
-  display:flex;
-  align-items:flex-start;
-  gap:10px;
-  margin:8px 0;
-}
-
-#editUserModal .checkbox-row input{
-  margin-top:3px;
-}
-
-#editUserModal .checkbox-row label{
-  margin:0;
-  font-size:14px;
-  line-height:1.4;
-}
-
-/* ============================= */
-/* 🧾 INPUTS RECHTE SEITE */
-/* ============================= */
-
-#editUserModal .qual-card input,
-#editUserModal .qual-card select{
-  width:100%;
-  box-sizing:border-box;
-  margin-bottom:10px;
-}
-
-/* ============================= */
-/* 🖼️ BILD */
-/* ============================= */
-
-#editUserModal .image-upload-grid{
-  display:grid;
-  grid-template-columns: 260px 1fr;
-  gap:20px;
-}
-
-/* ============================= */
-/* 📱 RESPONSIVE */
-/* ============================= */
-
-@media (max-width: 900px){
-  #editUserModal .qual-grid{
-    grid-template-columns: 1fr;
-  }
-
-  #editUserModal .lang-columns{
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-
-@media (max-width: 500px){
-  #editUserModal .lang-columns{
-    grid-template-columns: 1fr;
-  }
-}
-    .fc-daygrid-event-dot{
-      height:16px;width:16px;border-radius:50%;
-      background-color:currentColor !important;
-      margin-right:6px;
-      border:0 !important;
-    }
-    /* Chef: abgelehnt oder entfernt bleibt rot */
-#response-list.requests-grid > li.abgelehnt_chef,
-#response-list.requests-grid > li.entfernt_chef {
-  background: #fdecea;
-  border-color: #c62828;
-}
-    /* Wochenende grau (Sa/So) – stärker/gezielter, damit es in Chef-Ansicht sicher greift */
-    #calendar .fc-daygrid-day.weekend,
-    #planning-calendar .fc-daygrid-day.weekend{
-      background:#f2f2f2 !important;
-    }
-    .fc-event-title{font-weight:bold;font-size:14px;}
-
-    .detail-box{border:1px solid #ddd;border-radius:6px;padding:8px;margin-bottom:10px;background:#fafafa;}
-    .filter-row{margin:10px 0;}
-    #response-list button.inline{margin-left:8px;padding:2px 8px;font-size:12px;}
-    .section{margin-top:12px;padding-top:8px;border-top:1px dashed #ddd;}
-    .tfoot-sum td{font-weight:bold;border-top:2px solid #ccc;}
-    .hint{font-size:12px;color:#666;margin-top:6px;}
-    .form-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;}
-    .form-row > *{flex:1;min-width:160px;}
-    /* ✅ Checkbox + Text sollen eng beieinander stehen (keine 100%-Breite aus globalem CSS übernehmen) */
-    .checkbox-row{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin:10px 0;flex-wrap:nowrap;width:auto;}
-    .checkbox-row input[type="checkbox"]{margin:0;width:auto !important;flex:0 0 auto;display:inline-block;}
-    .checkbox-row label{margin:0;white-space:nowrap;width:auto !important;flex:0 1 auto;display:inline-block;}
-    .muted{color:#666;font-size:12px;}
   
-    /* ✅ Anfragen im Einsatzdetails: 4 nebeneinander (Grid) */
-    #response-list.requests-grid{
-      list-style:none;
-      padding:0;
-      margin:0;
-      display:grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      gap:12px;
-    }
-    /* Karten-Look für Einträge */
-    #response-list.requests-grid > li{
-      border:1px solid #ddd;
-      border-radius:8px;
-      padding:10px;
-      background:#fff;
-    }
-    /* ✅ Status-Farben auf der ganzen Kachel */
-    #response-list.requests-grid > li.bestätigt{
-      background:#e6f6ea;           /* grün */
-      border-color:#2e7d32;
-    }
-    #response-list.requests-grid > li.abgelehnt{
-      background:#fdecea;           /* rot */
-      border-color:#c62828;
-    }
-    /* ✅ Chef-Ablehnung/Entfernen auch rot (damit es in Einsatzdetails rot bleibt) */
-    #response-list.requests-grid > li.abgelehnt_chef,
-    #response-list.requests-grid > li.entfernt_chef{
-      background:#fdecea;
-      border-color:#c62828;
-    }
-    /* Buttons in der Karte: sauber umbrechen */
-    #response-list.requests-grid button.inline{
-      margin-left:0;
-      margin-top:8px;
-      margin-right:8px;
-    }
-    @media (max-width: 1200px){
-      #response-list.requests-grid{ grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    }
-    @media (max-width: 650px){
-      #response-list.requests-grid{ grid-template-columns: 1fr; }
-    }
-
-    /* ===== Planung: sachlich & kompakt (Titel + bestätigte Namen) ===== */
-    #planning-calendar .fc-daygrid-event{
-      background: transparent !important;   /* kein blau */
-      border: 1px solid #ddd !important;
-      border-radius: 4px !important;
-      padding: 2px 4px !important;
-      box-shadow: none !important;
-      cursor: default !important;
-      white-space: normal;
-    }
-    #planning-calendar .fc-daygrid-event .fc-event-main{ color: inherit !important; }
-    #planning-calendar .plan-title{
-      font-size: 16px;
-      font-weight: 1000; /* Titel fett */
-      line-height: 1.2;
-
-      /* ✅ Umrandung wie in der Kalender-Ansicht */
-      display: inline-block;
-      padding: 2px 6px;
-      border-radius: 6px;
-      border: 2px solid transparent;
-      margin-bottom: 2px;
-    }
-    /* ✅ Planung: Titel-Box je nach Kategorie (CV blau, CP gold) */
-    #planning-calendar .plan-title.title-cv{ color:#111 !important; background:#dbeafe !important; border-color:#60a5fa !important; }
-    #planning-calendar .plan-title.title-cp{ color:#111 !important; background:#fff3cd !important; border-color:#f1c40f !important; }
-
-    #planning-calendar .plan-staff{
-      font-size: 13px;
-      line-height: 1.2;
-      color: #333;
-      margin-top: 1px;
-    }
-    #planning-calendar .plan-staff-row{display:block;padding:2px 4px;border-radius:4px;}
-    #planning-calendar .plan-staff-row.done{background:#e6f6ea;border:1px solid #2e7d32;}
-    #planning-calendar .plan-staff-times{color:#555;}
-
-
-
-  
-
-    /* ✅ verhindert FullCalendar-Standard-Blau in Planung (auch nach Tab-Wechsel) */
-    #planning-calendar .fc-h-event,
-    #planning-calendar .fc-daygrid-event-harness .fc-event,
-    #planning-calendar .fc-daygrid-event .fc-event-main-frame{
-      background: transparent !important;
-    }
-
-
-/* ✅ Einheitlicher Tabellen-Abstand (Report & Zähler) */
-.user-table {
-  border-collapse: collapse;
-  width: 100%;
-}
-
-.user-table th,
-.user-table td {
-  padding: 8px 10px;
-  vertical-align: middle;
-  text-align: center;
-  line-height: 1.4;
-}
-
-/* Erste Spalte (Name) linksbündig */
-.user-table th:first-child,
-.user-table td:first-child {
-  text-align: left;
-  white-space: nowrap;
-}
-
-/* Kopfzeile kompakter */
-.user-table thead th {
-  padding-top: 6px;
-  padding-bottom: 6px;
-}
-
-/* Summenzeile absetzen */
-.user-table tfoot .tfoot-sum td {
-  padding-top: 10px;
-  padding-bottom: 10px;
-  background: #f7f7f7;
-}
-
-/* Personal: gesperrte Accounts sichtbar markieren */
-.user-table tr.is-locked-row td{
-  background:#f3f4f6;
-  color:#6b7280;
-}
-.personal-action-btns{display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap;}
-.personal-action-btns .personal-btn-pdf{background:#16a34a !important;border-color:#15803d !important;color:#fff !important;}
-.personal-action-btns .personal-btn-edit,
-.personal-action-btns .personal-btn-lock{background:#d4af37 !important;border-color:#b8860b !important;color:#111 !important;}
-.personal-action-btns .personal-btn-delete{background:#dc2626 !important;border-color:#b91c1c !important;color:#fff !important;}
-.personal-form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:10px;}
-.personal-form-grid > div{min-width:0;}
-.personal-form-grid label{display:block;margin-bottom:6px;font-weight:600;}
-.personal-form-grid input,
-.personal-form-grid select{width:100%;box-sizing:border-box;}
-#editUserModal .qual-card label,
-#user-management .qual-card label{display:flex;align-items:flex-start;gap:8px;line-height:1.4;}
-#editUserModal .qual-card label input[type="checkbox"],
-#user-management .qual-card label input[type="checkbox"]{margin-top:2px;flex:0 0 auto;}
-#editUserModal .lang-item label,
-#user-management .lang-item label{display:flex;align-items:center;gap:8px;line-height:1.3;}
-#editUserModal .lang-item label input[type="checkbox"],
-#user-management .lang-item label input[type="checkbox"]{margin:0;}
-
-#user-management .user-table{table-layout:auto;}
-#user-management .user-table th,
-#user-management .user-table td{white-space:nowrap;}
-#user-management .user-table .personal-note-cell{white-space:normal !important; min-width:180px;}
-#user-management .user-table th:last-child,
-#user-management .user-table td:last-child{min-width:320px;}
-#user-management .personal-action-btns button{white-space:nowrap;}
-.personal-note-cell{max-width:220px;white-space:normal !important;text-align:left !important;}
-.personal-name-cell{text-align:left !important;white-space:nowrap;}
-.consent-check{font-size:20px;font-weight:700;}
-.qual-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px;margin:10px 0;}
-.qual-card{border:1px solid #d6dbe3;border-radius:10px;padding:10px;background:#f8fbff;}
-.qual-card h5{margin:0 0 8px 0;font-size:14px;}
-.lang-item{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:6px 0;}
-.lang-item select{min-width:220px;display:none;}
-.section-title-lite{margin:14px 0 6px 0;font-weight:700;}
-.image-upload-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin:10px 0;}
-.image-preview-box{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;min-height:160px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden;}
-.image-preview-box img{max-width:100%;max-height:220px;border-radius:10px;display:block;}
-.image-preview-placeholder{color:#64748b;font-size:13px;text-align:center;}
-
-
-/* ✅ Edit-Modal sauber und responsive */
-#editUserModal .modal-content{width:min(1100px,98vw) !important;max-height:92vh;overflow:auto;box-sizing:border-box;}
-#editUserModal .personal-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
-#editUserModal .qual-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start;}
-#editUserModal .qual-card{padding:14px;min-width:0;}
-#editUserModal .qual-card h5{margin-bottom:12px;}
-#editUserModal .lang-columns{columns:unset;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 18px;}
-#editUserModal .lang-item{display:flex;flex-direction:column;align-items:stretch;gap:6px;margin:0;min-width:0;}
-#editUserModal .lang-item label{display:flex;align-items:center;gap:8px;margin:0;min-width:0;font-weight:500;}
-#editUserModal .lang-item select{min-width:0;width:100%;max-width:100%;box-sizing:border-box;}
-#editUserModal .image-upload-grid{grid-template-columns:minmax(240px,320px) minmax(280px,1fr);align-items:start;}
-#editUserModal .image-upload-grid input[type="file"]{width:100%;box-sizing:border-box;}
-#editUserModal .image-preview-box{min-height:180px;}
-#editUserModal .qual-card > input[type="text"],
-#editUserModal .qual-card > input[type="date"],
-#editUserModal .qual-card > select,
-#editUserModal .qual-card > div > input,
-#editUserModal .qual-card > div > select{width:100%;box-sizing:border-box;}
-#editUserModal #edit-fuehrerschein_klassen{width:100%;box-sizing:border-box;}
-#editUserModal .qual-card .stack-field{margin-top:10px;}
-#editUserModal .qual-card .check-list{display:grid;gap:10px;}
-#editUserModal .qual-card .check-list label{margin:0;}
-#editUserModal .modal-actions{position:sticky;bottom:0;background:#fff;padding-top:12px;}
-@media (max-width: 900px){
-  #editUserModal .lang-columns{grid-template-columns:1fr;}
-}
-@media (max-width: 700px){
-  #editUserModal .personal-form-grid,
-  #editUserModal .qual-grid,
-  #editUserModal .image-upload-grid{grid-template-columns:1fr;}
-  #editUserModal .modal-content{width:min(100vw,98vw) !important;padding:14px;}
-}
-
-
-</style>
 
 <style>
 /* === Voll gefüllte Status-Kreise === */
@@ -419,157 +71,8 @@
 .fc-day-sat, .fc-day-sun {
   background-color: #f2f2f2 !important;
 }
-  /* ======================================= */
-/* FINAL FIX – EDIT USER MODAL SAUBER */
-/* ======================================= */
-
-/* Modal etwas breiter und sauber */
-#editUserModal .modal-content{
-  width:min(1180px, 96vw) !important;
-  max-height:92vh;
-  overflow:auto;
-  box-sizing:border-box;
-}
-
-/* Oberes Formular normal in 2 Spalten */
-#editUserModal .personal-form-grid{
-  grid-template-columns:repeat(2, minmax(0,1fr));
-  gap:12px;
-}
-
-/* Fremdsprachen über volle Breite */
-#editUserModal .lang-section-full{
-  grid-column: 1 / -1;
-  width:100%;
-}
-
-#editUserModal .lang-columns{
-  display:grid !important;
-  grid-template-columns: repeat(4, minmax(0,1fr)) !important;
-  gap:8px 24px !important;
-  columns: unset !important;
-}
-
-#editUserModal .lang-item{
-  display:flex !important;
-  align-items:center !important;
-  gap:8px !important;
-  margin:0 !important;
-  white-space:nowrap;
-}
-
-#editUserModal .lang-item input[type="checkbox"]{
-  margin:0 !important;
-  flex:0 0 auto;
-}
-
-#editUserModal .lang-item label{
-  margin:0 !important;
-  display:inline !important;
-  white-space:nowrap;
-  font-size:13px;
-  font-weight:500;
-}
-
-/* Bild ebenfalls über volle Breite */
-#editUserModal .image-section-full{
-  grid-column: 1 / -1;
-  width:100%;
-}
-
-#editUserModal .image-upload-grid{
-  display:grid;
-  grid-template-columns: 280px minmax(320px,1fr);
-  gap:16px;
-  align-items:start;
-}
-
-/* Unterer Bereich: 2 saubere Spalten */
-#editUserModal .qual-grid{
-  display:grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap:20px !important;
-  align-items:start !important;
-}
-
-#editUserModal .qual-card{
-  padding:14px !important;
-  min-width:0;
-}
-
-/* LINKER BLOCK: Checkboxen linksbündig, nicht mittig */
-#editUserModal .qual-card .checkbox-row,
-#editUserModal .qual-card .check-list label{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:8px !important;
-  margin:8px 0 !important;
-  text-align:left !important;
-  white-space:normal !important;
-}
-
-#editUserModal .qual-card .checkbox-row input[type="checkbox"],
-#editUserModal .qual-card .check-list label input[type="checkbox"]{
-  margin:2px 0 0 0 !important;
-  flex:0 0 auto !important;
-}
-
-#editUserModal .qual-card .checkbox-row span,
-#editUserModal .qual-card .check-list label span{
-  display:block;
-  line-height:1.35;
-}
-
-/* Falls Text direkt im label steckt */
-#editUserModal .qual-card label{
-  text-align:left !important;
-}
-
-/* Rechter Block: Inputs sauber */
-#editUserModal .qual-card input[type="text"],
-#editUserModal .qual-card input[type="date"],
-#editUserModal .qual-card select{
-  width:100% !important;
-  box-sizing:border-box !important;
-  margin-bottom:10px !important;
-}
-
-/* Führerschein-Zeile sauber links */
-#editUserModal .fuehrerschein-row,
-#editUserModal .stack-field .checkbox-row{
-  display:flex !important;
-  align-items:flex-start !important;
-  justify-content:flex-start !important;
-  gap:8px !important;
-}
-
-/* Responsive */
-@media (max-width: 1100px){
-  #editUserModal .lang-columns{
-    grid-template-columns: repeat(3, minmax(0,1fr)) !important;
-  }
-}
-
-@media (max-width: 800px){
-  #editUserModal .personal-form-grid,
-  #editUserModal .qual-grid,
-  #editUserModal .image-upload-grid{
-    grid-template-columns:1fr !important;
-  }
-
-  #editUserModal .lang-columns{
-    grid-template-columns: repeat(2, minmax(0,1fr)) !important;
-  }
-}
-
-@media (max-width: 560px){
-  #editUserModal .lang-columns{
-    grid-template-columns:1fr !important;
-  }
-}
+  
 </style>
-
 
 <style>
 /* ✅ Responsive: In Planung Zeiten unter Namen bei kleinem Bildschirm
@@ -590,7 +93,6 @@
   }
 }
 </style>
-
 
 <style>
 /* === Planner: größere Schrift & mehr Luft === */
@@ -618,7 +120,6 @@
 }
 </style>
 
-
 <style>
 /* === Kategorie-Farben (CP/CV) === */
 #calendar .cat-cp,
@@ -645,7 +146,6 @@
 #planning-calendar .fc-event-main-frame{ color:#111 !important; }
 </style>
 
-
 <style>
 .badge{
   display:inline-block;
@@ -670,112 +170,12 @@
   margin-bottom:10px;
 }
 .filter-card label{ font-weight:600; }
-
-  /* ============================= */
-/* 🔥 FINAL FIX EDIT MODAL CLEAN */
-/* ============================= */
-
-/* Fremdsprachen sauber */
-#editUserModal .lang-columns{
-  display:grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap:8px 20px;
-}
-
-#editUserModal .lang-item{
-  display:flex;
-  align-items:center;
-  gap:6px;
-  white-space:nowrap;
-}
-
-#editUserModal .lang-item input{
-  margin:0;
-  flex-shrink:0;
-}
-
-#editUserModal .lang-item label{
-  margin:0;
-  font-size:13px;
-}
-
-/* Hauptlayout */
-#editUserModal .qual-grid{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap:20px;
-  align-items:start;
-}
-
-/* Karten */
-#editUserModal .qual-card{
-  padding:14px;
-}
-
-/* Checkboxen sauber */
-#editUserModal .checkbox-row{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  margin:6px 0;
-}
-
-#editUserModal .checkbox-row input{
-  margin:0;
-}
-
-#editUserModal .checkbox-row label{
-  margin:0;
-  font-size:13px;
-}
-
-/* Rechte Seite (Ausweis etc.) */
-#editUserModal .qual-card input,
-#editUserModal .qual-card select{
-  width:100%;
-  box-sizing:border-box;
-  margin-bottom:8px;
-}
-
-#editUserModal .qual-card label{
-  display:block;
-  font-size:13px;
-  margin-bottom:2px;
-}
-
-/* Bild Bereich stabil */
-#editUserModal .image-upload-grid{
-  display:grid;
-  grid-template-columns: 260px 1fr;
-  gap:16px;
-}
-
-/* Responsive */
-@media (max-width: 900px){
-  #editUserModal .qual-grid{
-    grid-template-columns: 1fr;
-  }
-
-  #editUserModal .lang-columns{
-    grid-template-columns: 1fr;
-  }
-
-  #editUserModal .image-upload-grid{
-    grid-template-columns: 1fr;
-  }
-}
 </style>
-
-
-
-
-
 
 <style>
 .money{ color:#b8860b; font-weight:800; }        /* gold */
 .money-soft{ color:#b8860b; font-weight:700; }
 </style>
-
 
 <style>
 /* ✅ Summe im Chef-Report & Zähler immer normal (nicht gold) */
@@ -788,13 +188,11 @@
 }
 </style>
 
-
 <style>
 /* ✅ User-Report-Modal: Kosten normal schwarz + bessere Summe-Ausrichtung */
 #userReportModal td, #userReportModal th { vertical-align: middle; }
 #userReportModal .money, #userReportModal .money-soft { color: inherit !important; font-weight: inherit !important; }
 </style>
-
 
 <style>
 /* ✅ Planung: Einsatz-Umrandung immer schwarz (unabhängig von CP/CV) */
@@ -802,7 +200,6 @@
   border-color: #000 !important;
 }
 </style>
-
 
 <style>
 /* ✅ Planung: heutigen Tag hervorheben */
@@ -813,7 +210,6 @@
   font-weight: 800;
 }
 </style>
-
 
 <style>
 /* ✅ Aktueller Tag: komplett farbig (Kalender + Planung) */
@@ -849,8 +245,6 @@
 }
 </style>
 
-
-
 <script>
 // ✅ CP/CV Badge neben Firma im Einsatzdetails-Modal
 function updateFirmaCategoryBadge(ev){
@@ -864,7 +258,6 @@ function updateFirmaCategoryBadge(ev){
 }
 </script>
 
-
 <script>
 // ✅ Firma = Kategorie (CP / CV) im Einsatzdetail
 function setFirmaAsCategory(ev){
@@ -875,7 +268,6 @@ function setFirmaAsCategory(ev){
   }
 }
 </script>
-
 
 <style>
 /* ✅ Modal (Einsatz anlegen): CP/CV Buttons oben statt Dropdown */
@@ -903,7 +295,6 @@ function setFirmaAsCategory(ev){
   transform:translateY(-1px);
 }
 </style>
-
 
 <style>
 /* ✅ CP/CV Buttons: farbig + aktiver Zustand gut erkennbar */
@@ -936,7 +327,6 @@ function setFirmaAsCategory(ev){
 .cat-btn:focus{ outline:none; box-shadow: 0 0 0 4px rgba(0,0,0,0.12); }
 </style>
 
-
 <style>
 .gold-headers thead th{
   background: linear-gradient(180deg, #ffcc33, #e6b800) !important;
@@ -944,7 +334,6 @@ function setFirmaAsCategory(ev){
   border-bottom:2px solid #cfa600 !important;
 }
 </style>
-
 
 <style>
 /* ✅ Abstand unter Navbar – für alle Reiter */
@@ -965,7 +354,6 @@ nav { position: sticky; top: 0; z-index: 50; }
 }
 </style>
 
-
 <style>
 /* ✅ Mobile: Tabellen horizontal scrollbar statt verzerrt */
 @media (max-width: 768px){
@@ -985,7 +373,6 @@ nav { position: sticky; top: 0; z-index: 50; }
 }
 </style>
 
-
 <style>
 /* ✅ Global horizontal scrolling für ALLES (Mobile & Desktop bei Bedarf) */
 .scroll-x{
@@ -998,7 +385,6 @@ nav { position: sticky; top: 0; z-index: 50; }
 }
 </style>
 
-
 <style>
 /* ✅ Mobile: Navbar horizontal scrollbar (Tabs) */
 nav { width:100%; overflow-x:auto; -webkit-overflow-scrolling:touch; }
@@ -1006,14 +392,12 @@ nav .left{ display:flex; flex-wrap:nowrap; gap:10px; white-space:nowrap; }
 nav .left a{ display:inline-flex; flex:0 0 auto; }
 </style>
 
-
 <style>
 /* ✅ Mobile: make taps feel immediate, avoid 300ms delay / ghost clicks */
 .fc-event, .fc-daygrid-day-frame, nav a{
   touch-action: manipulation;
 }
 </style>
-
 
 <style id="mobile-calendar-click-fix">
 /* ✅ iOS/Safari: overflow scrolling containers can delay/queue taps.
@@ -1028,7 +412,6 @@ nav .left a{ display:inline-flex; flex:0 0 auto; }
 /* make sure calendar itself doesn't force huge min-width */
 #calendar{ min-width: 0 !important; }
 </style>
-
 
 <style id="modal-mobile-fix">
 /* ✅ Modal should always be above sticky nav */
@@ -1051,7 +434,6 @@ nav .left a{ display:inline-flex; flex:0 0 auto; }
 }
 </style>
 
-
 <style id="planning-remarks-small">
 /* ✅ Planung: Bemerkungen kleiner, damit alles besser passt */
 #planningBulkEditModal .muted,
@@ -1071,7 +453,6 @@ nav .left a{ display:inline-flex; flex:0 0 auto; }
 }
 </style>
 
-
 <style id="fc-mobile-hitbox">
 @media (max-width: 768px){
   #calendar .fc-daygrid-event{
@@ -1083,7 +464,6 @@ nav .left a{ display:inline-flex; flex:0 0 auto; }
   }
 }
 </style>
-
 
 <style id="ios-modal-paint-fix">
 /* ✅ iOS/Safari: force immediate repaint when opening modals */
@@ -1103,7 +483,6 @@ body.modal-open{
 }
 </style>
 
-
 <style id="modal-scroll-hard-fix">
 /* ✅ HARD FIX: allow scrolling inside modals on mobile (incl. iOS) */
 body.modal-open{ touch-action: auto !important; }
@@ -1119,7 +498,6 @@ body.modal-open{ touch-action: auto !important; }
   }
 }
 </style>
-
 
 <style id="mobile-edit-modal-compact">
 /* ✅ Mobile: Edit-Modal kompakter, damit Speichern sichtbar bleibt */
@@ -1159,7 +537,6 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
-
 <style>
 /* ✅ Planung: NUR Header vom heutigen Tag leicht grün */
 #planning-calendar .fc-col-header-cell.fc-day-today {
@@ -1171,7 +548,6 @@ body.modal-open{ touch-action: auto !important; }
   color: #14532d;
 }
 </style>
-
 
 <style>
 /* Kompaktere Einsätze in Planung */
@@ -1188,7 +564,6 @@ body.modal-open{ touch-action: auto !important; }
 }
 </style>
 
-
 <script>
 // Kleine Sicherheits-Fallbacks
 window.usersList = Array.isArray(window.usersList) ? window.usersList : [];
@@ -1201,7 +576,6 @@ window.currentEditUser = window.currentEditUser || null;
 window.setLanguageSkills = window.setLanguageSkills || function(){};
 window.renderImagePreview = window.renderImagePreview || function(){};
 </script>
-
 
 <style>
   .home-wrap{padding:0;display:block;min-height:calc(100vh - 64px);width:100%;}
@@ -1224,7 +598,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   .board-delete-btn{padding:8px 12px;border-radius:10px;border:1px solid #d33;background:#fff;color:#b00020;font-weight:700;cursor:pointer;}
 </style>
 
-
 <style id="calendar-hard-fix">
 /* ✅ Chef-Kalender vollständig anzeigen */
 #calendar-wrap{width:100%;}
@@ -1237,7 +610,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 #calendar .fc-scrollgrid-sync-table{width:100% !important;}
 #calendar .fc-daygrid-body-natural .fc-daygrid-day-events{margin-bottom:2px;}
 </style>
-
 
 <style>
 .pdf-choice-modal{
@@ -1252,6 +624,185 @@ window.renderImagePreview = window.renderImagePreview || function(){};
 .pdf-choice-card select{width:100%; margin-bottom:14px;}
 .pdf-choice-actions{display:flex; gap:10px; justify-content:flex-end;}
 </style>
+
+<style id="edit-user-modal-clean-final">
+/* ===== Edit User Modal – saubere finale Version ===== */
+#editUserModal .modal-content{
+  width:min(1120px,96vw) !important;
+  max-height:92vh;
+  overflow:auto;
+  box-sizing:border-box;
+}
+
+#editUserModal .personal-form-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 16px;
+}
+
+#editUserModal .section-title-lite{
+  margin:18px 0 8px;
+}
+
+#editUserModal #edit-language-skills,
+#editUserModal #edit-language-skills .qual-card,
+#editUserModal .image-upload-grid{
+  grid-column:1 / -1;
+}
+
+#editUserModal #edit-language-skills{
+  display:block;
+  margin:0 0 8px;
+}
+
+#editUserModal #edit-language-skills .qual-card{
+  width:100%;
+}
+
+#editUserModal .qual-grid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+  align-items:start;
+  margin:10px 0 0;
+}
+
+#editUserModal .qual-card{
+  min-width:0;
+  padding:16px;
+  border:1px solid #d6dbe3;
+  border-radius:12px;
+  background:#f8fbff;
+}
+
+#editUserModal .qual-card h5{
+  margin:0 0 12px;
+  font-size:14px;
+}
+
+#editUserModal .lang-columns{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px 18px;
+}
+
+#editUserModal .lang-item{
+  display:grid;
+  grid-template-columns:minmax(0,1fr);
+  gap:6px;
+  min-width:0;
+}
+
+#editUserModal .lang-item .lang-toggle{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  min-width:0;
+  font-size:14px;
+  font-weight:500;
+  line-height:1.35;
+}
+
+#editUserModal .lang-item .lang-toggle input[type="checkbox"]{
+  margin:0;
+  flex:0 0 auto;
+}
+
+#editUserModal .lang-item .lang-toggle span{
+  min-width:0;
+  overflow-wrap:anywhere;
+}
+
+#editUserModal .lang-item select{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+#editUserModal .check-list{
+  display:grid;
+  gap:10px;
+}
+
+#editUserModal .check-list label,
+#editUserModal .checkbox-row,
+#editUserModal .fuehrerschein-row{
+  display:grid;
+  grid-template-columns:18px minmax(0,1fr);
+  align-items:start;
+  column-gap:10px;
+  margin:0;
+  text-align:left;
+  line-height:1.4;
+}
+
+#editUserModal .check-list label input[type="checkbox"],
+#editUserModal .checkbox-row input[type="checkbox"],
+#editUserModal .fuehrerschein-row input[type="checkbox"]{
+  margin:3px 0 0;
+}
+
+#editUserModal .check-list label span,
+#editUserModal .checkbox-row label,
+#editUserModal .fuehrerschein-row span{
+  display:block;
+  min-width:0;
+}
+
+#editUserModal .qual-card input[type="text"],
+#editUserModal .qual-card input[type="date"],
+#editUserModal .qual-card input[type="number"],
+#editUserModal .qual-card select{
+  width:100%;
+  box-sizing:border-box;
+}
+
+#editUserModal .stack-field{
+  margin-top:10px;
+}
+
+#editUserModal .image-upload-grid{
+  display:grid;
+  grid-template-columns:minmax(240px,280px) minmax(0,1fr);
+  gap:18px;
+  align-items:start;
+  margin:0 0 6px;
+}
+
+#editUserModal .image-upload-grid input[type="file"]{
+  width:100%;
+  box-sizing:border-box;
+}
+
+#editUserModal .image-preview-box{
+  min-height:180px;
+}
+
+#editUserModal .modal-actions{
+  position:sticky;
+  bottom:0;
+  background:#fff;
+  padding-top:12px;
+}
+
+@media (max-width: 900px){
+  #editUserModal .personal-form-grid,
+  #editUserModal .qual-grid,
+  #editUserModal .image-upload-grid,
+  #editUserModal .lang-columns{
+    grid-template-columns:1fr;
+  }
+}
+
+@media (max-width: 640px){
+  #editUserModal .modal-content{
+    width:min(100vw,98vw) !important;
+    padding:14px;
+  }
+}
+</style>
+
 </head>
 <body>
   <nav>
@@ -1417,7 +968,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
   </div>
 </div>
 
-
   <!-- Zähler -->
   <div class="table-scroll">
 <div class="scroll-x">
@@ -1472,7 +1022,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
     
   </div>
 </div>
-
 
   <!-- Mitarbeiter Verwaltung -->
 
@@ -1538,29 +1087,28 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <input type="number" id="stundensatz" step="0.01" min="0" placeholder="Stundensatz (€/h) optional">
       </div>
 
-
       <div class="section-title-lite">Fremdsprachen</div>
       <div class="qual-grid" id="add-language-skills">
         <div class="qual-card">
           <h5>Sprachen</h5>
           <div class="lang-columns">
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Deutsch"> Deutsch</label><select id="add-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Englisch"> Englisch</label><select id="add-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Französisch"> Französisch</label><select id="add-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Spanisch"> Spanisch</label><select id="add-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Türkisch"> Türkisch</label><select id="add-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Arabisch"> Arabisch</label><select id="add-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Italienisch"> Italienisch</label><select id="add-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Russisch"> Russisch</label><select id="add-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Polnisch"> Polnisch</label><select id="add-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Rumänisch"> Rumänisch</label><select id="add-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Ukrainisch"> Ukrainisch</label><select id="add-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Kurdisch"> Kurdisch</label><select id="add-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Japanisch"> Japanisch</label><select id="add-lang-Japanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Persisch"> Persisch</label><select id="add-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Portugiesisch"> Portugiesisch</label><select id="add-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Niederländisch"> Niederländisch</label><select id="add-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Albanisch"> Albanisch</label><select id="add-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Deutsch"><span> Deutsch</span></label><select id="add-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Englisch"><span> Englisch</span></label><select id="add-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Französisch"><span> Französisch</span></label><select id="add-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Spanisch"><span> Spanisch</span></label><select id="add-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Türkisch"><span> Türkisch</span></label><select id="add-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Arabisch"><span> Arabisch</span></label><select id="add-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Italienisch"><span> Italienisch</span></label><select id="add-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Russisch"><span> Russisch</span></label><select id="add-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Polnisch"><span> Polnisch</span></label><select id="add-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Rumänisch"><span> Rumänisch</span></label><select id="add-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Ukrainisch"><span> Ukrainisch</span></label><select id="add-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Kurdisch"><span> Kurdisch</span></label><select id="add-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Japanisch"><span> Japanisch</span></label><select id="add-lang-Japanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Persisch"><span> Persisch</span></label><select id="add-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Portugiesisch"><span> Portugiesisch</span></label><select id="add-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Niederländisch"><span> Niederländisch</span></label><select id="add-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="add" data-lang="Albanisch"><span> Albanisch</span></label><select id="add-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           </div>
         </div>
       </div>
@@ -1579,16 +1127,16 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
-          <label><input type="checkbox" id="brandschutzhelfer"> ⁠Ersthelfer/-in</label><br>
-          <label><input type="checkbox" id="sanitaeter"> Rettungssanitäter/-in oder höherwertig</label><br>
-          <label><input type="checkbox" id="gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label><br>
-          <label><input type="checkbox" id="fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label><br>
-          <label><input type="checkbox" id="personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label><br>
-          <label><input type="checkbox" id="waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label><br>
-          <label><input type="checkbox" id="behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label><br>
-          <label><input type="checkbox" id="bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label><br>
-          <label><input type="checkbox" id="deeskalation"> Deeskalationslehrgang</label><br>
-          <label><input type="checkbox" id="pschein"> Personenbeförderungsschein (P-Schein)</label>
+          <label><input type="checkbox" id="brandschutzhelfer"><span>⁠Ersthelfer/-in</span></label><br>
+          <label><input type="checkbox" id="sanitaeter"><span>Rettungssanitäter/-in oder höherwertig</span></label><br>
+          <label><input type="checkbox" id="gssk"><span>Geprüfte Schutz- und Sicherheitskraft (GSSK)</span></label><br>
+          <label><input type="checkbox" id="fachkraft_ss"><span>Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</span></label><br>
+          <label><input type="checkbox" id="personenschutz"><span>Erfahrung / Einsatz im Bereich Personenschutz</span></label><br>
+          <label><input type="checkbox" id="waffensachkunde"><span>Waffensachkunde / Berufswaffenträger/-in</span></label><br>
+          <label><input type="checkbox" id="behoerdlich_studium"><span>Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</span></label><br>
+          <label><input type="checkbox" id="bsw"><span>Brandsicherheitswache / Brandschutzhelfer/-in</span></label><br>
+          <label><input type="checkbox" id="deeskalation"><span>Deeskalationslehrgang</span></label><br>
+          <label><input type="checkbox" id="pschein"><span>Personenbeförderungsschein (P-Schein)</span></label>
         </div>
         <div class="qual-card">
           <h5>Ausweisdokument</h5>
@@ -1600,7 +1148,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
             <input type="date" id="ausweis_gueltig_bis">
           </div>
           <h5 style="margin-top:14px;">Führerschein</h5>
-          <label><input type="checkbox" id="fuehrerschein"> Führerschein vorhanden</label>
+          <label><input type="checkbox" id="fuehrerschein"><span>Führerschein vorhanden</span></label>
           <input type="text" id="fuehrerschein_klassen" placeholder="Klasse, z. B. B / BE / C1" style="margin-top:10px;display:none;">
         </div>
       </div>
@@ -1644,7 +1192,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <option value="CV">Casutt Veranstaltungsservice</option>
         <option value="CP">CP-Security-Solutions</option>
       </select>
-
 
       <label>Titel</label>
       <input id="title" placeholder="Titel des Einsatzes">
@@ -1907,23 +1454,23 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <div class="qual-card">
           <h5>Sprachen</h5>
           <div class="lang-columns">
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Deutsch"> Deutsch</label><select id="edit-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Englisch"> Englisch</label><select id="edit-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Französisch"> Französisch</label><select id="edit-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Spanisch"> Spanisch</label><select id="edit-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Türkisch"> Türkisch</label><select id="edit-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Arabisch"> Arabisch</label><select id="edit-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Italienisch"> Italienisch</label><select id="edit-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Russisch"> Russisch</label><select id="edit-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Polnisch"> Polnisch</label><select id="edit-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Rumänisch"> Rumänisch</label><select id="edit-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Ukrainisch"> Ukrainisch</label><select id="edit-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Kurdisch"> Kurdisch</label><select id="edit-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Japanisch"> Japanisch</label><select id="edit-lang-Japanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Persisch"> Persisch</label><select id="edit-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Portugiesisch"> Portugiesisch</label><select id="edit-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Niederländisch"> Niederländisch</label><select id="edit-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
-          <div class="lang-item"><label><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Albanisch"> Albanisch</label><select id="edit-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Deutsch"><span> Deutsch</span></label><select id="edit-lang-Deutsch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Englisch"><span> Englisch</span></label><select id="edit-lang-Englisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Französisch"><span> Französisch</span></label><select id="edit-lang-Französisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Spanisch"><span> Spanisch</span></label><select id="edit-lang-Spanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Türkisch"><span> Türkisch</span></label><select id="edit-lang-Türkisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Arabisch"><span> Arabisch</span></label><select id="edit-lang-Arabisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Italienisch"><span> Italienisch</span></label><select id="edit-lang-Italienisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Russisch"><span> Russisch</span></label><select id="edit-lang-Russisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Polnisch"><span> Polnisch</span></label><select id="edit-lang-Polnisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Rumänisch"><span> Rumänisch</span></label><select id="edit-lang-Rumänisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Ukrainisch"><span> Ukrainisch</span></label><select id="edit-lang-Ukrainisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Kurdisch"><span> Kurdisch</span></label><select id="edit-lang-Kurdisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Japanisch"><span> Japanisch</span></label><select id="edit-lang-Japanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Persisch"><span> Persisch</span></label><select id="edit-lang-Persisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Portugiesisch"><span> Portugiesisch</span></label><select id="edit-lang-Portugiesisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Niederländisch"><span> Niederländisch</span></label><select id="edit-lang-Niederländisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
+          <div class="lang-item"><label class="lang-toggle"><input type="checkbox" class="lang-check" data-prefix="edit" data-lang="Albanisch"><span> Albanisch</span></label><select id="edit-lang-Albanisch" class="lang-level"><option value="">Niveau wählen</option><option>Grundkenntnisse</option><option>Fortgeschritten</option><option>Verhandlungssicher in Wort und Schrift</option><option>Muttersprache</option></select></div>
           </div>
         </div>
       </div>
@@ -1939,22 +1486,21 @@ window.renderImagePreview = window.renderImagePreview || function(){};
         <div class="image-preview-box" id="edit-image-preview-box"><div class="image-preview-placeholder">Noch kein Bild hinterlegt</div></div>
       </div>
 
-
       <div class="section-title-lite">Zusätzliche Qualifikationen</div>
       <div class="qual-grid">
         <div class="qual-card">
           <h5>Qualifikationen</h5>
           <div class="check-list">
-            <label><input type="checkbox" id="edit-brandschutzhelfer"> ⁠Ersthelfer/-in</label>
-            <label><input type="checkbox" id="edit-deeskalation"> Deeskalationslehrgang</label>
-            <label><input type="checkbox" id="edit-gssk"> Geprüfte Schutz- und Sicherheitskraft (GSSK)</label>
-            <label><input type="checkbox" id="edit-fachkraft_ss"> Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</label>
-            <label><input type="checkbox" id="edit-personenschutz"> Erfahrung / Einsatz im Bereich Personenschutz</label>
-            <label><input type="checkbox" id="edit-waffensachkunde"> Waffensachkunde / Berufswaffenträger/-in</label>
-            <label><input type="checkbox" id="edit-behoerdlich_studium"> Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</label>
-            <label><input type="checkbox" id="edit-bsw"> Brandsicherheitswache / Brandschutzhelfer/-in</label>
-            <label><input type="checkbox" id="edit-sanitaeter"> Rettungssanitäter/-in oder höherwertig</label>
-            <label><input type="checkbox" id="edit-pschein"> Personenbeförderungsschein (P-Schein)</label>
+            <label><input type="checkbox" id="edit-brandschutzhelfer"><span>⁠Ersthelfer/-in</span></label>
+            <label><input type="checkbox" id="edit-deeskalation"><span>Deeskalationslehrgang</span></label>
+            <label><input type="checkbox" id="edit-gssk"><span>Geprüfte Schutz- und Sicherheitskraft (GSSK)</span></label>
+            <label><input type="checkbox" id="edit-fachkraft_ss"><span>Fachkraft für Schutz und Sicherheit oder vergleichbare anerkannte Ausbildung</span></label>
+            <label><input type="checkbox" id="edit-personenschutz"><span>Erfahrung / Einsatz im Bereich Personenschutz</span></label>
+            <label><input type="checkbox" id="edit-waffensachkunde"><span>Waffensachkunde / Berufswaffenträger/-in</span></label>
+            <label><input type="checkbox" id="edit-behoerdlich_studium"><span>Studium Sicherheitsmanagement oder vergleichbares anerkanntes Studium</span></label>
+            <label><input type="checkbox" id="edit-bsw"><span>Brandsicherheitswache / Brandschutzhelfer/-in</span></label>
+            <label><input type="checkbox" id="edit-sanitaeter"><span>Rettungssanitäter/-in oder höherwertig</span></label>
+            <label><input type="checkbox" id="edit-pschein"><span>Personenbeförderungsschein (P-Schein)</span></label>
           </div>
         </div>
         <div class="qual-card">
@@ -1967,7 +1513,7 @@ window.renderImagePreview = window.renderImagePreview || function(){};
             <input type="date" id="edit-ausweis_gueltig_bis">
           </div>
           <h5 style="margin-top:14px;">Führerschein</h5>
-          <label><input type="checkbox" id="edit-fuehrerschein"> Führerschein vorhanden</label>
+          <label class="fuehrerschein-row"><input type="checkbox" id="edit-fuehrerschein"><span>Führerschein vorhanden</span></label>
           <input type="text" id="edit-fuehrerschein_klassen" class="stack-field" placeholder="Klasse, z. B. B / BE / C1" style="display:none;">
         </div>
       </div>
@@ -2070,7 +1616,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
     </div>
   </div>
 
-
   <!-- ✅ Modal: Planung – Planer sieht nur Kommentare (Doppelklick) -->
   <div class="modal" id="planningCommentsModal" style="display:none;">
     <div class="modal-content" tabindex="-1">
@@ -2091,7 +1636,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
     </div>
   </div>
-
 
   <!-- ✅ Modal: Einsatz duplizieren (Kalender) -->
   <div class="modal" id="duplicateModal" style="display:none;">
@@ -2126,7 +1670,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       </div>
     </div>
   </div>
-
 
   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
   <script>
@@ -2220,7 +1763,6 @@ window.renderImagePreview = window.renderImagePreview || function(){};
       return (c === "CV") ? "Casutt Veranstaltungsservice" : "CP-Security-Solutions";
     }
 
-
     // ✅ Kategorie-Buttons (CV/CP) steuern die versteckten Selects
     function syncCatButtons(toggleId, selectId){
       const toggle = document.getElementById(toggleId);
@@ -2295,7 +1837,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       });
     }
 
-
     function hideTermine(){
       const t = document.getElementById("termine");
       if(t) t.style.display = "none";
@@ -2358,7 +1899,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       return isNaN(v) ? null : v;
     }
 
-
     // ✅ Tooltip-Helfer (für title="...") – verhindert kaputtes HTML bei Anführungszeichen etc.
     function escapeAttr(s){
       return String(s || "")
@@ -2368,7 +1908,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
         .replace(/"/g,"&quot;")
         .replace(/'/g,"&#39;");
     }
-
 
     function capYesNo(v){
       const t = String(v||"").toLowerCase();
@@ -2437,7 +1976,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       const catFilter = (document.getElementById("report-type")?.value || "CV").toUpperCase();
       events = events.filter(ev => String(ev.category || "CP").toUpperCase() === catFilter);
 
-
       // nur bestätigte für mich
       let rows = [];
       events.forEach(ev=>{
@@ -2485,7 +2023,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       if(countEl) countEl.textContent = `${rows.length} Termine`;
     }
 
-
     // Report Jahres-Input
     let yearInput = document.getElementById("report-year");
     let now = new Date();
@@ -2508,7 +2045,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
     }
     const ctrType = document.getElementById("counter-type");
     if(ctrType){ ctrType.value = (ctrType.value || "CV"); if(!ctrType.value) ctrType.value="CV"; ctrType.addEventListener("change", loadCounter); ctrType.addEventListener("change", ()=>{ if(typeof syncCatButtons==="function") syncCatButtons("counter-cat-toggle","counter-type"); if(typeof applyGoldHeaders==="function") applyGoldHeaders(); }); }
-
 
     function escapeHtmlBoard(value){
       return String(value ?? "")
@@ -2572,7 +2108,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
       loadBoardPosts();
     }
 
-
     async function deleteBoardPost(postId){
       const id = Number(postId);
       if(!Number.isInteger(id) || id <= 0){
@@ -2632,7 +2167,6 @@ let calendar, planningCalendar, selectedDate=null, lastClickTime=0, currentEvent
         tMonth.addEventListener("change", loadMyTermine);
         tYear.addEventListener("change", loadMyTermine);
       }
-
 
       // Tabs
       if(!IS_PLANNER){
@@ -2986,7 +2520,6 @@ document.getElementById("planning").style.display="block";
         return items.join("");
       }
 
-
       function initPlanningCalendar(){
         planningCalendar = new FullCalendar.Calendar(document.getElementById('planning-calendar'),{
           headerToolbar: { left: 'prev,next today', center: 'title', right: '' },
@@ -3027,7 +2560,6 @@ document.getElementById("planning").style.display="block";
               if(tEl) tEl.textContent = title;
             }catch(_){}
           },
-
 
         buttonText: { today: "Heute", month: "Monat", week: "Woche", day: "Tag", list: "Liste" },
           height:"85vh",
@@ -3146,8 +2678,6 @@ document.getElementById("planning").style.display="block";
         }, 20000);
       }
 
-
-
     function collectLanguageSkills(prefix){
       const result = {};
       document.querySelectorAll(`input.lang-check[data-prefix="${prefix}"]`).forEach(cb => {
@@ -3194,8 +2724,6 @@ document.getElementById("planning").style.display="block";
       });
     }
     window.setLanguageSkills = setLanguageSkills;
-
-
 
     function renderImagePreview(prefix, value){
       const box = document.getElementById(prefix === 'edit' ? 'edit-image-preview-box' : 'image-preview-box');
@@ -3340,7 +2868,6 @@ document.getElementById("planning").style.display="block";
       return (c === 'CV') ? 'CV' : 'CP';
     }
 
-
     function openDuplicateModal(){
       document.getElementById("duplicateModal").style.display = "flex";
       dupSelectedDates = [];
@@ -3444,8 +2971,6 @@ document.getElementById("dup-date").value = "";
       if(calendar) calendar.refetchEvents();
       if(planningCalendar) planningCalendar.refetchEvents();
     }
-
-
 
     // Einsatz anlegen
     function openEventModal(){
@@ -3701,7 +3226,6 @@ async function saveEventEdit(){
         return;
       }
 
-
       await fetch("/events/update",{
         method:"POST", headers:{"Content-Type":"application/json"},
         body:JSON.stringify(payload)
@@ -3836,7 +3360,6 @@ async function saveEventEdit(){
       } else {
         baseStartHHMM = fmtTimeOnly(baseStartSource);
       }
-
 
       // ✅ Reihenfolge in Einsatzdetails:
 // 1) bestätigte hintereinander
@@ -4031,7 +3554,6 @@ document.getElementById("confirmed-counter").textContent =
       users.forEach(u=>{ usersCache[u.username] = `${u.vorname} ${u.nachname}`.trim(); });
 
       renderUsersTable(users);
-
 
       // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
       function updateReportSumRow(){
@@ -4507,8 +4029,6 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
         list.appendChild(tr);
       });
 
-
-
       // ✅ Summenzeile (alle Mitarbeiter zusammen) aktualisieren
       function updateReportSumRow(){
         const monthHours = Array(12).fill(0);
@@ -4866,7 +4386,6 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
       document.getElementById("planningBulkEditModal").style.display = "none";
     }
 
-
     // =========================
     // 🗂️ Planung (Planer): nur Kommentare anzeigen
     // =========================
@@ -5000,7 +4519,6 @@ const monthNames = ["Januar","Februar","März","April","Mai","Juni","Juli","Augu
       if(typeof loadReport === "function") loadReport();
     }
 
-
     /* REPORT_SORT_BY_DATE */
     function fmtDateOnlyDE(dt){
       const d = new Date(dt);
@@ -5023,7 +4541,6 @@ function setCategoryBadge(cat){
 }
 </script>
 
-
 <script>
 document.addEventListener("DOMContentLoaded", function(){
   // ✅ Defaults: Report & Zähler starten mit CV
@@ -5036,7 +4553,6 @@ document.addEventListener("DOMContentLoaded", function(){
   if(typeof initCategoryButtons === "function") initCategoryButtons();
 });
 </script>
-
 
 <script>
 /* ✅ Modal-Kategorie Buttons (Create) */
@@ -5070,7 +4586,6 @@ function initModalCatButtons(){
 }
 document.addEventListener("DOMContentLoaded", initModalCatButtons);
 </script>
-
 
 <script>
 (function(){
@@ -5158,7 +4673,6 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
 })();
 </script>
 
-
 <script>
 /* ✅ Mobile Fix (iOS/Safari):
    - verhindert "queued/ghost clicks" in overflow scroll containers
@@ -5207,7 +4721,6 @@ document.addEventListener("DOMContentLoaded", initModalCatButtons);
 })();
 </script>
 
-
 <script id="modal-relocate-fix">
 /* ✅ Mobile fix: move all modals directly under <body> to avoid being clipped by overflow/scroll containers */
 document.addEventListener('DOMContentLoaded', function(){
@@ -5220,7 +4733,6 @@ document.addEventListener('DOMContentLoaded', function(){
   }catch(e){}
 });
 </script>
-
 
 <div id="pdf-choice-modal" class="pdf-choice-modal" aria-hidden="true">
   <div class="pdf-choice-card">
@@ -5239,7 +4751,6 @@ document.addEventListener('DOMContentLoaded', function(){
 
 </body>
 </html>
-
 
 <script>
 // ✅ Kategorie-Badge bei Firma im Einsatzdetails-Modal setzen
