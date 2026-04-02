@@ -1119,7 +1119,7 @@ document.addEventListener("DOMContentLoaded", function() {
             if(form) form.style.display = "none";
             if(done){
               done.style.display = "block";
-              done.textContent = `Ich, ${data.name || data.full_name || "Vorname Nachname"}, habe die Subunternehmervereinbarung einschließlich Datenschutz bestätigt.
+              done.textContent = `Ich, ${data.name || data.full_name || "Vorname Nachname"}, willige in die Subunternehmervereinbarung einschließlich der Verwendung meiner Daten ein.
 Datum: ${formatDateDE(data.date || "")}.`;
             }
             setLocked(false);
@@ -1165,7 +1165,7 @@ Datum: ${formatDateDE(data.date || "")}.`;
           if(form) form.style.display = "none";
           if(done){
             done.style.display = "block";
-            done.textContent = `Ich, ${name}, habe die Subunternehmervereinbarung einschließlich Datenschutz bestätigt.
+            done.textContent = `Ich, ${name}, willige in die Subunternehmervereinbarung einschließlich der Verwendung meiner Daten ein.
 Datum: ${formatDateDE(date)}.`;
           }
           setLocked(false);
