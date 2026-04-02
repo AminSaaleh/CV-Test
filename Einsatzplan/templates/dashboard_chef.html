@@ -211,8 +211,7 @@
 .image-preview-box{border:1px dashed #cbd5e1;border-radius:12px;padding:12px;min-height:160px;background:#f8fafc;display:flex;align-items:center;justify-content:center;overflow:hidden;}
 .image-preview-box img{max-width:100%;max-height:220px;border-radius:10px;display:block;}
 .image-preview-placeholder{color:#64748b;font-size:13px;text-align:center;}
-.lang-columns{columns:2;column-gap:18px;}
-.lang-columns .lang-item{break-inside:avoid;}
+
 
 /* ✅ Edit-Modal sauber und responsive */
 #editUserModal .modal-content{width:min(1100px,98vw) !important;max-height:92vh;overflow:auto;box-sizing:border-box;}
@@ -415,6 +414,100 @@
   margin-bottom:10px;
 }
 .filter-card label{ font-weight:600; }
+
+  /* ============================= */
+/* 🔥 FINAL FIX EDIT MODAL CLEAN */
+/* ============================= */
+
+/* Fremdsprachen sauber */
+#editUserModal .lang-columns{
+  display:grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap:8px 20px;
+}
+
+#editUserModal .lang-item{
+  display:flex;
+  align-items:center;
+  gap:6px;
+  white-space:nowrap;
+}
+
+#editUserModal .lang-item input{
+  margin:0;
+  flex-shrink:0;
+}
+
+#editUserModal .lang-item label{
+  margin:0;
+  font-size:13px;
+}
+
+/* Hauptlayout */
+#editUserModal .qual-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:20px;
+  align-items:start;
+}
+
+/* Karten */
+#editUserModal .qual-card{
+  padding:14px;
+}
+
+/* Checkboxen sauber */
+#editUserModal .checkbox-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:6px 0;
+}
+
+#editUserModal .checkbox-row input{
+  margin:0;
+}
+
+#editUserModal .checkbox-row label{
+  margin:0;
+  font-size:13px;
+}
+
+/* Rechte Seite (Ausweis etc.) */
+#editUserModal .qual-card input,
+#editUserModal .qual-card select{
+  width:100%;
+  box-sizing:border-box;
+  margin-bottom:8px;
+}
+
+#editUserModal .qual-card label{
+  display:block;
+  font-size:13px;
+  margin-bottom:2px;
+}
+
+/* Bild Bereich stabil */
+#editUserModal .image-upload-grid{
+  display:grid;
+  grid-template-columns: 260px 1fr;
+  gap:16px;
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  #editUserModal .qual-grid{
+    grid-template-columns: 1fr;
+  }
+
+  #editUserModal .lang-columns{
+    grid-template-columns: 1fr;
+  }
+
+  #editUserModal .image-upload-grid{
+    grid-template-columns: 1fr;
+  }
+}
 </style>
 
 
